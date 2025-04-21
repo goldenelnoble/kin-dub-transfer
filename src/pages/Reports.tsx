@@ -1,4 +1,3 @@
-
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { FileText, FileSpreadsheet, Info, Filter } from "lucide-react";
@@ -16,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import jsPDF from "jspdf";
 
 type ReportType = "mensuel" | "hebdomadaire" | "journalier";
 
@@ -65,6 +65,35 @@ export default function Reports() {
     }
     return typeMatch && dateMatch;
   });
+
+  // Fonction pour exporter en PDF
+  const handleExportPDF = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.text("Rapports exportés", 14, 16);
+    doc.setFontSize(10);
+
+    let y = 26;
+    doc.text("ID", 14, y);
+    doc.text("Titre", 34, y);
+    doc.text("Date", 110, y);
+    doc.text("Status", 142, y);
+    y += 6;
+
+    filteredReports.forEach((report) => {
+      doc.text(String(report.id), 14, y);
+      doc.text(report.title, 34, y, { maxWidth: 70 });
+      doc.text(format(parseISO(report.date), "PPP", { locale: fr }), 110, y);
+      doc.text(report.status, 142, y);
+      y += 6;
+      if (y > 270) {
+        doc.addPage();
+        y = 16;
+      }
+    });
+
+    doc.save("rapports.pdf");
+  };
 
   return (
     <AppLayout>
@@ -152,7 +181,10 @@ export default function Reports() {
               <FileSpreadsheet className="h-5 w-5 text-[#F2C94C]" />
               Historique des rapports
             </h2>
-            <Button className="bg-[#43A047] hover:bg-[#F2C94C] text-white">
+            <Button
+              className="bg-[#43A047] hover:bg-[#F2C94C] text-white"
+              onClick={handleExportPDF}
+            >
               Exporter
             </Button>
           </div>
@@ -231,4 +263,3 @@ export default function Reports() {
     </AppLayout>
   );
 }
-

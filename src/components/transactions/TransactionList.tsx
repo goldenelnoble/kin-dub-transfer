@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { 
   Table, 
@@ -133,7 +132,12 @@ export function TransactionList() {
   const [transactions, setTransactions] = useState(getInitialTransactions());
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [directionFilter, setDirectionFilter] = useState("all");
+  const [directionFilter, setDirectionFilter] = useState(() => {
+    const url = new URL(window.location.href);
+    const dir = url.searchParams.get("direction");
+    if (dir === "kinshasa_to_dubai" || dir === "dubai_to_kinshasa") return dir;
+    return "all";
+  });
 
   // Handler for updating transaction status
   const handleUpdateStatus = (id: string, newStatus: TransactionStatus) => {
@@ -299,6 +303,17 @@ export function TransactionList() {
                               </Button>
                             </>
                           )}
+                          {transaction.status === TransactionStatus.VALIDATED && (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="text-app-green-700"
+                              title="Compléter"
+                              onClick={() => handleUpdateStatus(transaction.id, TransactionStatus.COMPLETED)}
+                            >
+                              <CheckCheck className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -312,4 +327,3 @@ export function TransactionList() {
     </Card>
   );
 }
-

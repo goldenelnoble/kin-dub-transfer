@@ -92,8 +92,8 @@ export default function Reports() {
     try {
       // Charge le logo en base64
       const logoData = await fetchImageBase64(LOGO_URL);
-      doc.addImage(logoData, "PNG", 14, 6, 30, 15); // position x=14, y=6, width=30, height=15
-      y = 24; // Décale le texte du titre sous le logo
+      doc.addImage(logoData, "PNG", 14, 6, 50, 50); // position x=14, y=6, width=50, height=50 (updated size)
+      y = 58; // Décale le texte du titre sous le logo (6 + 50 + 2 spacing)
     } catch (e) {
       // Si le logo échoue à charger, on continue sans
     }
@@ -263,7 +263,7 @@ export default function Reports() {
                               <span className="font-semibold">Titre :</span> {selected.title}
                             </p>
                             <p>
-                              <span className="font-semibold">Date :</span> {format(parseISO(selected.date), "PPP", { locale: fr })}
+                              <span className="font-semibold">Date⯯:</span> {format(parseISO(selected.date), "PPP", { locale: fr })}
                             </p>
                             <p>
                               <span className="font-semibold">Type :</span>{" "}

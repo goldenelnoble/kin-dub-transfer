@@ -13,7 +13,9 @@ import {
   Clock, 
   DollarSign, 
   Percent, 
-  X 
+  X,
+  ArrowRight,
+  ArrowLeft
 } from "lucide-react";
 import { DashboardStats, Currency } from "@/types";
 import { CURRENCY_SYMBOLS } from "@/lib/constants";

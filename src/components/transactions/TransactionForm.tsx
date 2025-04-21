@@ -13,6 +13,7 @@ import {
 import { AVAILABLE_CURRENCIES, CURRENCY_SYMBOLS, DEFAULT_COMMISSION_PERCENTAGES, MOBILE_MONEY_NETWORKS } from "@/lib/constants";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "@/components/ui/sonner";
+import { ArrowRight } from "lucide-react";
 
 export function TransactionForm() {
   const [direction, setDirection] = useState<TransactionDirection>(TransactionDirection.KINSHASA_TO_DUBAI);

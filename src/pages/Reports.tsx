@@ -43,6 +43,11 @@ const statusColors: Record<string, string> = {
   "Annulé": "text-red-500",
 };
 
+// Ajouter la dépendance pour gérer les images base64
+// (jspdf permet d'utiliser des URLs ou des données base64 pour addImage)
+
+const LOGO_URL = "/public/lovable-uploads/b41d0d5e-3f93-4cc4-8fee-1f2457623fad.png";
+
 export default function Reports() {
   // Filtres: type et période
   const [reportType, setReportType] = React.useState<ReportType | "tous">("tous");
@@ -66,14 +71,37 @@ export default function Reports() {
     return typeMatch && dateMatch;
   });
 
-  // Fonction pour exporter en PDF
-  const handleExportPDF = () => {
+  // Fonction utilitaire pour charger une image et retourner les données base64 pour jsPDF
+  const fetchImageBase64 = (url: string): Promise<string> => {
+    return fetch(url)
+      .then(response => response.blob())
+      .then(blob => {
+        return new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+      });
+  };
+
+  // Fonction pour exporter en PDF, avec logo en haut
+  const handleExportPDF = async () => {
     const doc = new jsPDF();
+    let y = 16;
+    try {
+      // Charge le logo en base64
+      const logoData = await fetchImageBase64(LOGO_URL);
+      doc.addImage(logoData, "PNG", 14, 6, 30, 15); // position x=14, y=6, width=30, height=15
+      y = 24; // Décale le texte du titre sous le logo
+    } catch (e) {
+      // Si le logo échoue à charger, on continue sans
+    }
     doc.setFontSize(16);
-    doc.text("Rapports exportés", 14, 16);
+    doc.text("Rapports exportés", 50, y);
     doc.setFontSize(10);
 
-    let y = 26;
+    y += 10;
     doc.text("ID", 14, y);
     doc.text("Titre", 34, y);
     doc.text("Date", 110, y);
@@ -181,85 +209,85 @@ export default function Reports() {
               <FileSpreadsheet className="h-5 w-5 text-[#F2C94C]" />
               Historique des rapports
             </h2>
-            <Button
-              className="bg-[#43A047] hover:bg-[#F2C94C] text-white"
-              onClick={handleExportPDF}
-            >
-              Exporter
-            </Button>
-          </div>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>ID</TableHead>
-                <TableHead>Titre</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Action</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredReports.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center text-gray-400">Aucun rapport pour cette période/type.</TableCell>
-                </TableRow>
-              ) : (
-                filteredReports.map(report => (
-                  <TableRow key={report.id}>
-                    <TableCell>{report.id}</TableCell>
-                    <TableCell>{report.title}</TableCell>
-                    <TableCell className="text-[#F2C94C]">{format(parseISO(report.date), "PPP", { locale: fr })}</TableCell>
-                    <TableCell className={statusColors[report.status]}>{report.status}</TableCell>
-                    <TableCell>
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="border-[#F97316] text-[#F97316] hover:bg-[#F2C94C] flex items-center gap-1"
-                            onClick={() => setSelected(report)}
-                          >
-                            <Info className="h-4 w-4 mr-1" />
-                            Information
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>
-                              Détail du rapport
-                            </DialogTitle>
-                          </DialogHeader>
-                          {selected && (
-                            <div className="space-y-2">
-                              <p>
-                                <span className="font-semibold">Titre :</span> {selected.title}
-                              </p>
-                              <p>
-                                <span className="font-semibold">Date :</span> {format(parseISO(selected.date), "PPP", { locale: fr })}
-                              </p>
-                              <p>
-                                <span className="font-semibold">Type :</span>{" "}
-                                {selected.type.charAt(0).toUpperCase() + selected.type.slice(1)}
-                              </p>
-                              <p>
-                                <span className="font-semibold">Status :</span>{" "}
-                                <span className={statusColors[selected.status]}>{selected.status}</span>
-                              </p>
-                              <p>
-                                <span className="font-semibold">Description :</span> {selected.description}
-                              </p>
-                            </div>
-                          )}
-                        </DialogContent>
-                      </Dialog>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+          <Button
+            className="bg-[#43A047] hover:bg-[#F2C94C] text-white"
+            onClick={handleExportPDF}
+          >
+            Exporter
+          </Button>
         </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>ID</TableHead>
+              <TableHead>Titre</TableHead>
+              <TableHead>Date</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Action</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredReports.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center text-gray-400">Aucun rapport pour cette période/type.</TableCell>
+              </TableRow>
+            ) : (
+              filteredReports.map(report => (
+                <TableRow key={report.id}>
+                  <TableCell>{report.id}</TableCell>
+                  <TableCell>{report.title}</TableCell>
+                  <TableCell className="text-[#F2C94C]">{format(parseISO(report.date), "PPP", { locale: fr })}</TableCell>
+                  <TableCell className={statusColors[report.status]}>{report.status}</TableCell>
+                  <TableCell>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="border-[#F97316] text-[#F97316] hover:bg-[#F2C94C] flex items-center gap-1"
+                          onClick={() => setSelected(report)}
+                        >
+                          <Info className="h-4 w-4 mr-1" />
+                          Information
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>
+                            Détail du rapport
+                          </DialogTitle>
+                        </DialogHeader>
+                        {selected && (
+                          <div className="space-y-2">
+                            <p>
+                              <span className="font-semibold">Titre :</span> {selected.title}
+                            </p>
+                            <p>
+                              <span className="font-semibold">Date :</span> {format(parseISO(selected.date), "PPP", { locale: fr })}
+                            </p>
+                            <p>
+                              <span className="font-semibold">Type :</span>{" "}
+                              {selected.type.charAt(0).toUpperCase() + selected.type.slice(1)}
+                            </p>
+                            <p>
+                              <span className="font-semibold">Status :</span>{" "}
+                              <span className={statusColors[selected.status]}>{selected.status}</span>
+                            </p>
+                            <p>
+                              <span className="font-semibold">Description :</span> {selected.description}
+                            </p>
+                          </div>
+                        )}
+                      </DialogContent>
+                    </Dialog>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
       </div>
+    </div>
     </AppLayout>
   );
 }

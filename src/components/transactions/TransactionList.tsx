@@ -33,9 +33,10 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { CURRENCY_SYMBOLS } from "@/lib/constants";
 import { Check, Info, Search, X } from "lucide-react";
+import { toast } from "@/components/ui/sonner";
 
-// Sample transaction data
-const sampleTransactions = [
+// Sample transaction data (move to local state)
+const getInitialTransactions = () => [
   {
     id: "TXN123456",
     direction: TransactionDirection.KINSHASA_TO_DUBAI,
@@ -129,11 +130,27 @@ const sampleTransactions = [
 ];
 
 export function TransactionList() {
+  const [transactions, setTransactions] = useState(getInitialTransactions());
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [directionFilter, setDirectionFilter] = useState("all");
 
-  const filteredTransactions = sampleTransactions.filter(transaction => {
+  // Handler for updating transaction status
+  const handleUpdateStatus = (id: string, newStatus: TransactionStatus) => {
+    setTransactions((prev) =>
+      prev.map((tx) =>
+        tx.id === id ? { ...tx, status: newStatus } : tx
+      )
+    );
+    if (newStatus === TransactionStatus.VALIDATED || newStatus === TransactionStatus.COMPLETED) {
+      toast.success("Transaction validée !");
+    }
+    if (newStatus === TransactionStatus.CANCELLED) {
+      toast.error("Transaction annulée !");
+    }
+  };
+
+  const filteredTransactions = transactions.filter(transaction => {
     const matchesSearch = transaction.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           transaction.sender.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           transaction.recipient.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -262,10 +279,22 @@ export function TransactionList() {
                           </Button>
                           {transaction.status === TransactionStatus.PENDING && (
                             <>
-                              <Button size="icon" variant="ghost" className="text-green-600" title="Valider">
+                              <Button 
+                                size="icon" 
+                                variant="ghost" 
+                                className="text-green-600" 
+                                title="Valider"
+                                onClick={() => handleUpdateStatus(transaction.id, TransactionStatus.VALIDATED)}
+                              >
                                 <Check className="h-4 w-4" />
                               </Button>
-                              <Button size="icon" variant="ghost" className="text-red-600" title="Annuler">
+                              <Button 
+                                size="icon" 
+                                variant="ghost" 
+                                className="text-red-600" 
+                                title="Annuler"
+                                onClick={() => handleUpdateStatus(transaction.id, TransactionStatus.CANCELLED)}
+                              >
                                 <X className="h-4 w-4" />
                               </Button>
                             </>
@@ -283,3 +312,4 @@ export function TransactionList() {
     </Card>
   );
 }
+

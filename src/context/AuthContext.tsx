@@ -16,6 +16,9 @@ interface AuthContextType {
   logout: () => void;
   isLoading: boolean;
   hasPermission: (permission: keyof typeof ROLE_PERMISSIONS[UserRole]) => boolean;
+  updateUser: (userId: string, userData: Partial<User>) => boolean;
+  createUser: (userData: Omit<User, 'id' | 'createdAt'> & { password: string }) => boolean;
+  deleteUser: (userId: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -81,9 +84,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!user) return false;
     return ROLE_PERMISSIONS[user.role][permission] === true;
   };
+  
+  // New functions for user management (demo implementation)
+  const updateUser = (userId: string, userData: Partial<User>): boolean => {
+    // In a real application, this would make an API call
+    // For demo purposes, we just return true
+    console.log(`Update user ${userId} with data:`, userData);
+    return true;
+  };
+  
+  const createUser = (userData: Omit<User, 'id' | 'createdAt'> & { password: string }): boolean => {
+    // In a real application, this would make an API call
+    // For demo purposes, we just return true
+    console.log(`Create user with data:`, userData);
+    return true;
+  };
+  
+  const deleteUser = (userId: string): boolean => {
+    // In a real application, this would make an API call
+    // For demo purposes, we just return true
+    console.log(`Delete user ${userId}`);
+    return true;
+  };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isLoading, hasPermission }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      login, 
+      logout, 
+      isLoading, 
+      hasPermission,
+      updateUser,
+      createUser,
+      deleteUser
+    }}>
       {children}
     </AuthContext.Provider>
   );

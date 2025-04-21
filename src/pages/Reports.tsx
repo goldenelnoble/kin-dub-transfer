@@ -71,6 +71,19 @@ export default function Reports() {
     return typeMatch && dateMatch;
   });
 
+  // Pour le résumé
+  const total = filteredReports.length;
+  const byType = {
+    mensuel: filteredReports.filter(r => r.type === "mensuel").length,
+    hebdomadaire: filteredReports.filter(r => r.type === "hebdomadaire").length,
+    journalier: filteredReports.filter(r => r.type === "journalier").length,
+  };
+  const byStatus = {
+    Complété: filteredReports.filter(r => r.status === "Complété").length,
+    "En cours": filteredReports.filter(r => r.status === "En cours").length,
+    Annulé: filteredReports.filter(r => r.status === "Annulé").length,
+  };
+
   // Fonction utilitaire pour charger une image et retourner les données base64 pour jsPDF
   const fetchImageBase64 = (url: string): Promise<string> => {
     return fetch(url)
@@ -85,41 +98,95 @@ export default function Reports() {
       });
   };
 
-  // Fonction pour exporter en PDF, avec logo en haut
+  // Nouvelle fonction pour exporter un PDF présenté en tableau
   const handleExportPDF = async () => {
-    const doc = new jsPDF();
+    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
     let y = 16;
+
     try {
-      // Charge le logo en base64
       const logoData = await fetchImageBase64(LOGO_URL);
-      doc.addImage(logoData, "PNG", 14, 6, 50, 50); // position x=14, y=6, width=50, height=50 (updated size)
-      y = 58; // Décale le texte du titre sous le logo (6 + 50 + 2 spacing)
+      doc.addImage(logoData, "PNG", 14, 6, 50, 50);
+      y = 58;
     } catch (e) {
       // Si le logo échoue à charger, on continue sans
     }
+
+    // TITRE
     doc.setFontSize(16);
-    doc.text("Rapports exportés", 50, y);
+    doc.text("Rapports exportés", 70, y, { align: "left" }); // Title below logo
+    y += 12;
+
+    // ---- Tableau résumé ----
+    doc.setFontSize(11);
+    doc.setTextColor(67, 160, 71); // Vert
+    doc.text("Résumé des rapports", 14, y);
+    y += 7;
+    doc.setTextColor(33,33,33);
+
+    // Tableau résumé (simple)
+    // Colonnes: Total | Mensuel | Hebdomadaire | Journalier | Complété | En cours | Annulé
+    doc.setFillColor(242, 201, 76); // Jaune pale
+    doc.rect(14, y, 180, 8, "F");
+    doc.setFont(undefined, "bold");
+    doc.text("Total", 17, y+5.5);
+    doc.text("Mensuel", 38, y+5.5);
+    doc.text("Hebdo", 67, y+5.5);
+    doc.text("Journalier", 96, y+5.5);
+    doc.text("Complété", 125, y+5.5);
+    doc.text("En cours", 154, y+5.5);
+    doc.text("Annulé", 176, y+5.5);
+    doc.setFont(undefined, "normal");
+    y += 8;
+    doc.rect(14, y, 180, 8, "S"); // ligne
+    doc.text(String(total), 20, y+5.5);
+    doc.text(String(byType.mensuel), 45, y+5.5);
+    doc.text(String(byType.hebdomadaire), 74, y+5.5);
+    doc.text(String(byType.journalier), 104, y+5.5);
+    doc.text(String(byStatus["Complété"]), 131, y+5.5);
+    doc.text(String(byStatus["En cours"]), 161, y+5.5);
+    doc.text(String(byStatus["Annulé"]), 184, y+5.5);
+    y += 12;
+
+    // ---- Tableau détaillé ----
+    doc.setFontSize(12);
+    doc.setTextColor(67, 160, 71);
+    doc.text("Détail des rapports :", 14, y);
+    doc.setTextColor(33,33,33);
+
+    y += 7;
+
+    // Entête du tableau
     doc.setFontSize(10);
+    doc.setFillColor(67, 160, 71); // Vert
+    doc.setTextColor(255,255,255);
+    doc.rect(14, y, 180, 8, "F");
+    doc.text("ID", 17, y+5.5);
+    doc.text("Titre", 32, y+5.5);
+    doc.text("Date", 86, y+5.5);
+    doc.text("Status", 116, y+5.5);
+    doc.text("Type", 142, y+5.5);
+    doc.text("Description", 166, y+5.5);
+    y += 8;
+    doc.setTextColor(33,33,33);
 
-    y += 10;
-    doc.text("ID", 14, y);
-    doc.text("Titre", 34, y);
-    doc.text("Date", 110, y);
-    doc.text("Status", 142, y);
-    y += 6;
+    // Lignes
+    filteredReports.forEach((r) => {
+      doc.setFillColor(255,255,255);
+      doc.rect(14, y, 180, 8, "S"); // Bordure petite hauteur
+      doc.text(r.id, 17, y+5.2);
+      doc.text(r.title.length > 25 ? r.title.slice(0,22)+"..." : r.title, 32, y+5.2);
+      doc.text(format(parseISO(r.date), "PPP", { locale: fr }), 86, y+5.2);
+      doc.text(r.status, 116, y+5.2);
+      doc.text(r.type.charAt(0).toUpperCase() + r.type.slice(1), 142, y+5.2);
+      doc.text(r.description.length > 25 ? r.description.slice(0,22)+"..." : r.description, 166, y+5.2);
 
-    filteredReports.forEach((report) => {
-      doc.text(String(report.id), 14, y);
-      doc.text(report.title, 34, y, { maxWidth: 70 });
-      doc.text(format(parseISO(report.date), "PPP", { locale: fr }), 110, y);
-      doc.text(report.status, 142, y);
-      y += 6;
+      y += 8;
       if (y > 270) {
         doc.addPage();
         y = 16;
       }
     });
-
+  
     doc.save("rapports.pdf");
   };
 

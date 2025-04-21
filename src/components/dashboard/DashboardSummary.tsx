@@ -1,3 +1,4 @@
+
 import { Currency, DashboardStats } from "@/types";
 import { FileSpreadsheet, FileWarning, FileCheck, FileX, FileType, FileKey } from "lucide-react";
 
@@ -17,66 +18,56 @@ const palette = {
 };
 
 export function DashboardSummary({ stats, currency, onStatClick }: DashboardSummaryProps) {
-  // Items de résumé interactifs : Cliquable, props couleurs/icône
+  // Items de résumé interactifs : Cliquable, props couleurs/icône
   const items = [
     {
       key: "totalTransactions",
       label: "Transactions totales",
       value: stats.totalTransactions,
       color: palette.orange,
-      icon: "file-spreadsheet"
+      icon: FileSpreadsheet
     },
     {
       key: "pendingTransactions",
       label: "En attente",
       value: stats.pendingTransactions,
       color: palette.yellow,
-      icon: "file-warning"
+      icon: FileWarning
     },
     {
       key: "completedTransactions",
       label: "Complétées",
       value: stats.completedTransactions,
       color: palette.green,
-      icon: "file-check"
+      icon: FileCheck
     },
     {
       key: "cancelledTransactions",
       label: "Annulées",
       value: stats.cancelledTransactions,
       color: "#ea384c",
-      icon: "file-x"
+      icon: FileX
     },
     {
       key: "totalAmount",
       label: "Montant total",
       value: `${stats.totalAmount.toLocaleString()} ${currency}`,
       color: palette.green,
-      icon: "file-type"
+      icon: FileType
     },
     {
       key: "totalCommissions",
       label: "Commissions",
       value: `${stats.totalCommissions.toLocaleString()} ${currency}`,
       color: palette.orange,
-      icon: "file-key"
+      icon: FileKey
     }
   ];
-
-  // Import d'icônes Lucide "safelist"
-  const iconsMap: any = {
-    "file-spreadsheet": require("lucide-react").FileSpreadsheet,
-    "file-warning": require("lucide-react").FileWarning,
-    "file-check": require("lucide-react").FileCheck,
-    "file-x": require("lucide-react").FileX,
-    "file-type": require("lucide-react").FileType,
-    "file-key": require("lucide-react").FileKey,
-  };
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       {items.map(item => {
-        const LucideIcon = iconsMap[item.icon];
+        const LucideIcon = item.icon;
         // clickable si onStatClick existe
         const clickable = !!onStatClick && ["totalTransactions", "pendingTransactions", "completedTransactions", "cancelledTransactions"].includes(item.key);
 

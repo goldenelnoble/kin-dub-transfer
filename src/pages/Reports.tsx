@@ -98,95 +98,99 @@ export default function Reports() {
       });
   };
 
-  // Nouvelle fonction pour exporter un PDF présenté en tableau
+  // Fonction d'export PDF au format paysage, uniquement les rapports filtrés
   const handleExportPDF = async () => {
-    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-    let y = 16;
+    // PDF en format paysage
+    const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+    let y = 14;
 
     try {
       const logoData = await fetchImageBase64(LOGO_URL);
-      doc.addImage(logoData, "PNG", 14, 6, 50, 50);
-      y = 58;
+      // Logo 50*50 centré en haut à gauche
+      doc.addImage(logoData, "PNG", 14, 8, 50, 50);
+      y = 62;
     } catch (e) {
-      // Si le logo échoue à charger, on continue sans
+      // Si échec logo, on laisse plus de place
+      y = 24;
     }
 
     // TITRE
-    doc.setFontSize(16);
-    doc.text("Rapports exportés", 70, y, { align: "left" }); // Title below logo
-    y += 12;
+    doc.setFontSize(18);
+    doc.text("Rapports exportés", 80, y);
+    y += 10;
 
     // ---- Tableau résumé ----
-    doc.setFontSize(11);
+    doc.setFontSize(12);
     doc.setTextColor(67, 160, 71); // Vert
-    doc.text("Résumé des rapports", 14, y);
+    doc.text("Résumé des rapports sélectionnés", 14, y);
     y += 7;
     doc.setTextColor(33,33,33);
 
-    // Tableau résumé (simple)
-    // Colonnes: Total | Mensuel | Hebdomadaire | Journalier | Complété | En cours | Annulé
+    // Présentation : ligne de titres jaunes
     doc.setFillColor(242, 201, 76); // Jaune pale
-    doc.rect(14, y, 180, 8, "F");
+    doc.rect(14, y, 265, 10, "F"); // Largeur augmentée pour paysage
     doc.setFont(undefined, "bold");
-    doc.text("Total", 17, y+5.5);
-    doc.text("Mensuel", 38, y+5.5);
-    doc.text("Hebdo", 67, y+5.5);
-    doc.text("Journalier", 96, y+5.5);
-    doc.text("Complété", 125, y+5.5);
-    doc.text("En cours", 154, y+5.5);
-    doc.text("Annulé", 176, y+5.5);
+    doc.text("Total", 17, y+7);
+    doc.text("Mensuel", 47, y+7);
+    doc.text("Hebdo", 87, y+7);
+    doc.text("Journalier", 127, y+7);
+    doc.text("Complété", 167, y+7);
+    doc.text("En cours", 207, y+7);
+    doc.text("Annulé", 247, y+7);
     doc.setFont(undefined, "normal");
-    y += 8;
-    doc.rect(14, y, 180, 8, "S"); // ligne
-    doc.text(String(total), 20, y+5.5);
-    doc.text(String(byType.mensuel), 45, y+5.5);
-    doc.text(String(byType.hebdomadaire), 74, y+5.5);
-    doc.text(String(byType.journalier), 104, y+5.5);
-    doc.text(String(byStatus["Complété"]), 131, y+5.5);
-    doc.text(String(byStatus["En cours"]), 161, y+5.5);
-    doc.text(String(byStatus["Annulé"]), 184, y+5.5);
-    y += 12;
+    y += 10;
+    // Bordure
+    doc.rect(14, y, 265, 10, "S");
+    doc.text(String(total), 22, y+7);
+    doc.text(String(byType.mensuel), 58, y+7);
+    doc.text(String(byType.hebdomadaire), 98, y+7);
+    doc.text(String(byType.journalier), 138, y+7);
+    doc.text(String(byStatus["Complété"]), 176, y+7);
+    doc.text(String(byStatus["En cours"]), 216, y+7);
+    doc.text(String(byStatus["Annulé"]), 256, y+7);
+
+    y += 16;
 
     // ---- Tableau détaillé ----
-    doc.setFontSize(12);
+    doc.setFontSize(13);
     doc.setTextColor(67, 160, 71);
-    doc.text("Détail des rapports :", 14, y);
+    doc.text("Détail des rapports filtrés :", 14, y);
+    y += 7;
     doc.setTextColor(33,33,33);
 
-    y += 7;
-
-    // Entête du tableau
+    // En-tête tableau (paysage)
     doc.setFontSize(10);
     doc.setFillColor(67, 160, 71); // Vert
     doc.setTextColor(255,255,255);
-    doc.rect(14, y, 180, 8, "F");
-    doc.text("ID", 17, y+5.5);
-    doc.text("Titre", 32, y+5.5);
-    doc.text("Date", 86, y+5.5);
-    doc.text("Status", 116, y+5.5);
-    doc.text("Type", 142, y+5.5);
-    doc.text("Description", 166, y+5.5);
-    y += 8;
+    doc.rect(14, y, 265, 10, "F");
+    doc.text("ID", 16, y+7);
+    doc.text("Titre", 36, y+7);
+    doc.text("Date", 90, y+7);
+    doc.text("Status", 120, y+7);
+    doc.text("Type", 150, y+7);
+    doc.text("Description", 176, y+7);
+    y += 10;
     doc.setTextColor(33,33,33);
 
-    // Lignes
+    // Tableau lignes
     filteredReports.forEach((r) => {
       doc.setFillColor(255,255,255);
-      doc.rect(14, y, 180, 8, "S"); // Bordure petite hauteur
-      doc.text(r.id, 17, y+5.2);
-      doc.text(r.title.length > 25 ? r.title.slice(0,22)+"..." : r.title, 32, y+5.2);
-      doc.text(format(parseISO(r.date), "PPP", { locale: fr }), 86, y+5.2);
-      doc.text(r.status, 116, y+5.2);
-      doc.text(r.type.charAt(0).toUpperCase() + r.type.slice(1), 142, y+5.2);
-      doc.text(r.description.length > 25 ? r.description.slice(0,22)+"..." : r.description, 166, y+5.2);
+      doc.rect(14, y, 265, 9, "S"); // Largeur paysage, ligne fine
 
-      y += 8;
-      if (y > 270) {
+      doc.text(r.id, 16, y+6.4);
+      doc.text(r.title.length > 40 ? r.title.slice(0,37)+"..." : r.title, 36, y+6.4);
+      doc.text(format(parseISO(r.date), "PPP", { locale: fr }), 90, y+6.4);
+      doc.text(r.status, 120, y+6.4);
+      doc.text(r.type.charAt(0).toUpperCase() + r.type.slice(1), 150, y+6.4);
+      doc.text(r.description.length > 55 ? r.description.slice(0,52)+"..." : r.description, 176, y+6.4);
+
+      y += 9;
+      if (y > 190) {
         doc.addPage();
-        y = 16;
+        y = 25;
       }
     });
-  
+
     doc.save("rapports.pdf");
   };
 

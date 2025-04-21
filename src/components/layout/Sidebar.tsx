@@ -1,10 +1,9 @@
-
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { UserRole } from "@/types";
-import { ArrowLeft, ArrowRight, BarChart, File, FileText, Settings, User, Users } from "lucide-react";
+import { ArrowLeft, ArrowRight, BarChart, File, FileText, Settings, User, Users, History } from "lucide-react";
 import { useState } from "react";
 
 export function Sidebar() {
@@ -27,11 +26,19 @@ export function Sidebar() {
       icon: <ArrowRight className="h-5 w-5" />,
       visible: true
     },
+    // Ajout Rapports
     {
       name: "Rapports",
       path: "/reports",
       icon: <FileText className="h-5 w-5" />,
       visible: hasPermission("canViewReports")
+    },
+    // Ajout Journal d'Audit
+    {
+      name: "Journal d'audit",
+      path: "/audit-log",
+      icon: <History className="h-5 w-5" />,
+      visible: hasPermission("canViewAuditLog")
     },
     {
       name: "Utilisateurs",
@@ -44,12 +51,6 @@ export function Sidebar() {
       path: "/settings",
       icon: <Settings className="h-5 w-5" />,
       visible: hasPermission("canConfigureSystem")
-    },
-    {
-      name: "Journal d'audit",
-      path: "/audit-log",
-      icon: <File className="h-5 w-5" />,
-      visible: hasPermission("canViewAuditLog")
     }
   ];
 

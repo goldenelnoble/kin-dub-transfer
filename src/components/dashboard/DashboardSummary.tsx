@@ -1,149 +1,100 @@
-
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle
-} from "@/components/ui/card";
-import {
-  ArrowDown,
-  ArrowUp,
-  Check,
-  CheckCircle,
-  Clock,
-  DollarSign,
-  Percent,
-  X,
-  ArrowRight,
-  ArrowLeft
-} from "lucide-react";
-import { DashboardStats, Currency } from "@/types";
-import { CURRENCY_SYMBOLS } from "@/lib/constants";
-import { useNavigate } from "react-router-dom";
+import { Currency, DashboardStats } from "@/types";
+import { FileSpreadsheet, FileWarning, FileCheck, FileX, FileType, FileKey } from "lucide-react";
 
 interface DashboardSummaryProps {
   stats: DashboardStats;
   currency: Currency;
+  // Ajout : callback clic
+  onStatClick?: (statKey: keyof DashboardStats) => void;
 }
 
-export function DashboardSummary({ stats, currency }: DashboardSummaryProps) {
-  const currencySymbol = CURRENCY_SYMBOLS[currency];
-  const navigate = useNavigate();
+// # Palette
+const palette = {
+  orange: "#F97316",
+  green: "#43A047",
+  yellow: "#F2C94C",
+  bg: "#FEF7CD"
+};
 
-  const statCards = [
+export function DashboardSummary({ stats, currency, onStatClick }: DashboardSummaryProps) {
+  // Items de résumé interactifs : Cliquable, props couleurs/icône
+  const items = [
     {
-      title: "Transactions totales",
-      value: stats.totalTransactions.toString(),
-      description: "Toutes les transactions",
-      icon: <DollarSign className="h-5 w-5 text-[#F7C33F]" />,
-      color: "bg-[#FEF7CD]",
-      onClick: undefined
+      key: "totalTransactions",
+      label: "Transactions totales",
+      value: stats.totalTransactions,
+      color: palette.orange,
+      icon: "file-spreadsheet"
     },
     {
-      title: "En attente",
-      value: stats.pendingTransactions.toString(),
-      description: "Transactions à valider",
-      icon: <Clock className="h-5 w-5 text-[#F97316]" />,
-      color: "bg-[#FEC6A1]",
-      onClick: undefined
+      key: "pendingTransactions",
+      label: "En attente",
+      value: stats.pendingTransactions,
+      color: palette.yellow,
+      icon: "file-warning"
     },
     {
-      title: "Complétées",
-      value: stats.completedTransactions.toString(),
-      description: "Transactions terminées",
-      icon: <CheckCircle className="h-5 w-5 text-[#43A047]" />,
-      color: "bg-[#C6EFD3]",
-      onClick: undefined
+      key: "completedTransactions",
+      label: "Complétées",
+      value: stats.completedTransactions,
+      color: palette.green,
+      icon: "file-check"
     },
     {
-      title: "Annulées",
-      value: stats.cancelledTransactions.toString(),
-      description: "Transactions annulées",
-      icon: <X className="h-5 w-5 text-[#F97316]" />,
-      color: "bg-[#FEC6A1]",
-      onClick: undefined
+      key: "cancelledTransactions",
+      label: "Annulées",
+      value: stats.cancelledTransactions,
+      color: "#ea384c",
+      icon: "file-x"
     },
     {
-      title: "Volume total",
-      value: `${currencySymbol}${stats.totalAmount.toLocaleString()}`,
-      description: "Montant total transféré",
-      icon: <DollarSign className="h-5 w-5 text-[#F7C33F]" />,
-      color: "bg-[#FEF7CD]",
-      onClick: undefined
+      key: "totalAmount",
+      label: "Montant total",
+      value: `${stats.totalAmount.toLocaleString()} ${currency}`,
+      color: palette.green,
+      icon: "file-type"
     },
     {
-      title: "Commissions",
-      value: `${currencySymbol}${stats.totalCommissions.toLocaleString()}`,
-      description: "Total des commissions",
-      icon: <Percent className="h-5 w-5 text-[#F2C94C]" />,
-      color: "bg-[#FEF7CD]",
-      onClick: undefined
-    },
-    {
-      title: "Kinshasa → Dubai",
-      value: "56",
-      description: "Nombre de transferts",
-      icon: <ArrowRight className="h-5 w-5 text-[#F7C33F]" />,
-      color: "bg-[#FEF7CD]",
-      onClick: () => navigate("/transactions?direction=kinshasa_to_dubai")
-    },
-    {
-      title: "Dubai → Kinshasa",
-      value: "37",
-      description: "Nombre de transferts",
-      icon: <ArrowLeft className="h-5 w-5 text-[#43A047]" />,
-      color: "bg-[#C6EFD3]",
-      onClick: () => navigate("/transactions?direction=dubai_to_kinshasa")
+      key: "totalCommissions",
+      label: "Commissions",
+      value: `${stats.totalCommissions.toLocaleString()} ${currency}`,
+      color: palette.orange,
+      icon: "file-key"
     }
   ];
 
+  // Import d'icônes Lucide "safelist"
+  const iconsMap: any = {
+    "file-spreadsheet": require("lucide-react").FileSpreadsheet,
+    "file-warning": require("lucide-react").FileWarning,
+    "file-check": require("lucide-react").FileCheck,
+    "file-x": require("lucide-react").FileX,
+    "file-type": require("lucide-react").FileType,
+    "file-key": require("lucide-react").FileKey,
+  };
+
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      {statCards.map((card, index) => {
-        if (card.onClick) {
-          return (
-            <button
-              key={index}
-              onClick={card.onClick}
-              className="text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F2C94C] rounded-lg group"
-            >
-              <Card className="transition-transform hover:scale-[1.025] cursor-pointer border-2 border-transparent group-hover:border-[#F97316]">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    {card.title}
-                  </CardTitle>
-                  <div className={`${card.color} p-2 rounded-full`}>
-                    {card.icon}
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{card.value}</div>
-                  <p className="text-xs text-muted-foreground">
-                    {card.description}
-                  </p>
-                </CardContent>
-              </Card>
-            </button>
-          );
-        }
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {items.map(item => {
+        const LucideIcon = iconsMap[item.icon];
+        // clickable si onStatClick existe
+        const clickable = !!onStatClick && ["totalTransactions", "pendingTransactions", "completedTransactions", "cancelledTransactions"].includes(item.key);
+
         return (
-          <Card key={index}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                {card.title}
-              </CardTitle>
-              <div className={`${card.color} p-2 rounded-full`}>
-                {card.icon}
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{card.value}</div>
-              <p className="text-xs text-muted-foreground">
-                {card.description}
-              </p>
-            </CardContent>
-          </Card>
+          <div
+            key={item.key}
+            className={`rounded-xl border shadow transition group flex flex-col items-center justify-center gap-2 p-6 bg-white cursor-${clickable ? "pointer" : "default"} hover:shadow-lg`}
+            style={{ borderColor: item.color }}
+            onClick={clickable ? () => onStatClick && onStatClick(item.key as keyof DashboardStats) : undefined}
+          >
+            <div className="flex items-center gap-2">
+              {LucideIcon && <LucideIcon className="h-7 w-7" style={{ color: item.color }} />}
+              <span className="text-lg font-semibold" style={{ color: item.color }}>{item.label}</span>
+            </div>
+            <span className="text-2xl font-bold" style={{ color: item.color }}>
+              {item.value}
+            </span>
+          </div>
         );
       })}
     </div>

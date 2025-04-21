@@ -9,7 +9,23 @@ import { useNavigate } from "react-router-dom";
 const Dashboard = () => {
   const navigate = useNavigate();
 
-  // Sample stats for the dashboard
+  // Nouvelle navigation après clic sur une statistique
+  const handleSummaryClick = (type: string) => {
+    switch (type) {
+      case "totalTransactions":
+      case "pendingTransactions":
+      case "cancelledTransactions":
+        navigate("/transactions");
+        break;
+      case "completedTransactions":
+        navigate("/reports");
+        break;
+      default:
+        break;
+    }
+  };
+
+  // Stats d'exemple pour la démo, gardées ici (adapter au besoin)
   const sampleStats = {
     totalTransactions: 93,
     pendingTransactions: 12,
@@ -41,7 +57,12 @@ const Dashboard = () => {
           </Button>
         </div>
 
-        <DashboardSummary stats={sampleStats} currency={Currency.USD} />
+        {/* Lien de navigation "cliquable" sur chaque case */}
+        <DashboardSummary 
+          stats={sampleStats} 
+          currency={Currency.USD}
+          onStatClick={handleSummaryClick}
+        />
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <div className="col-span-2">
@@ -50,7 +71,7 @@ const Dashboard = () => {
                 <h3 className="font-semibold leading-none tracking-tight text-[#F97316]">Activité récente</h3>
               </div>
               <div className="p-6">
-                {/* Here would be a chart component in a real app */}
+                {/* Ici afficher le futur graphique d'activité */}
                 <div className="h-[200px] bg-[#FEF7CD] rounded-md flex items-center justify-center">
                   <p className="text-[#43A047]">Graphique d'activité des transactions</p>
                 </div>
@@ -61,7 +82,7 @@ const Dashboard = () => {
             <div className="rounded-xl border bg-card text-card-foreground shadow">
               <div className="p-6 flex flex-row items-center justify-between space-y-0 pb-2">
                 <h3 className="font-semibold leading-none tracking-tight text-[#F97316]">Transactions récentes</h3>
-                <Button variant="ghost" size="sm" className="text-[#43A047]">
+                <Button variant="ghost" size="sm" className="text-[#43A047]" onClick={() => navigate("/transactions")}>
                   Voir tout
                   <ArrowRight className="ml-1 h-4 w-4" />
                 </Button>

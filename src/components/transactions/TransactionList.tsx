@@ -31,7 +31,7 @@ import {
 } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { CURRENCY_SYMBOLS } from "@/lib/constants";
-import { Check, Info, Search, X } from "lucide-react";
+import { Check, Info, Search, X, CheckCircle } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
 
 // Sample transaction data (move to local state)
@@ -169,13 +169,13 @@ export function TransactionList() {
   const getStatusBadge = (status: TransactionStatus) => {
     switch (status) {
       case TransactionStatus.PENDING:
-        return <Badge variant="outline" className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">En attente</Badge>;
+        return <Badge variant="outline" className="bg-[#FEF3CF] text-[#F7C33F] hover:bg-[#FEF3CF]">En attente</Badge>;
       case TransactionStatus.VALIDATED:
-        return <Badge variant="outline" className="bg-blue-100 text-blue-800 hover:bg-blue-100">Validée</Badge>;
+        return <Badge variant="outline" className="bg-[#F2C94C]/20 text-[#F7C33F] hover:bg-[#FEF7CD]">Validée</Badge>;
       case TransactionStatus.COMPLETED:
-        return <Badge variant="outline" className="bg-green-100 text-green-800 hover:bg-green-100">Complétée</Badge>;
+        return <Badge variant="outline" className="bg-[#43A047]/20 text-[#43A047] hover:bg-[#C6EFD3]">Complétée</Badge>;
       case TransactionStatus.CANCELLED:
-        return <Badge variant="outline" className="bg-red-100 text-red-800 hover:bg-red-100">Annulée</Badge>;
+        return <Badge variant="outline" className="bg-[#FEC6A1] text-[#F97316] hover:bg-[#FEC6A1]">Annulée</Badge>;
       default:
         return <Badge variant="outline">Inconnu</Badge>;
     }
@@ -190,7 +190,9 @@ export function TransactionList() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Transactions récentes</CardTitle>
+        <CardTitle>
+          Transactions récentes
+        </CardTitle>
         <CardDescription>
           Liste des transactions récentes dans le système
         </CardDescription>
@@ -230,7 +232,6 @@ export function TransactionList() {
               </SelectContent>
             </Select>
           </div>
-
           <div className="rounded-md border">
             <Table>
               <TableCaption>Liste des transactions récentes</TableCaption>
@@ -278,24 +279,28 @@ export function TransactionList() {
                       <TableCell>{getStatusBadge(transaction.status)}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end space-x-2">
-                          <Button size="icon" variant="ghost" title="Détails">
+                          <Button size="icon" variant="ghost" title="Détails"
+                            className="text-[#F97316] hover:bg-[#FEF7CD]"
+                          >
                             <Info className="h-4 w-4" />
                           </Button>
                           {transaction.status === TransactionStatus.PENDING && (
                             <>
+                              {/* Valider */}
                               <Button 
                                 size="icon" 
                                 variant="ghost" 
-                                className="text-green-600" 
+                                className="text-[#43A047] hover:bg-[#C6EFD3]" 
                                 title="Valider"
                                 onClick={() => handleUpdateStatus(transaction.id, TransactionStatus.VALIDATED)}
                               >
                                 <Check className="h-4 w-4" />
                               </Button>
+                              {/* Annuler */}
                               <Button 
                                 size="icon" 
                                 variant="ghost" 
-                                className="text-red-600" 
+                                className="text-[#F97316] hover:bg-[#FEF7CD]" 
                                 title="Annuler"
                                 onClick={() => handleUpdateStatus(transaction.id, TransactionStatus.CANCELLED)}
                               >
@@ -304,14 +309,15 @@ export function TransactionList() {
                             </>
                           )}
                           {transaction.status === TransactionStatus.VALIDATED && (
+                            // Compléter
                             <Button
                               size="icon"
                               variant="ghost"
-                              className="text-app-green-700"
+                              className="text-[#F2C94C] hover:bg-[#FEF7CD]"
                               title="Compléter"
                               onClick={() => handleUpdateStatus(transaction.id, TransactionStatus.COMPLETED)}
                             >
-                              <CheckCheck className="h-4 w-4" />
+                              <CheckCircle className="h-4 w-4" />
                             </Button>
                           )}
                         </div>

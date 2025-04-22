@@ -1,41 +1,11 @@
-
 import { useState, useEffect } from "react";
-import { 
-  Table, 
-  TableBody, 
-  TableCaption, 
-  TableCell, 
-  TableHead, 
-  TableHeader,
-  TableRow 
-} from "@/components/ui/table";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle 
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select";
-import { 
-  TransactionDirection, 
-  TransactionStatus, 
-  Currency,
-  Transaction,
-  PaymentMethod
-} from "@/types";
-import { Badge } from "@/components/ui/badge";
-import { CURRENCY_SYMBOLS } from "@/lib/constants";
-import { Check, Filter, Info, Search, X, CheckCircle } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Transaction, TransactionStatus } from "@/types";
 import { toast } from "@/components/ui/sonner";
+import { TransactionStats } from "./TransactionStats";
+import { TransactionFilters } from "./TransactionFilters";
+import { TransactionTable } from "./TransactionTable";
+import { filterTransactions } from "./utils/transactionUtils";
 
 // Sample transaction data (move to local state)
 const getInitialTransactions = (): Transaction[] => [
@@ -180,7 +150,7 @@ export function TransactionList() {
   const [directionFilter, setDirectionFilter] = useState("all");
   const [currencyFilter, setCurrencyFilter] = useState("all");
   const [paymentMethodFilter, setPaymentMethodFilter] = useState("all");
-  const [dateFilter, setDateFilter] = useState("all"); // all, today, week, month
+  const [dateFilter, setDateFilter] = useState("all");
 
   useEffect(() => {
     const storedTransactions = localStorage.getItem('transactions');
@@ -199,7 +169,7 @@ export function TransactionList() {
             ...tx,
             receivingAmount: tx.receivingAmount || tx.amount,
             commissionPercentage: tx.commissionPercentage || 3.5,
-            paymentMethod: tx.paymentMethod || PaymentMethod.AGENCY,
+            paymentMethod: tx.paymentMethod || "agency",
             updatedAt: tx.updatedAt || new Date(),
             sender: {
               name: tx.sender?.name || "",
@@ -264,295 +234,46 @@ export function TransactionList() {
     }
   };
 
-  const filterTransactions = (transactions: Transaction[]) => {
-    return transactions.filter(transaction => {
-      const matchesSearch = 
-        transaction.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        transaction.sender.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        transaction.recipient.name.toLowerCase().includes(searchQuery.toLowerCase());
-      
-      const matchesStatus = statusFilter === "all" || transaction.status === statusFilter;
-      const matchesDirection = directionFilter === "all" || transaction.direction === directionFilter;
-      const matchesCurrency = currencyFilter === "all" || transaction.currency === currencyFilter;
-      const matchesPaymentMethod = paymentMethodFilter === "all" || transaction.paymentMethod === paymentMethodFilter;
-      
-      let matchesDate = true;
-      const today = new Date();
-      const txDate = new Date(transaction.createdAt);
-      
-      switch (dateFilter) {
-        case "today":
-          matchesDate = txDate.toDateString() === today.toDateString();
-          break;
-        case "week":
-          const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
-          matchesDate = txDate >= weekAgo;
-          break;
-        case "month":
-          const monthAgo = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate());
-          matchesDate = txDate >= monthAgo;
-          break;
-        default:
-          matchesDate = true;
-      }
-      
-      return matchesSearch && matchesStatus && matchesDirection && matchesCurrency && 
-             matchesPaymentMethod && matchesDate;
-    });
-  };
-
-  const getStatusBadge = (status: TransactionStatus) => {
-    switch (status) {
-      case TransactionStatus.PENDING:
-        return <Badge variant="outline" className="bg-[#FEF3CF] text-[#F7C33F] hover:bg-[#FEF3CF]">En attente</Badge>;
-      case TransactionStatus.VALIDATED:
-        return <Badge variant="outline" className="bg-[#F2C94C]/20 text-[#F7C33F] hover:bg-[#FEF7CD]">Validée</Badge>;
-      case TransactionStatus.COMPLETED:
-        return <Badge variant="outline" className="bg-[#43A047]/20 text-[#43A047] hover:bg-[#C6EFD3]">Complétée</Badge>;
-      case TransactionStatus.CANCELLED:
-        return <Badge variant="outline" className="bg-[#FEC6A1] text-[#F97316] hover:bg-[#FEC6A1]">Annulée</Badge>;
-      default:
-        return <Badge variant="outline">Inconnu</Badge>;
-    }
-  };
-
-  const getDirectionLabel = (direction: TransactionDirection) => {
-    return direction === TransactionDirection.KINSHASA_TO_DUBAI
-      ? "Kinshasa → Dubaï"
-      : "Dubaï → Kinshasa";
-  };
-
-  const filteredTransactions = filterTransactions(transactions);
-  
-  // Calculate statistics for all transactions
-  const stats = {
-    total: filteredTransactions.length,
-    pending: filteredTransactions.filter(tx => tx.status === TransactionStatus.PENDING).length,
-    validated: filteredTransactions.filter(tx => tx.status === TransactionStatus.VALIDATED).length,
-    completed: filteredTransactions.filter(tx => tx.status === TransactionStatus.COMPLETED).length,
-    cancelled: filteredTransactions.filter(tx => tx.status === TransactionStatus.CANCELLED).length,
-    totalAmount: filteredTransactions.reduce((acc, tx) => acc + tx.amount, 0),
-    totalCommission: filteredTransactions.reduce((acc, tx) => acc + tx.commissionAmount, 0),
-  };
+  const filteredTransactions = filterTransactions(
+    transactions,
+    searchQuery,
+    statusFilter,
+    directionFilter,
+    currencyFilter,
+    paymentMethodFilter,
+    dateFilter
+  );
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Toutes les Transactions</CardTitle>
         <CardDescription>Liste complète des transactions avec filtres</CardDescription>
-        
-        <div className="mt-2 grid grid-cols-1 md:grid-cols-5 gap-2">
-          <div className="bg-[#f3f4f6] p-2 rounded-md text-center">
-            <div className="text-sm text-gray-500">Total</div>
-            <div className="text-lg font-bold">{stats.total}</div>
-            <div className="text-sm text-muted-foreground">
-              {currencyFilter === "all" ? "Montant total" : `Total en ${currencyFilter}`}:
-              {stats.totalAmount.toLocaleString()} 
-            </div>
-          </div>
-          <div className="bg-[#FEF3CF] p-2 rounded-md text-center">
-            <div className="text-sm text-[#F7C33F]">En attente</div>
-            <div className="text-lg font-bold text-[#F7C33F]">{stats.pending}</div>
-          </div>
-          <div className="bg-[#F2C94C]/20 p-2 rounded-md text-center">
-            <div className="text-sm text-[#F7C33F]">Validées</div>
-            <div className="text-lg font-bold text-[#F7C33F]">{stats.validated}</div>
-          </div>
-          <div className="bg-[#43A047]/20 p-2 rounded-md text-center">
-            <div className="text-sm text-[#43A047]">Complétées</div>
-            <div className="text-lg font-bold text-[#43A047]">{stats.completed}</div>
-            <div className="text-sm text-muted-foreground">
-              Commission: {stats.totalCommission.toLocaleString()}
-            </div>
-          </div>
-          <div className="bg-[#FEC6A1] p-2 rounded-md text-center">
-            <div className="text-sm text-[#F97316]">Annulées</div>
-            <div className="text-lg font-bold text-[#F97316]">{stats.cancelled}</div>
-          </div>
-        </div>
+        <TransactionStats 
+          transactions={filteredTransactions}
+          currencyFilter={currencyFilter}
+        />
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Rechercher par ID, expéditeur ou bénéficiaire..."
-                className="pl-8"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-            
-            <div className="flex flex-wrap gap-2">
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[150px]">
-                  <Filter className="w-4 h-4 mr-2" />
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tous les statuts</SelectItem>
-                  <SelectItem value={TransactionStatus.PENDING}>En attente</SelectItem>
-                  <SelectItem value={TransactionStatus.VALIDATED}>Validée</SelectItem>
-                  <SelectItem value={TransactionStatus.COMPLETED}>Complétée</SelectItem>
-                  <SelectItem value={TransactionStatus.CANCELLED}>Annulée</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={directionFilter} onValueChange={setDirectionFilter}>
-                <SelectTrigger className="w-[150px]">
-                  <Filter className="w-4 h-4 mr-2" />
-                  <SelectValue placeholder="Direction" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Toutes les directions</SelectItem>
-                  <SelectItem value={TransactionDirection.KINSHASA_TO_DUBAI}>Kinshasa → Dubaï</SelectItem>
-                  <SelectItem value={TransactionDirection.DUBAI_TO_KINSHASA}>Dubaï → Kinshasa</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={currencyFilter} onValueChange={setCurrencyFilter}>
-                <SelectTrigger className="w-[150px]">
-                  <Filter className="w-4 h-4 mr-2" />
-                  <SelectValue placeholder="Devise" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Toutes les devises</SelectItem>
-                  <SelectItem value={Currency.USD}>USD</SelectItem>
-                  <SelectItem value={Currency.EUR}>EUR</SelectItem>
-                  <SelectItem value={Currency.AED}>AED</SelectItem>
-                  <SelectItem value={Currency.CDF}>CDF</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={paymentMethodFilter} onValueChange={setPaymentMethodFilter}>
-                <SelectTrigger className="w-[150px]">
-                  <Filter className="w-4 h-4 mr-2" />
-                  <SelectValue placeholder="Paiement" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tous les moyens</SelectItem>
-                  <SelectItem value={PaymentMethod.AGENCY}>Agence</SelectItem>
-                  <SelectItem value={PaymentMethod.MOBILE_MONEY}>Mobile Money</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={dateFilter} onValueChange={setDateFilter}>
-                <SelectTrigger className="w-[150px]">
-                  <Filter className="w-4 h-4 mr-2" />
-                  <SelectValue placeholder="Période" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Toute période</SelectItem>
-                  <SelectItem value="today">Aujourd'hui</SelectItem>
-                  <SelectItem value="week">Cette semaine</SelectItem>
-                  <SelectItem value="month">Ce mois</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="rounded-md border">
-            <Table>
-              <TableCaption>Liste de toutes les transactions</TableCaption>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>ID</TableHead>
-                  <TableHead>Direction</TableHead>
-                  <TableHead>Montant</TableHead>
-                  <TableHead>Expéditeur</TableHead>
-                  <TableHead>Bénéficiaire</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Statut</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredTransactions.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8">
-                      Aucune transaction trouvée
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredTransactions.map(transaction => (
-                    <TableRow key={transaction.id}>
-                      <TableCell className="font-medium">{transaction.id}</TableCell>
-                      <TableCell>{getDirectionLabel(transaction.direction)}</TableCell>
-                      <TableCell>
-                        <div>
-                          {CURRENCY_SYMBOLS[transaction.currency]}{transaction.amount.toLocaleString()}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          Commission: {CURRENCY_SYMBOLS[transaction.currency]}{transaction.commissionAmount.toLocaleString()}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div>{transaction.sender.name}</div>
-                        <div className="text-sm text-muted-foreground">{transaction.sender.phone}</div>
-                      </TableCell>
-                      <TableCell>
-                        <div>{transaction.recipient.name}</div>
-                        <div className="text-sm text-muted-foreground">{transaction.recipient.phone}</div>
-                      </TableCell>
-                      <TableCell>
-                        {new Date(transaction.createdAt).toLocaleDateString('fr-FR')}
-                        <div className="text-sm text-muted-foreground">
-                          {new Date(transaction.createdAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                        </div>
-                      </TableCell>
-                      <TableCell>{getStatusBadge(transaction.status)}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end space-x-2">
-                          <Button 
-                            size="icon" 
-                            variant="ghost" 
-                            title="Détails"
-                            className="text-[#F97316] hover:bg-[#FEF7CD]"
-                          >
-                            <Info className="h-4 w-4" />
-                          </Button>
-                          {transaction.status === TransactionStatus.PENDING && (
-                            <>
-                              <Button 
-                                size="icon" 
-                                variant="ghost" 
-                                className="text-[#43A047] hover:bg-[#C6EFD3]" 
-                                title="Valider"
-                                onClick={() => handleUpdateStatus(transaction.id, TransactionStatus.VALIDATED)}
-                              >
-                                <Check className="h-4 w-4" />
-                              </Button>
-                              <Button 
-                                size="icon" 
-                                variant="ghost" 
-                                className="text-[#F97316] hover:bg-[#FEF7CD]" 
-                                title="Annuler"
-                                onClick={() => handleUpdateStatus(transaction.id, TransactionStatus.CANCELLED)}
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </>
-                          )}
-                          {transaction.status === TransactionStatus.VALIDATED && (
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="text-[#F2C94C] hover:bg-[#FEF7CD]"
-                              title="Compléter"
-                              onClick={() => handleUpdateStatus(transaction.id, TransactionStatus.COMPLETED)}
-                            >
-                              <CheckCircle className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
+          <TransactionFilters 
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            statusFilter={statusFilter}
+            onStatusChange={setStatusFilter}
+            directionFilter={directionFilter}
+            onDirectionChange={setDirectionFilter}
+            currencyFilter={currencyFilter}
+            onCurrencyChange={setCurrencyFilter}
+            paymentMethodFilter={paymentMethodFilter}
+            onPaymentMethodChange={setPaymentMethodFilter}
+            dateFilter={dateFilter}
+            onDateFilterChange={setDateFilter}
+          />
+          <TransactionTable 
+            transactions={filteredTransactions}
+            onUpdateStatus={handleUpdateStatus}
+          />
         </div>
       </CardContent>
     </Card>

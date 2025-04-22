@@ -1,13 +1,9 @@
 
 import { AppLayout } from "@/components/layout/AppLayout";
 import { TransactionList } from "@/components/transactions/TransactionList";
-import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { CreateTransactionButton } from "@/components/transactions/CreateTransactionButton";
 
 const Transactions = () => {
-  const navigate = useNavigate();
-
   return (
     <AppLayout>
       <div className="space-y-6">
@@ -18,13 +14,7 @@ const Transactions = () => {
               Gérer et suivre toutes les transactions
             </p>
           </div>
-          <Button 
-            onClick={() => navigate("/transactions/new")} 
-            className="bg-app-blue-500 hover:bg-app-blue-600"
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Nouvelle Transaction
-          </Button>
+          <CreateTransactionButton />
         </div>
 
         <TransactionList />

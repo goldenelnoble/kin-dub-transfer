@@ -1,10 +1,10 @@
-
 import { AppLayout } from "@/components/layout/AppLayout";
 import { DashboardSummary } from "@/components/dashboard/DashboardSummary";
 import { Currency } from "@/types";
+import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { CreateTransactionButton } from "@/components/transactions/CreateTransactionButton";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -48,13 +48,7 @@ const Dashboard = () => {
               </p>
             </div>
           </div>
-          <Button 
-            onClick={() => navigate("/transactions/new")} 
-            className="bg-[#F97316] hover:bg-[#F2C94C] text-white"
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Nouvelle Transaction
-          </Button>
+          <CreateTransactionButton />
         </div>
 
         {/* Lien de navigation "cliquable" sur chaque case */}

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Transaction, TransactionStatus, TransactionDirection, Currency, PaymentMethod, UserRole } from "@/types";
@@ -35,6 +36,9 @@ export function TransactionList() {
     // S'abonner aux événements du gestionnaire de transactions
     const unsubscribeCreated = TransactionManager.subscribe('transaction:created', handleTransactionCreated);
     const unsubscribeUpdated = TransactionManager.subscribe('transaction:updated', handleTransactionUpdated);
+    
+    // Charger les transactions initiales (s'il y en a)
+    loadTransactions();
     
     return () => {
       unsubscribeCreated();
@@ -78,13 +82,18 @@ export function TransactionList() {
 
   // Gestionnaire pour une transaction mise à jour
   const handleTransactionUpdated = (transaction: Transaction) => {
-    // Mettre à jour l'état local sans recharger toutes les transactions
-    setTransactions(current => 
-      current.map(tx => tx.id === transaction.id ? transaction : tx)
-    );
-    
-    // Sauvegarder dans localStorage
-    localStorage.setItem('transactions', JSON.stringify(transactions));
+    // Mettre à jour l'état local
+    setTransactions(current => {
+      const updated = current.map(tx => tx.id === transaction.id ? transaction : tx);
+      
+      // Mettre à jour les statistiques globales
+      TransactionManager.calculateStatsFromTransactions(updated);
+      
+      // Sauvegarder dans localStorage
+      localStorage.setItem('transactions', JSON.stringify(updated));
+      
+      return updated;
+    });
   };
 
   const handleUpdateStatus = (id: string, newStatus: TransactionStatus) => {

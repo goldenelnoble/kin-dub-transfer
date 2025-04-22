@@ -1,16 +1,78 @@
+
 import { AppLayout } from "@/components/layout/AppLayout";
 import { DashboardSummary } from "@/components/dashboard/DashboardSummary";
-import { Currency } from "@/types";
+import { Currency, DashboardStats } from "@/types";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { CreateTransactionButton } from "@/components/transactions/CreateTransactionButton";
+import { useState, useEffect } from "react";
+import { TransactionManager } from "@/components/transactions/utils/transactionUtils";
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const [stats, setStats] = useState<DashboardStats>({
+    totalTransactions: 0,
+    pendingTransactions: 0,
+    completedTransactions: 0,
+    cancelledTransactions: 0,
+    totalAmount: 0,
+    totalCommissions: 0
+  });
+
+  // Charger les statistiques au montage et lors des mises à jour
+  useEffect(() => {
+    // Récupérer les statistiques du gestionnaire de transactions
+    const transactionStats = TransactionManager.getStats();
+    
+    // Convertir les statistiques du format du gestionnaire au format du tableau de bord
+    setStats({
+      totalTransactions: transactionStats.transactionTotal,
+      pendingTransactions: transactionStats.transactionTotal - 
+                          (transactionStats.transactionCompletee + 
+                           transactionStats.transactionValidee + 
+                           transactionStats.transactionAnnulee),
+      completedTransactions: transactionStats.transactionCompletee,
+      cancelledTransactions: transactionStats.transactionAnnulee,
+      totalAmount: transactionStats.montantTotal,
+      totalCommissions: transactionStats.commissionTotale
+    });
+
+    // S'abonner aux événements pour mettre à jour automatiquement les stats
+    const unsubscribeCreated = TransactionManager.subscribe('transaction:created', updateStats);
+    const unsubscribeUpdated = TransactionManager.subscribe('transaction:updated', updateStats);
+    const unsubscribeValidated = TransactionManager.subscribe('transaction:validated', updateStats);
+    const unsubscribeCompleted = TransactionManager.subscribe('transaction:completed', updateStats);
+    const unsubscribeCancelled = TransactionManager.subscribe('transaction:cancelled', updateStats);
+    
+    return () => {
+      // Nettoyer les abonnements
+      unsubscribeCreated();
+      unsubscribeUpdated();
+      unsubscribeValidated();
+      unsubscribeCompleted();
+      unsubscribeCancelled();
+    };
+  }, []);
+
+  // Fonction pour mettre à jour les statistiques
+  const updateStats = () => {
+    const transactionStats = TransactionManager.getStats();
+    setStats({
+      totalTransactions: transactionStats.transactionTotal,
+      pendingTransactions: transactionStats.transactionTotal - 
+                          (transactionStats.transactionCompletee + 
+                           transactionStats.transactionValidee + 
+                           transactionStats.transactionAnnulee),
+      completedTransactions: transactionStats.transactionCompletee,
+      cancelledTransactions: transactionStats.transactionAnnulee,
+      totalAmount: transactionStats.montantTotal,
+      totalCommissions: transactionStats.commissionTotale
+    });
+  };
 
   // Nouvelle navigation après clic sur une statistique
-  const handleSummaryClick = (type: string) => {
+  const handleSummaryClick = (type: keyof DashboardStats) => {
     switch (type) {
       case "totalTransactions":
       case "pendingTransactions":
@@ -23,16 +85,6 @@ const Dashboard = () => {
       default:
         break;
     }
-  };
-
-  // Stats d'exemple pour la démo, gardées ici (adapter au besoin)
-  const sampleStats = {
-    totalTransactions: 93,
-    pendingTransactions: 12,
-    completedTransactions: 76,
-    cancelledTransactions: 5,
-    totalAmount: 345000,
-    totalCommissions: 10350
   };
 
   return (
@@ -51,9 +103,9 @@ const Dashboard = () => {
           <CreateTransactionButton />
         </div>
 
-        {/* Lien de navigation "cliquable" sur chaque case */}
+        {/* Utiliser les statistiques réelles */}
         <DashboardSummary 
-          stats={sampleStats} 
+          stats={stats} 
           currency={Currency.USD}
           onStatClick={handleSummaryClick}
         />

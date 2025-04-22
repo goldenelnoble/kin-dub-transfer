@@ -1,11 +1,12 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Transaction, TransactionStatus } from "@/types";
+import { Transaction, TransactionStatus, TransactionDirection, Currency, PaymentMethod } from "@/types";
 import { toast } from "@/components/ui/sonner";
 import { TransactionStats } from "./TransactionStats";
 import { TransactionFilters } from "./TransactionFilters";
 import { TransactionTable } from "./TransactionTable";
-import { filterTransactions } from "./utils/transactionUtils";
+import { filterTransactions, TransactionManager } from "./utils/transactionUtils";
 
 // Sample transaction data (move to local state)
 const getInitialTransactions = (): Transaction[] => [
@@ -186,51 +187,81 @@ export function TransactionList() {
           };
         });
         
-        setTransactions([...validTransactions, ...getInitialTransactions()]);
+        // Combiner les transactions de localStorage avec les exemples
+        const allTransactions = [...validTransactions, ...getInitialTransactions()];
+        
+        // Calculer les statistiques initiales
+        TransactionManager.calculateStatsFromTransactions(allTransactions);
+        
+        setTransactions(allTransactions);
       } catch (error) {
         console.error("Erreur lors du parsing des transactions:", error);
-        setTransactions(getInitialTransactions());
+        const initialTransactions = getInitialTransactions();
+        TransactionManager.calculateStatsFromTransactions(initialTransactions);
+        setTransactions(initialTransactions);
         toast.error("Erreur lors du chargement des transactions");
       }
     } else {
-      setTransactions(getInitialTransactions());
+      const initialTransactions = getInitialTransactions();
+      TransactionManager.calculateStatsFromTransactions(initialTransactions);
+      setTransactions(initialTransactions);
     }
   }, []);
 
   const handleUpdateStatus = (id: string, newStatus: TransactionStatus) => {
     const now = new Date();
     
-    const updatedTransactions = transactions.map(tx => {
-      if (tx.id === id) {
-        const updated = { 
-          ...tx, 
-          status: newStatus,
-          updatedAt: now
-        };
-        
-        if (newStatus === TransactionStatus.VALIDATED || newStatus === TransactionStatus.COMPLETED) {
-          updated.validatedBy = "Admin User";
-          updated.validatedAt = now;
-        }
-        
-        return updated;
+    // Déterminer l'action appropriée en fonction du nouveau statut
+    let action: "validate" | "complete" | "cancel";
+    switch (newStatus) {
+      case TransactionStatus.VALIDATED:
+        action = "validate";
+        break;
+      case TransactionStatus.COMPLETED:
+        action = "complete";
+        break;
+      case TransactionStatus.CANCELLED:
+        action = "cancel";
+        break;
+      default:
+        toast.error("Action non prise en charge");
+        return;
+    }
+    
+    // Utiliser le TransactionManager pour effectuer la validation
+    const result = TransactionManager.validateTransaction(
+      transactions,
+      id,
+      "Admin User", // Normalement, cela devrait venir de l'utilisateur connecté
+      action,
+      "admin" // Normalement, cela devrait venir de l'utilisateur connecté
+    );
+    
+    if (result.success) {
+      // Mettre à jour l'état des transactions
+      setTransactions([...transactions]);
+      
+      // Enregistrer les modifications dans localStorage
+      localStorage.setItem('transactions', JSON.stringify(transactions));
+      
+      // Afficher une notification appropriée
+      const statusMessages = {
+        [TransactionStatus.VALIDATED]: "Transaction validée !",
+        [TransactionStatus.COMPLETED]: "Transaction complétée !",
+        [TransactionStatus.CANCELLED]: "Transaction annulée !"
+      };
+      
+      if (statusMessages[newStatus]) {
+        toast[newStatus === TransactionStatus.CANCELLED ? "error" : "success"](
+          statusMessages[newStatus], 
+          {
+            description: `${result.message}`
+          }
+        );
       }
-      return tx;
-    });
-    
-    setTransactions(updatedTransactions);
-    localStorage.setItem('transactions', JSON.stringify(updatedTransactions));
-    
-    const statusMessages = {
-      [TransactionStatus.VALIDATED]: "Transaction validée !",
-      [TransactionStatus.COMPLETED]: "Transaction complétée !",
-      [TransactionStatus.CANCELLED]: "Transaction annulée !"
-    };
-    
-    if (statusMessages[newStatus]) {
-      toast[newStatus === TransactionStatus.CANCELLED ? "error" : "success"](statusMessages[newStatus], {
-        description: `La transaction ${id} a été ${newStatus === TransactionStatus.CANCELLED ? 'annulée' : 'mise à jour'}`
-      });
+    } else {
+      // Afficher une erreur en cas d'échec
+      toast.error(result.message);
     }
   };
 

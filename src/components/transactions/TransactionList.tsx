@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { 
   Table, 
@@ -29,7 +28,8 @@ import {
   TransactionDirection, 
   TransactionStatus, 
   Currency,
-  Transaction
+  Transaction,
+  PaymentMethod
 } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { CURRENCY_SYMBOLS } from "@/lib/constants";
@@ -37,95 +37,137 @@ import { Check, Info, Search, X, CheckCircle } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
 
 // Sample transaction data (move to local state)
-const getInitialTransactions = () => [
+const getInitialTransactions = (): Transaction[] => [
   {
     id: "TXN123456",
     direction: TransactionDirection.KINSHASA_TO_DUBAI,
     amount: 5000,
+    receivingAmount: 5000,
     currency: Currency.USD,
+    commissionPercentage: 3.5,
     commissionAmount: 175,
+    paymentMethod: PaymentMethod.AGENCY,
     status: TransactionStatus.COMPLETED,
     sender: {
       name: "Jean Lumumba",
-      phone: "+243 123456789"
+      phone: "+243 123456789",
+      idNumber: "KIN12345",
+      idType: "Passport"
     },
     recipient: {
       name: "Mohammed Ali",
-      phone: "+971 501234567"
+      phone: "+971 501234567",
+      idNumber: "UAE45678",
+      idType: "ID Card"
     },
     createdAt: new Date(2023, 3, 15, 10, 30),
+    updatedAt: new Date(2023, 3, 15, 12, 30),
     createdBy: "Operator User"
   },
   {
     id: "TXN123457",
     direction: TransactionDirection.DUBAI_TO_KINSHASA,
     amount: 3000,
+    receivingAmount: 3000,
     currency: Currency.USD,
+    commissionPercentage: 3.0,
     commissionAmount: 90,
+    paymentMethod: PaymentMethod.MOBILE_MONEY,
+    mobileMoneyNetwork: "M-Pesa",
     status: TransactionStatus.PENDING,
     sender: {
       name: "Abdullah Mohammed",
-      phone: "+971 501234567"
+      phone: "+971 501234567",
+      idNumber: "UAE78901",
+      idType: "Passport"
     },
     recipient: {
       name: "Marie Kabila",
-      phone: "+243 987654321"
+      phone: "+243 987654321",
+      idNumber: "KIN67890",
+      idType: "ID Card"
     },
     createdAt: new Date(2023, 3, 16, 11, 45),
+    updatedAt: new Date(2023, 3, 16, 11, 45),
     createdBy: "Supervisor User"
   },
   {
     id: "TXN123458",
     direction: TransactionDirection.KINSHASA_TO_DUBAI,
     amount: 2500,
+    receivingAmount: 2500,
     currency: Currency.EUR,
+    commissionPercentage: 3.5,
     commissionAmount: 87.5,
+    paymentMethod: PaymentMethod.AGENCY,
     status: TransactionStatus.CANCELLED,
     sender: {
       name: "Paul Mutombo",
-      phone: "+243 234567890"
+      phone: "+243 234567890",
+      idNumber: "KIN23456",
+      idType: "Passport"
     },
     recipient: {
       name: "Rashed Ahmed",
-      phone: "+971 502345678"
+      phone: "+971 502345678",
+      idNumber: "UAE56789",
+      idType: "ID Card"
     },
     createdAt: new Date(2023, 3, 17, 9, 15),
+    updatedAt: new Date(2023, 3, 17, 10, 30),
     createdBy: "Operator User"
   },
   {
     id: "TXN123459",
     direction: TransactionDirection.KINSHASA_TO_DUBAI,
     amount: 7500,
+    receivingAmount: 7500,
     currency: Currency.USD,
+    commissionPercentage: 3.5,
     commissionAmount: 262.5,
+    paymentMethod: PaymentMethod.AGENCY,
     status: TransactionStatus.VALIDATED,
     sender: {
       name: "Claude Makiese",
-      phone: "+243 345678901"
+      phone: "+243 345678901",
+      idNumber: "KIN34567",
+      idType: "Passport"
     },
     recipient: {
       name: "Saeed Al Mansouri",
-      phone: "+971 503456789"
+      phone: "+971 503456789",
+      idNumber: "UAE67890",
+      idType: "ID Card"
     },
     createdAt: new Date(2023, 3, 18, 14, 20),
+    updatedAt: new Date(2023, 3, 18, 16, 45),
     createdBy: "Operator User"
   },
   {
     id: "TXN123460",
     direction: TransactionDirection.DUBAI_TO_KINSHASA,
     amount: 4000,
+    receivingAmount: 4000,
     currency: Currency.AED,
+    commissionPercentage: 3.0,
     commissionAmount: 120,
+    paymentMethod: PaymentMethod.MOBILE_MONEY,
+    mobileMoneyNetwork: "Orange Money",
     status: TransactionStatus.COMPLETED,
     sender: {
       name: "Fatima Ali",
-      phone: "+971 504567890"
+      phone: "+971 504567890",
+      idNumber: "UAE78901",
+      idType: "Passport"
     },
     recipient: {
       name: "Jean-Marc Kabongo",
-      phone: "+243 456789012"
+      phone: "+243 456789012",
+      idNumber: "KIN45678",
+      idType: "ID Card"
     },
     createdAt: new Date(2023, 3, 19, 16, 30),
+    updatedAt: new Date(2023, 3, 19, 18, 45),
     createdBy: "Supervisor User"
   }
 ];
@@ -147,16 +189,48 @@ export function TransactionList() {
     const storedTransactions = localStorage.getItem('transactions');
     
     if (storedTransactions) {
-      // Convertir les dates string en objets Date
-      const parsedTransactions = JSON.parse(storedTransactions).map((tx: any) => ({
-        ...tx,
-        createdAt: new Date(tx.createdAt),
-        updatedAt: new Date(tx.updatedAt),
-        validatedAt: tx.validatedAt ? new Date(tx.validatedAt) : undefined
-      }));
-      
-      // Combiner avec les transactions initiales
-      setTransactions([...parsedTransactions, ...getInitialTransactions()]);
+      try {
+        // Convertir les dates string en objets Date
+        const parsedTransactions = JSON.parse(storedTransactions).map((tx: any) => ({
+          ...tx,
+          createdAt: new Date(tx.createdAt),
+          updatedAt: new Date(tx.updatedAt),
+          validatedAt: tx.validatedAt ? new Date(tx.validatedAt) : undefined
+        }));
+        
+        // S'assurer que toutes les propriétés requises sont présentes
+        const validTransactions = parsedTransactions.map((tx: any): Transaction => {
+          // Ajouter les propriétés manquantes si nécessaire
+          return {
+            ...tx,
+            receivingAmount: tx.receivingAmount || tx.amount,
+            commissionPercentage: tx.commissionPercentage || 3.5,
+            paymentMethod: tx.paymentMethod || PaymentMethod.AGENCY,
+            updatedAt: tx.updatedAt || new Date(),
+            // S'assurer que sender et recipient ont tous les champs requis
+            sender: {
+              name: tx.sender?.name || "",
+              phone: tx.sender?.phone || "",
+              idNumber: tx.sender?.idNumber || "",
+              idType: tx.sender?.idType || ""
+            },
+            recipient: {
+              name: tx.recipient?.name || "",
+              phone: tx.recipient?.phone || "",
+              idNumber: tx.recipient?.idNumber || "",
+              idType: tx.recipient?.idType || ""
+            }
+          };
+        });
+        
+        // Combiner avec les transactions initiales
+        setTransactions([...validTransactions, ...getInitialTransactions()]);
+      } catch (error) {
+        console.error("Erreur lors du parsing des transactions:", error);
+        // En cas d'erreur, utiliser les transactions initiales
+        setTransactions(getInitialTransactions());
+        toast.error("Erreur lors du chargement des transactions");
+      }
     } else {
       // Si aucune transaction n'est dans le localStorage, utiliser les transactions initiales
       setTransactions(getInitialTransactions());

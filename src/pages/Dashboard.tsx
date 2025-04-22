@@ -1,7 +1,7 @@
 
 import { AppLayout } from "@/components/layout/AppLayout";
 import { DashboardSummary } from "@/components/dashboard/DashboardSummary";
-import { Currency, DashboardStats } from "@/types";
+import { Currency, DashboardStats, Transaction } from "@/types";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -19,6 +19,7 @@ const Dashboard = () => {
     totalAmount: 0,
     totalCommissions: 0
   });
+  const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
 
   // Charger les statistiques au montage et lors des mises à jour
   useEffect(() => {
@@ -38,15 +39,34 @@ const Dashboard = () => {
       totalCommissions: transactionStats.commissionTotale
     });
 
-    // S'abonner aux événements pour mettre à jour automatiquement les stats
-    const unsubscribeCreated = TransactionManager.subscribe('transaction:created', updateStats);
-    const unsubscribeUpdated = TransactionManager.subscribe('transaction:updated', updateStats);
-    const unsubscribeValidated = TransactionManager.subscribe('transaction:validated', updateStats);
-    const unsubscribeCompleted = TransactionManager.subscribe('transaction:completed', updateStats);
-    const unsubscribeCancelled = TransactionManager.subscribe('transaction:cancelled', updateStats);
+    // Charger les transactions récentes depuis le localStorage
+    const storedTransactions = localStorage.getItem('transactions');
+    if (storedTransactions) {
+      const allTransactions = JSON.parse(storedTransactions).map((tx: any) => ({
+        ...tx,
+        createdAt: new Date(tx.createdAt),
+        updatedAt: new Date(tx.updatedAt),
+        validatedAt: tx.validatedAt ? new Date(tx.validatedAt) : undefined
+      }));
+      
+      // Prendre les 3 transactions les plus récentes
+      const recent = allTransactions
+        .sort((a: Transaction, b: Transaction) => 
+          b.createdAt.getTime() - a.createdAt.getTime()
+        )
+        .slice(0, 3);
+      
+      setRecentTransactions(recent);
+    }
+
+    // S'abonner aux événements pour mettre à jour automatiquement les stats et transactions
+    const unsubscribeCreated = TransactionManager.subscribe('transaction:created', updateDashboard);
+    const unsubscribeUpdated = TransactionManager.subscribe('transaction:updated', updateDashboard);
+    const unsubscribeValidated = TransactionManager.subscribe('transaction:validated', updateDashboard);
+    const unsubscribeCompleted = TransactionManager.subscribe('transaction:completed', updateDashboard);
+    const unsubscribeCancelled = TransactionManager.subscribe('transaction:cancelled', updateDashboard);
     
     return () => {
-      // Nettoyer les abonnements
       unsubscribeCreated();
       unsubscribeUpdated();
       unsubscribeValidated();
@@ -55,8 +75,8 @@ const Dashboard = () => {
     };
   }, []);
 
-  // Fonction pour mettre à jour les statistiques
-  const updateStats = () => {
+  // Fonction pour mettre à jour les statistiques et transactions récentes
+  const updateDashboard = () => {
     const transactionStats = TransactionManager.getStats();
     setStats({
       totalTransactions: transactionStats.transactionTotal,
@@ -69,6 +89,27 @@ const Dashboard = () => {
       totalAmount: transactionStats.montantTotal,
       totalCommissions: transactionStats.commissionTotale
     });
+
+    // Mettre à jour les transactions récentes
+    const storedTransactions = localStorage.getItem('transactions');
+    if (storedTransactions) {
+      const allTransactions = JSON.parse(storedTransactions).map((tx: any) => ({
+        ...tx,
+        createdAt: new Date(tx.createdAt),
+        updatedAt: new Date(tx.updatedAt),
+        validatedAt: tx.validatedAt ? new Date(tx.validatedAt) : undefined
+      }));
+      
+      const recent = allTransactions
+        .sort((a: Transaction, b: Transaction) => 
+          b.createdAt.getTime() - a.createdAt.getTime()
+        )
+        .slice(0, 3);
+      
+      setRecentTransactions(recent);
+    } else {
+      setRecentTransactions([]);
+    }
   };
 
   // Nouvelle navigation après clic sur une statistique
@@ -87,6 +128,10 @@ const Dashboard = () => {
     }
   };
 
+  const getDirectionLabel = (direction: string) => {
+    return direction === "kinshasa_to_dubai" ? "Dubaï → Kinshasa" : "Kinshasa → Dubaï";
+  };
+
   return (
     <AppLayout>
       <div className="space-y-6">
@@ -103,7 +148,6 @@ const Dashboard = () => {
           <CreateTransactionButton />
         </div>
 
-        {/* Utiliser les statistiques réelles */}
         <DashboardSummary 
           stats={stats} 
           currency={Currency.USD}
@@ -117,7 +161,6 @@ const Dashboard = () => {
                 <h3 className="font-semibold leading-none tracking-tight text-[#F97316]">Activité récente</h3>
               </div>
               <div className="p-6">
-                {/* Ici afficher le futur graphique d'activité */}
                 <div className="h-[200px] bg-[#FEF7CD] rounded-md flex items-center justify-center">
                   <p className="text-[#43A047]">Graphique d'activité des transactions</p>
                 </div>
@@ -135,22 +178,28 @@ const Dashboard = () => {
               </div>
               <div className="p-6">
                 <div className="space-y-4">
-                  {[1, 2, 3].map(i => (
-                    <div key={i} className="flex items-center justify-between border-b pb-2 last:border-0 last:pb-0">
-                      <div>
-                        <p className="font-medium text-[#F97316]">TXN12345{i}</p>
-                        <p className="text-sm text-[#F2C94C]">
-                          {i % 2 === 0 ? "Dubaï → Kinshasa" : "Kinshasa → Dubaï"}
-                        </p>
+                  {recentTransactions.length === 0 ? (
+                    <p className="text-center text-muted-foreground">Aucune transaction récente</p>
+                  ) : (
+                    recentTransactions.map(transaction => (
+                      <div key={transaction.id} className="flex items-center justify-between border-b pb-2 last:border-0 last:pb-0">
+                        <div>
+                          <p className="font-medium text-[#F97316]">{transaction.id}</p>
+                          <p className="text-sm text-[#F2C94C]">
+                            {getDirectionLabel(transaction.direction)}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-medium text-[#43A047]">
+                            {transaction.currency} {transaction.amount.toLocaleString()}
+                          </p>
+                          <p className="text-sm text-[#F97316]">
+                            {new Date(transaction.createdAt).toLocaleDateString('fr-FR')}
+                          </p>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className="font-medium text-[#43A047]">$2,{i}00.00</p>
-                        <p className="text-sm text-[#F97316]">
-                          {new Date().toLocaleDateString('fr-FR')}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </div>
             </div>

@@ -60,6 +60,37 @@ export class TransactionManager {
     commissionTotale: 0
   };
 
+  // Event bus pour la communication entre composants
+  private static listeners: { [event: string]: Function[] } = {
+    'transaction:created': [],
+    'transaction:updated': [],
+    'transaction:validated': [],
+    'transaction:completed': [],
+    'transaction:cancelled': []
+  };
+
+  /**
+   * S'abonner à un événement de transaction
+   */
+  static subscribe(event: string, callback: Function) {
+    if (!this.listeners[event]) {
+      this.listeners[event] = [];
+    }
+    this.listeners[event].push(callback);
+    return () => {
+      this.listeners[event] = this.listeners[event].filter(cb => cb !== callback);
+    };
+  }
+
+  /**
+   * Déclencher un événement
+   */
+  private static emit(event: string, data: any) {
+    if (this.listeners[event]) {
+      this.listeners[event].forEach(callback => callback(data));
+    }
+  }
+
   /**
    * Obtenir les statistiques actuelles
    */
@@ -73,6 +104,33 @@ export class TransactionManager {
   static createTransaction(transaction: Transaction): Transaction {
     // Assurons-nous que la transaction est en statut "pending" (en attente)
     transaction.status = TransactionStatus.PENDING;
+    
+    // Emettre l'événement de création
+    this.emit('transaction:created', transaction);
+    
+    return transaction;
+  }
+
+  /**
+   * Sauvegarder une transaction dans le localStorage
+   */
+  static saveTransaction(transaction: Transaction) {
+    // Récupérer les transactions existantes
+    const existingTransactions = JSON.parse(localStorage.getItem('transactions') || '[]');
+    
+    // Vérifier si la transaction existe déjà
+    const existingIndex = existingTransactions.findIndex((tx: Transaction) => tx.id === transaction.id);
+    
+    if (existingIndex >= 0) {
+      // Mettre à jour la transaction existante
+      existingTransactions[existingIndex] = transaction;
+    } else {
+      // Ajouter la nouvelle transaction
+      existingTransactions.unshift(transaction);
+    }
+    
+    // Sauvegarder les transactions
+    localStorage.setItem('transactions', JSON.stringify(existingTransactions));
     
     return transaction;
   }
@@ -143,6 +201,9 @@ export class TransactionManager {
         // Si pas encore comptabilisée dans le total
         this.stats.transactionTotal++;
       }
+      
+      // Émettre l'événement
+      this.emit('transaction:validated', updatedTransaction);
     } 
     else if (action === "complete") {
       // Mettre à jour en "complétée"
@@ -165,6 +226,9 @@ export class TransactionManager {
       // Mettre à jour les montants
       this.stats.montantTotal += transaction.amount;
       this.stats.commissionTotale += transaction.commissionAmount;
+      
+      // Émettre l'événement
+      this.emit('transaction:completed', updatedTransaction);
     } 
     else if (action === "cancel") {
       // Mettre à jour en "annulée"
@@ -179,10 +243,16 @@ export class TransactionManager {
         // Si pas encore comptabilisée dans le total
         this.stats.transactionTotal++;
       }
+      
+      // Émettre l'événement
+      this.emit('transaction:cancelled', updatedTransaction);
     }
     
     // Mise à jour de la transaction
     transactions[transactionIndex] = updatedTransaction;
+    
+    // Émettre l'événement de mise à jour
+    this.emit('transaction:updated', updatedTransaction);
     
     return {
       transaction: updatedTransaction,

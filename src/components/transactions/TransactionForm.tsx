@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,6 +16,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "@/components/ui/sonner";
 import { ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { TransactionManager } from "./utils/transactionUtils";
 
 export function TransactionForm() {
   const navigate = useNavigate();
@@ -50,7 +52,7 @@ export function TransactionForm() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate required fields
+    // Valider les champs requis
     if (!amount || parseFloat(amount) <= 0) {
       toast.error("Veuillez saisir un montant valide");
       return;
@@ -71,7 +73,7 @@ export function TransactionForm() {
       return;
     }
     
-    // Create transaction object
+    // Créer la transaction
     const transactionId = "TXN" + Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
     const now = new Date();
     
@@ -79,6 +81,7 @@ export function TransactionForm() {
       id: transactionId,
       direction,
       amount: amountValue,
+      receivingAmount: amountValue,
       currency,
       commissionPercentage: commissionValue,
       commissionAmount,
@@ -101,12 +104,9 @@ export function TransactionForm() {
       updatedAt: now
     };
     
-    console.log("Transaction created:", transaction);
-    
-    // Ajouter la transaction à la liste existante dans le localStorage
-    const existingTransactions = JSON.parse(localStorage.getItem('transactions') || '[]');
-    const updatedTransactions = [transaction, ...existingTransactions];
-    localStorage.setItem('transactions', JSON.stringify(updatedTransactions));
+    // Utiliser le TransactionManager pour créer et sauvegarder la transaction
+    TransactionManager.createTransaction(transaction);
+    TransactionManager.saveTransaction(transaction);
     
     toast.success("Transaction créée avec succès", {
       description: `Identifiant: ${transactionId}`,
@@ -116,7 +116,7 @@ export function TransactionForm() {
       }
     });
     
-    // Reset form
+    // Réinitialiser le formulaire
     setAmount("");
     setSenderName("");
     setSenderPhone("");

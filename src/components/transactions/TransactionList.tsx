@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Transaction, TransactionStatus, TransactionDirection, Currency, PaymentMethod } from "@/types";
+import { Transaction, TransactionStatus, TransactionDirection, Currency, PaymentMethod, UserRole } from "@/types";
 import { toast } from "@/components/ui/sonner";
 import { TransactionStats } from "./TransactionStats";
 import { TransactionFilters } from "./TransactionFilters";
@@ -153,7 +153,23 @@ export function TransactionList() {
   const [paymentMethodFilter, setPaymentMethodFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("all");
 
+  // Charger les transactions et configurer les écouteurs d'événements
   useEffect(() => {
+    loadTransactions();
+    
+    // S'abonner aux événements du gestionnaire de transactions
+    const unsubscribeCreated = TransactionManager.subscribe('transaction:created', handleTransactionCreated);
+    const unsubscribeUpdated = TransactionManager.subscribe('transaction:updated', handleTransactionUpdated);
+    
+    // Nettoyer les abonnements lors du démontage du composant
+    return () => {
+      unsubscribeCreated();
+      unsubscribeUpdated();
+    };
+  }, []);
+
+  // Fonction pour charger les transactions depuis localStorage
+  const loadTransactions = () => {
     const storedTransactions = localStorage.getItem('transactions');
     
     if (storedTransactions) {
@@ -206,7 +222,26 @@ export function TransactionList() {
       TransactionManager.calculateStatsFromTransactions(initialTransactions);
       setTransactions(initialTransactions);
     }
-  }, []);
+  };
+
+  // Gestionnaire pour une nouvelle transaction créée
+  const handleTransactionCreated = (transaction: Transaction) => {
+    toast.success("Nouvelle transaction créée", {
+      description: `La transaction ${transaction.id} a été créée avec succès`
+    });
+    loadTransactions(); // Recharger les transactions
+  };
+
+  // Gestionnaire pour une transaction mise à jour
+  const handleTransactionUpdated = (transaction: Transaction) => {
+    // Mettre à jour l'état local sans recharger toutes les transactions
+    setTransactions(current => 
+      current.map(tx => tx.id === transaction.id ? transaction : tx)
+    );
+    
+    // Sauvegarder dans localStorage
+    localStorage.setItem('transactions', JSON.stringify(transactions));
+  };
 
   const handleUpdateStatus = (id: string, newStatus: TransactionStatus) => {
     const now = new Date();
@@ -234,7 +269,7 @@ export function TransactionList() {
       id,
       "Admin User", // Normalement, cela devrait venir de l'utilisateur connecté
       action,
-      "admin" // Normalement, cela devrait venir de l'utilisateur connecté
+      UserRole.ADMIN // Utilisation de l'énumération UserRole au lieu de la chaîne
     );
     
     if (result.success) {

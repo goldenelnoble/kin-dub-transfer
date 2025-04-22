@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Info, Check, X, CheckCircle } from "lucide-react";
 import { Transaction, TransactionDirection, TransactionStatus } from "@/types";
 import { CURRENCY_SYMBOLS } from "@/lib/constants";
+import { useNavigate } from "react-router-dom";
 
 interface TransactionTableProps {
   transactions: Transaction[];
@@ -12,6 +13,8 @@ interface TransactionTableProps {
 }
 
 export const TransactionTable = ({ transactions, onUpdateStatus }: TransactionTableProps) => {
+  const navigate = useNavigate();
+  
   const getStatusBadge = (status: TransactionStatus) => {
     switch (status) {
       case TransactionStatus.PENDING:
@@ -31,6 +34,11 @@ export const TransactionTable = ({ transactions, onUpdateStatus }: TransactionTa
     return direction === TransactionDirection.KINSHASA_TO_DUBAI
       ? "Kinshasa → Dubaï"
       : "Dubaï → Kinshasa";
+  };
+
+  // Fonction pour naviguer vers les détails de la transaction
+  const goToTransactionDetails = (id: string) => {
+    navigate(`/transactions/${id}`);
   };
 
   return (
@@ -58,7 +66,11 @@ export const TransactionTable = ({ transactions, onUpdateStatus }: TransactionTa
             </TableRow>
           ) : (
             transactions.map(transaction => (
-              <TableRow key={transaction.id}>
+              <TableRow 
+                key={transaction.id} 
+                className="cursor-pointer hover:bg-muted/50"
+                onClick={() => goToTransactionDetails(transaction.id)}
+              >
                 <TableCell className="font-medium">{transaction.id}</TableCell>
                 <TableCell>{getDirectionLabel(transaction.direction)}</TableCell>
                 <TableCell>
@@ -84,13 +96,17 @@ export const TransactionTable = ({ transactions, onUpdateStatus }: TransactionTa
                   </div>
                 </TableCell>
                 <TableCell>{getStatusBadge(transaction.status)}</TableCell>
-                <TableCell className="text-right">
+                <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                   <div className="flex justify-end space-x-2">
                     <Button 
                       size="icon" 
                       variant="ghost" 
                       title="Détails"
                       className="text-[#F97316] hover:bg-[#FEF7CD]"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        goToTransactionDetails(transaction.id);
+                      }}
                     >
                       <Info className="h-4 w-4" />
                     </Button>
@@ -101,7 +117,10 @@ export const TransactionTable = ({ transactions, onUpdateStatus }: TransactionTa
                           variant="ghost" 
                           className="text-[#43A047] hover:bg-[#C6EFD3]" 
                           title="Valider"
-                          onClick={() => onUpdateStatus(transaction.id, TransactionStatus.VALIDATED)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onUpdateStatus(transaction.id, TransactionStatus.VALIDATED);
+                          }}
                         >
                           <Check className="h-4 w-4" />
                         </Button>
@@ -110,7 +129,10 @@ export const TransactionTable = ({ transactions, onUpdateStatus }: TransactionTa
                           variant="ghost" 
                           className="text-[#F97316] hover:bg-[#FEF7CD]" 
                           title="Annuler"
-                          onClick={() => onUpdateStatus(transaction.id, TransactionStatus.CANCELLED)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onUpdateStatus(transaction.id, TransactionStatus.CANCELLED);
+                          }}
                         >
                           <X className="h-4 w-4" />
                         </Button>
@@ -122,7 +144,10 @@ export const TransactionTable = ({ transactions, onUpdateStatus }: TransactionTa
                         variant="ghost"
                         className="text-[#F2C94C] hover:bg-[#FEF7CD]"
                         title="Compléter"
-                        onClick={() => onUpdateStatus(transaction.id, TransactionStatus.COMPLETED)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onUpdateStatus(transaction.id, TransactionStatus.COMPLETED);
+                        }}
                       >
                         <CheckCircle className="h-4 w-4" />
                       </Button>

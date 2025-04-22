@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Transaction, TransactionStatus, TransactionDirection, Currency, PaymentMethod, UserRole } from "@/types";
@@ -168,11 +169,11 @@ export function TransactionList() {
             statusFilter={statusFilter}
             onStatusChange={setStatusFilter}
             directionFilter={directionFilter}
-            onDirectionChange={setDirectionChange}
+            onDirectionChange={setDirectionFilter}
             currencyFilter={currencyFilter}
-            onCurrencyChange={setCurrencyChange}
+            onCurrencyChange={setCurrencyFilter}
             paymentMethodFilter={paymentMethodFilter}
-            onPaymentMethodChange={setPaymentMethodChange}
+            onPaymentMethodChange={setPaymentMethodFilter}
             dateFilter={dateFilter}
             onDateFilterChange={setDateFilter}
           />

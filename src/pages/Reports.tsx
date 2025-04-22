@@ -1,3 +1,4 @@
+
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { FileText, FileSpreadsheet, Info, Filter } from "lucide-react";
@@ -149,7 +150,7 @@ export default function Reports() {
       });
   };
 
-  // Modification de l’export PDF pour inclure le tableau des transactions détaillées
+  // Modification de l'export PDF pour inclure le tableau des transactions détaillées
   const handleExportPDF = async () => {
     const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
     let y = 14;
@@ -192,10 +193,10 @@ export default function Reports() {
 
     y += 16;
 
-    // ---- Tableau transactions détaillées (jusqu’à 15 lignes / page) ----
+    // ---- Tableau transactions détaillées (jusqu'à 15 lignes / page) ----
     doc.setFontSize(13);
     doc.setTextColor(67, 160, 71);
-    doc.text("Détails des transactions filtrées :", 14, y);
+    doc.text("Détails des transactions filtrées :", 14, y);
     y += 7;
     doc.setTextColor(33,33,33);
 
@@ -246,7 +247,7 @@ export default function Reports() {
         <div className="flex flex-wrap gap-4 items-center">
           <div className="flex items-center gap-2">
             <Filter className="h-5 w-5 text-[#43A047]" />
-            <span className="font-medium text-[#43A047]">Filtrer :</span>
+            <span className="font-medium text-[#43A047]">Filtrer :</span>
           </div>
           <div className="flex gap-2">
             <Button
@@ -318,151 +319,152 @@ export default function Reports() {
               <FileSpreadsheet className="h-5 w-5 text-[#F2C94C]" />
               Historique des rapports
             </h2>
-          <Button
-            className="bg-[#43A047] hover:bg-[#F2C94C] text-white"
-            onClick={handleExportPDF}
-          >
-            Exporter
-          </Button>
-        </div>
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 my-4">
-          {/* Tableau résumé financier */}
-          <div className="border rounded-md p-4 bg-[#f3fff6]">
-            <h3 className="font-semibold text-[#43A047] mb-2">Résumé financier de la période</h3>
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-[#F2C94C] text-[#222]">
-                  <th className="p-2">Transactions</th>
-                  <th className="p-2">Montant total</th>
-                  <th className="p-2">Total commissions</th>
-                  <th className="p-2">En attente</th>
-                  <th className="p-2">Validées</th>
-                  <th className="p-2">Annulées</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr className="text-center">
-                  <td className="p-2">{summary.nbTransactions}</td>
-                  <td className="p-2">{summary.totalAmount.toLocaleString()} $</td>
-                  <td className="p-2">{summary.totalCommissions.toLocaleString()} $</td>
-                  <td className="p-2">{summary.nbPending}</td>
-                  <td className="p-2">{summary.nbCompleted}</td>
-                  <td className="p-2">{summary.nbCancelled}</td>
-                </tr>
-              </tbody>
-            </table>
+            <Button
+              className="bg-[#43A047] hover:bg-[#F2C94C] text-white"
+              onClick={handleExportPDF}
+            >
+              Exporter
+            </Button>
           </div>
-          {/* Tableau détails transactions */}
-          <div className="border rounded-md p-4 bg-[#fffbe8]">
-            <h3 className="font-semibold text-[#F97316] mb-2">Détail transactions</h3>
-            <div className="overflow-x-auto max-h-80">
-              <table className="w-full min-w-[650px] text-xs">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 my-4">
+            {/* Tableau résumé financier */}
+            <div className="border rounded-md p-4 bg-[#f3fff6]">
+              <h3 className="font-semibold text-[#43A047] mb-2">Résumé financier de la période</h3>
+              <table className="w-full text-sm">
                 <thead>
-                  <tr className="bg-[#43A047] text-white">
-                    <th className="p-1">ID</th>
-                    <th className="p-1">Date</th>
-                    <th className="p-1">Emetteur</th>
-                    <th className="p-1">Récepteur</th>
-                    <th className="p-1">Montant</th>
-                    <th className="p-1">Statut</th>
-                    <th className="p-1">Commission</th>
-                    <th className="p-1">Sens</th>
+                  <tr className="bg-[#F2C94C] text-[#222]">
+                    <th className="p-2">Transactions</th>
+                    <th className="p-2">Montant total</th>
+                    <th className="p-2">Total commissions</th>
+                    <th className="p-2">En attente</th>
+                    <th className="p-2">Validées</th>
+                    <th className="p-2">Annulées</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredTransactions.length === 0 ? (
-                    <tr>
-                      <td colSpan={8} className="text-center">Aucune transaction pour cette période.</td>
-                    </tr>
-                  ) : (
-                    filteredTransactions.map((t) => (
-                      <tr key={t.id} className="text-center">
-                        <td className="p-1">{t.id}</td>
-                        <td className="p-1">{format(new Date(t.createdAt), "PPP", { locale: fr })}</td>
-                        <td className="p-1">{t.sender?.name || "-"}</td>
-                        <td className="p-1">{t.recipient?.name || "-"}</td>
-                        <td className="p-1">{t.amount.toLocaleString()} $</td>
-                        <td className="p-1">{t.status}</td>
-                        <td className="p-1">{t.commissionAmount?.toLocaleString() ?? 0} $</td>
-                        <td className="p-1">{t.direction}</td>
-                      </tr>
-                    ))
-                  )}
+                  <tr className="text-center">
+                    <td className="p-2">{summary.nbTransactions}</td>
+                    <td className="p-2">{summary.totalAmount.toLocaleString()} $</td>
+                    <td className="p-2">{summary.totalCommissions.toLocaleString()} $</td>
+                    <td className="p-2">{summary.nbPending}</td>
+                    <td className="p-2">{summary.nbCompleted}</td>
+                    <td className="p-2">{summary.nbCancelled}</td>
+                  </tr>
                 </tbody>
               </table>
             </div>
+            {/* Tableau détails transactions */}
+            <div className="border rounded-md p-4 bg-[#fffbe8]">
+              <h3 className="font-semibold text-[#F97316] mb-2">Détail transactions</h3>
+              <div className="overflow-x-auto max-h-80">
+                <table className="w-full min-w-[650px] text-xs">
+                  <thead>
+                    <tr className="bg-[#43A047] text-white">
+                      <th className="p-1">ID</th>
+                      <th className="p-1">Date</th>
+                      <th className="p-1">Emetteur</th>
+                      <th className="p-1">Récepteur</th>
+                      <th className="p-1">Montant</th>
+                      <th className="p-1">Statut</th>
+                      <th className="p-1">Commission</th>
+                      <th className="p-1">Sens</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredTransactions.length === 0 ? (
+                      <tr>
+                        <td colSpan={8} className="text-center">Aucune transaction pour cette période.</td>
+                      </tr>
+                    ) : (
+                      filteredTransactions.map((t) => (
+                        <tr key={t.id} className="text-center">
+                          <td className="p-1">{t.id}</td>
+                          <td className="p-1">{format(new Date(t.createdAt), "PPP", { locale: fr })}</td>
+                          <td className="p-1">{t.sender?.name || "-"}</td>
+                          <td className="p-1">{t.recipient?.name || "-"}</td>
+                          <td className="p-1">{t.amount.toLocaleString()} $</td>
+                          <td className="p-1">{t.status}</td>
+                          <td className="p-1">{t.commissionAmount?.toLocaleString() ?? 0} $</td>
+                          <td className="p-1">{t.direction}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
-        </div>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>ID</TableHead>
-              <TableHead>Titre</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Action</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredReports.length === 0 ? (
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-gray-400">Aucun rapport pour cette période/type.</TableCell>
+                <TableHead>ID</TableHead>
+                <TableHead>Titre</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Action</TableHead>
               </TableRow>
-            ) : (
-              filteredReports.map(report => (
-                <TableRow key={report.id}>
-                  <TableCell>{report.id}</TableCell>
-                  <TableCell>{report.title}</TableCell>
-                  <TableCell className="text-[#F2C94C]">{format(parseISO(report.date), "PPP", { locale: fr })}</TableCell>
-                  <TableCell className={statusColors[report.status]}>{report.status}</TableCell>
-                  <TableCell>
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="border-[#F97316] text-[#F97316] hover:bg-[#F2C94C] flex items-center gap-1"
-                          onClick={() => setSelected(report)}
-                        >
-                          <Info className="h-4 w-4 mr-1" />
-                          Information
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>
-                            Détail du rapport
-                          </DialogTitle>
-                        </DialogHeader>
-                        {selected && (
-                          <div className="space-y-2">
-                            <p>
-                              <span className="font-semibold">Titre :</span> {selected.title}
-                            </p>
-                            <p>
-                              <span className="font-semibold">Date⯯:</span> {format(parseISO(selected.date), "PPP", { locale: fr })}
-                            </p>
-                            <p>
-                              <span className="font-semibold">Type :</span>{" "}
-                              {selected.type.charAt(0).toUpperCase() + selected.type.slice(1)}
-                            </p>
-                            <p>
-                              <span className="font-semibold">Status :</span>{" "}
-                              <span className={statusColors[selected.status]}>{selected.status}</span>
-                            </p>
-                            <p>
-                              <span className="font-semibold">Description :</span> {selected.description}
-                            </p>
-                          </div>
-                        )}
-                      </DialogContent>
-                    </Dialog>
-                  </TableCell>
+            </TableHeader>
+            <TableBody>
+              {filteredReports.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center text-gray-400">Aucun rapport pour cette période/type.</TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ) : (
+                filteredReports.map(report => (
+                  <TableRow key={report.id}>
+                    <TableCell>{report.id}</TableCell>
+                    <TableCell>{report.title}</TableCell>
+                    <TableCell className="text-[#F2C94C]">{format(parseISO(report.date), "PPP", { locale: fr })}</TableCell>
+                    <TableCell className={statusColors[report.status]}>{report.status}</TableCell>
+                    <TableCell>
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="border-[#F97316] text-[#F97316] hover:bg-[#F2C94C] flex items-center gap-1"
+                            onClick={() => setSelected(report)}
+                          >
+                            <Info className="h-4 w-4 mr-1" />
+                            Information
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>
+                              Détail du rapport
+                            </DialogTitle>
+                          </DialogHeader>
+                          {selected && (
+                            <div className="space-y-2">
+                              <p>
+                                <span className="font-semibold">Titre :</span> {selected.title}
+                              </p>
+                              <p>
+                                <span className="font-semibold">Date⯯:</span> {format(parseISO(selected.date), "PPP", { locale: fr })}
+                              </p>
+                              <p>
+                                <span className="font-semibold">Type :</span>{" "}
+                                {selected.type.charAt(0).toUpperCase() + selected.type.slice(1)}
+                              </p>
+                              <p>
+                                <span className="font-semibold">Status :</span>{" "}
+                                <span className={statusColors[selected.status]}>{selected.status}</span>
+                              </p>
+                              <p>
+                                <span className="font-semibold">Description :</span> {selected.description}
+                              </p>
+                            </div>
+                          )}
+                        </DialogContent>
+                      </Dialog>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
     </AppLayout>
   );

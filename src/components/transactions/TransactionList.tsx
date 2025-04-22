@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { 
   Table, 
@@ -33,7 +34,7 @@ import {
 } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { CURRENCY_SYMBOLS } from "@/lib/constants";
-import { Check, Info, Search, X, CheckCircle } from "lucide-react";
+import { Check, Filter, Info, Search, X, CheckCircle } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
 
 // Sample transaction data (move to local state)
@@ -176,21 +177,16 @@ export function TransactionList() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [directionFilter, setDirectionFilter] = useState(() => {
-    const url = new URL(window.location.href);
-    const dir = url.searchParams.get("direction");
-    if (dir === "kinshasa_to_dubai" || dir === "dubai_to_kinshasa") return dir;
-    return "all";
-  });
+  const [directionFilter, setDirectionFilter] = useState("all");
+  const [currencyFilter, setCurrencyFilter] = useState("all");
+  const [paymentMethodFilter, setPaymentMethodFilter] = useState("all");
+  const [dateFilter, setDateFilter] = useState("all"); // all, today, week, month
 
-  // Charger les transactions au chargement du composant
   useEffect(() => {
-    // Récupérer les transactions du localStorage
     const storedTransactions = localStorage.getItem('transactions');
     
     if (storedTransactions) {
       try {
-        // Convertir les dates string en objets Date
         const parsedTransactions = JSON.parse(storedTransactions).map((tx: any) => ({
           ...tx,
           createdAt: new Date(tx.createdAt),
@@ -198,16 +194,13 @@ export function TransactionList() {
           validatedAt: tx.validatedAt ? new Date(tx.validatedAt) : undefined
         }));
         
-        // S'assurer que toutes les propriétés requises sont présentes
         const validTransactions = parsedTransactions.map((tx: any): Transaction => {
-          // Ajouter les propriétés manquantes si nécessaire
           return {
             ...tx,
             receivingAmount: tx.receivingAmount || tx.amount,
             commissionPercentage: tx.commissionPercentage || 3.5,
             paymentMethod: tx.paymentMethod || PaymentMethod.AGENCY,
             updatedAt: tx.updatedAt || new Date(),
-            // S'assurer que sender et recipient ont tous les champs requis
             sender: {
               name: tx.sender?.name || "",
               phone: tx.sender?.phone || "",
@@ -223,25 +216,20 @@ export function TransactionList() {
           };
         });
         
-        // Combiner avec les transactions initiales
         setTransactions([...validTransactions, ...getInitialTransactions()]);
       } catch (error) {
         console.error("Erreur lors du parsing des transactions:", error);
-        // En cas d'erreur, utiliser les transactions initiales
         setTransactions(getInitialTransactions());
         toast.error("Erreur lors du chargement des transactions");
       }
     } else {
-      // Si aucune transaction n'est dans le localStorage, utiliser les transactions initiales
       setTransactions(getInitialTransactions());
     }
   }, []);
 
-  // Handler pour mettre à jour le statut d'une transaction
   const handleUpdateStatus = (id: string, newStatus: TransactionStatus) => {
     const now = new Date();
     
-    // Mettre à jour la transaction dans le state
     const updatedTransactions = transactions.map(tx => {
       if (tx.id === id) {
         const updated = { 
@@ -250,7 +238,6 @@ export function TransactionList() {
           updatedAt: now
         };
         
-        // Ajouter les informations de validation si la transaction est validée ou complétée
         if (newStatus === TransactionStatus.VALIDATED || newStatus === TransactionStatus.COMPLETED) {
           updated.validatedBy = "Admin User";
           updated.validatedAt = now;
@@ -262,37 +249,57 @@ export function TransactionList() {
     });
     
     setTransactions(updatedTransactions);
-    
-    // Mettre à jour le localStorage
     localStorage.setItem('transactions', JSON.stringify(updatedTransactions));
     
-    // Afficher une notification appropriée
-    if (newStatus === TransactionStatus.VALIDATED) {
-      toast.success("Transaction validée !", {
-        description: `La transaction ${id} a été validée`
-      });
-    } else if (newStatus === TransactionStatus.COMPLETED) {
-      toast.success("Transaction complétée !", {
-        description: `La transaction ${id} a été marquée comme complétée`
-      });
-    } else if (newStatus === TransactionStatus.CANCELLED) {
-      toast.error("Transaction annulée !", {
-        description: `La transaction ${id} a été annulée`
+    const statusMessages = {
+      [TransactionStatus.VALIDATED]: "Transaction validée !",
+      [TransactionStatus.COMPLETED]: "Transaction complétée !",
+      [TransactionStatus.CANCELLED]: "Transaction annulée !"
+    };
+    
+    if (statusMessages[newStatus]) {
+      toast[newStatus === TransactionStatus.CANCELLED ? "error" : "success"](statusMessages[newStatus], {
+        description: `La transaction ${id} a été ${newStatus === TransactionStatus.CANCELLED ? 'annulée' : 'mise à jour'}`
       });
     }
   };
 
-  const filteredTransactions = transactions.filter(transaction => {
-    const matchesSearch = transaction.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          transaction.sender.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          transaction.recipient.name.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesStatus = statusFilter === "all" || transaction.status === statusFilter;
-    
-    const matchesDirection = directionFilter === "all" || transaction.direction === directionFilter;
-    
-    return matchesSearch && matchesStatus && matchesDirection;
-  });
+  const filterTransactions = (transactions: Transaction[]) => {
+    return transactions.filter(transaction => {
+      const matchesSearch = 
+        transaction.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        transaction.sender.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        transaction.recipient.name.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesStatus = statusFilter === "all" || transaction.status === statusFilter;
+      const matchesDirection = directionFilter === "all" || transaction.direction === directionFilter;
+      const matchesCurrency = currencyFilter === "all" || transaction.currency === currencyFilter;
+      const matchesPaymentMethod = paymentMethodFilter === "all" || transaction.paymentMethod === paymentMethodFilter;
+      
+      let matchesDate = true;
+      const today = new Date();
+      const txDate = new Date(transaction.createdAt);
+      
+      switch (dateFilter) {
+        case "today":
+          matchesDate = txDate.toDateString() === today.toDateString();
+          break;
+        case "week":
+          const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+          matchesDate = txDate >= weekAgo;
+          break;
+        case "month":
+          const monthAgo = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate());
+          matchesDate = txDate >= monthAgo;
+          break;
+        default:
+          matchesDate = true;
+      }
+      
+      return matchesSearch && matchesStatus && matchesDirection && matchesCurrency && 
+             matchesPaymentMethod && matchesDate;
+    });
+  };
 
   const getStatusBadge = (status: TransactionStatus) => {
     switch (status) {
@@ -315,28 +322,33 @@ export function TransactionList() {
       : "Dubaï → Kinshasa";
   };
 
-  // Calculer les statistiques pour les différents statuts
+  const filteredTransactions = filterTransactions(transactions);
+  
+  // Calculate statistics for all transactions
   const stats = {
     total: filteredTransactions.length,
     pending: filteredTransactions.filter(tx => tx.status === TransactionStatus.PENDING).length,
     validated: filteredTransactions.filter(tx => tx.status === TransactionStatus.VALIDATED).length,
     completed: filteredTransactions.filter(tx => tx.status === TransactionStatus.COMPLETED).length,
     cancelled: filteredTransactions.filter(tx => tx.status === TransactionStatus.CANCELLED).length,
+    totalAmount: filteredTransactions.reduce((acc, tx) => acc + tx.amount, 0),
+    totalCommission: filteredTransactions.reduce((acc, tx) => acc + tx.commissionAmount, 0),
   };
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>
-          Transactions récentes
-        </CardTitle>
-        <CardDescription>
-          Liste des transactions récentes dans le système
-        </CardDescription>
+        <CardTitle>Toutes les Transactions</CardTitle>
+        <CardDescription>Liste complète des transactions avec filtres</CardDescription>
+        
         <div className="mt-2 grid grid-cols-1 md:grid-cols-5 gap-2">
           <div className="bg-[#f3f4f6] p-2 rounded-md text-center">
             <div className="text-sm text-gray-500">Total</div>
             <div className="text-lg font-bold">{stats.total}</div>
+            <div className="text-sm text-muted-foreground">
+              {currencyFilter === "all" ? "Montant total" : `Total en ${currencyFilter}`}:
+              {stats.totalAmount.toLocaleString()} 
+            </div>
           </div>
           <div className="bg-[#FEF3CF] p-2 rounded-md text-center">
             <div className="text-sm text-[#F7C33F]">En attente</div>
@@ -349,6 +361,9 @@ export function TransactionList() {
           <div className="bg-[#43A047]/20 p-2 rounded-md text-center">
             <div className="text-sm text-[#43A047]">Complétées</div>
             <div className="text-lg font-bold text-[#43A047]">{stats.completed}</div>
+            <div className="text-sm text-muted-foreground">
+              Commission: {stats.totalCommission.toLocaleString()}
+            </div>
           </div>
           <div className="bg-[#FEC6A1] p-2 rounded-md text-center">
             <div className="text-sm text-[#F97316]">Annulées</div>
@@ -368,32 +383,78 @@ export function TransactionList() {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full md:w-[180px]">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tous les statuts</SelectItem>
-                <SelectItem value={TransactionStatus.PENDING}>En attente</SelectItem>
-                <SelectItem value={TransactionStatus.VALIDATED}>Validée</SelectItem>
-                <SelectItem value={TransactionStatus.COMPLETED}>Complétée</SelectItem>
-                <SelectItem value={TransactionStatus.CANCELLED}>Annulée</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={directionFilter} onValueChange={setDirectionFilter}>
-              <SelectTrigger className="w-full md:w-[180px]">
-                <SelectValue placeholder="Direction" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Toutes les directions</SelectItem>
-                <SelectItem value={TransactionDirection.KINSHASA_TO_DUBAI}>Kinshasa → Dubaï</SelectItem>
-                <SelectItem value={TransactionDirection.DUBAI_TO_KINSHASA}>Dubaï → Kinshasa</SelectItem>
-              </SelectContent>
-            </Select>
+            
+            <div className="flex flex-wrap gap-2">
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-[150px]">
+                  <Filter className="w-4 h-4 mr-2" />
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous les statuts</SelectItem>
+                  <SelectItem value={TransactionStatus.PENDING}>En attente</SelectItem>
+                  <SelectItem value={TransactionStatus.VALIDATED}>Validée</SelectItem>
+                  <SelectItem value={TransactionStatus.COMPLETED}>Complétée</SelectItem>
+                  <SelectItem value={TransactionStatus.CANCELLED}>Annulée</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={directionFilter} onValueChange={setDirectionFilter}>
+                <SelectTrigger className="w-[150px]">
+                  <Filter className="w-4 h-4 mr-2" />
+                  <SelectValue placeholder="Direction" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Toutes les directions</SelectItem>
+                  <SelectItem value={TransactionDirection.KINSHASA_TO_DUBAI}>Kinshasa → Dubaï</SelectItem>
+                  <SelectItem value={TransactionDirection.DUBAI_TO_KINSHASA}>Dubaï → Kinshasa</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={currencyFilter} onValueChange={setCurrencyFilter}>
+                <SelectTrigger className="w-[150px]">
+                  <Filter className="w-4 h-4 mr-2" />
+                  <SelectValue placeholder="Devise" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Toutes les devises</SelectItem>
+                  <SelectItem value={Currency.USD}>USD</SelectItem>
+                  <SelectItem value={Currency.EUR}>EUR</SelectItem>
+                  <SelectItem value={Currency.AED}>AED</SelectItem>
+                  <SelectItem value={Currency.CDF}>CDF</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={paymentMethodFilter} onValueChange={setPaymentMethodFilter}>
+                <SelectTrigger className="w-[150px]">
+                  <Filter className="w-4 h-4 mr-2" />
+                  <SelectValue placeholder="Paiement" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous les moyens</SelectItem>
+                  <SelectItem value={PaymentMethod.AGENCY}>Agence</SelectItem>
+                  <SelectItem value={PaymentMethod.MOBILE_MONEY}>Mobile Money</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={dateFilter} onValueChange={setDateFilter}>
+                <SelectTrigger className="w-[150px]">
+                  <Filter className="w-4 h-4 mr-2" />
+                  <SelectValue placeholder="Période" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Toute période</SelectItem>
+                  <SelectItem value="today">Aujourd'hui</SelectItem>
+                  <SelectItem value="week">Cette semaine</SelectItem>
+                  <SelectItem value="month">Ce mois</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
+
           <div className="rounded-md border">
             <Table>
-              <TableCaption>Liste des transactions récentes</TableCaption>
+              <TableCaption>Liste de toutes les transactions</TableCaption>
               <TableHeader>
                 <TableRow>
                   <TableHead>ID</TableHead>
@@ -419,7 +480,12 @@ export function TransactionList() {
                       <TableCell className="font-medium">{transaction.id}</TableCell>
                       <TableCell>{getDirectionLabel(transaction.direction)}</TableCell>
                       <TableCell>
-                        {CURRENCY_SYMBOLS[transaction.currency]}{transaction.amount.toLocaleString()}
+                        <div>
+                          {CURRENCY_SYMBOLS[transaction.currency]}{transaction.amount.toLocaleString()}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          Commission: {CURRENCY_SYMBOLS[transaction.currency]}{transaction.commissionAmount.toLocaleString()}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <div>{transaction.sender.name}</div>
@@ -430,22 +496,24 @@ export function TransactionList() {
                         <div className="text-sm text-muted-foreground">{transaction.recipient.phone}</div>
                       </TableCell>
                       <TableCell>
-                        {transaction.createdAt.toLocaleDateString('fr-FR')}
+                        {new Date(transaction.createdAt).toLocaleDateString('fr-FR')}
                         <div className="text-sm text-muted-foreground">
-                          {transaction.createdAt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                          {new Date(transaction.createdAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                         </div>
                       </TableCell>
                       <TableCell>{getStatusBadge(transaction.status)}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end space-x-2">
-                          <Button size="icon" variant="ghost" title="Détails"
+                          <Button 
+                            size="icon" 
+                            variant="ghost" 
+                            title="Détails"
                             className="text-[#F97316] hover:bg-[#FEF7CD]"
                           >
                             <Info className="h-4 w-4" />
                           </Button>
                           {transaction.status === TransactionStatus.PENDING && (
                             <>
-                              {/* Valider */}
                               <Button 
                                 size="icon" 
                                 variant="ghost" 
@@ -455,7 +523,6 @@ export function TransactionList() {
                               >
                                 <Check className="h-4 w-4" />
                               </Button>
-                              {/* Annuler */}
                               <Button 
                                 size="icon" 
                                 variant="ghost" 
@@ -468,7 +535,6 @@ export function TransactionList() {
                             </>
                           )}
                           {transaction.status === TransactionStatus.VALIDATED && (
-                            // Compléter
                             <Button
                               size="icon"
                               variant="ghost"

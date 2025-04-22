@@ -1,7 +1,6 @@
-
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
-import { FileText, FileSpreadsheet, Info, Filter } from "lucide-react";
+import { FileText, FileSpreadsheet, Info, Filter, Plus } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import * as React from "react";
 import { format, isSameMonth, isSameWeek, isSameDay, parseISO } from "date-fns";
@@ -16,9 +15,11 @@ import {
 } from "@/components/ui/dialog";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { CreateTransactionButton } from "@/components/transactions/CreateTransactionButton";
 import jsPDF from "jspdf";
 import { DEMO_TRANSACTIONS } from "@/lib/constants";
 import { Transaction } from "@/types";
+import { toast } from "@/components/ui/sonner";
 
 type ReportType = "mensuel" | "hebdomadaire" | "journalier";
 
@@ -233,16 +234,25 @@ export default function Reports() {
     doc.save("rapport_transactions.pdf");
   };
 
+  const handleShowDetails = (report: ReportData) => {
+    setSelected(report);
+    toast.info(`Consultation des détails du rapport ${report.id}`);
+  };
+
   return (
     <AppLayout>
       <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <FileText className="h-10 w-10 text-[#F97316]" />
-          <div>
-            <h1 className="text-3xl font-bold text-[#F97316]">Rapports</h1>
-            <p className="text-[#43A047]">Consultez et exportez vos rapports clés concernant les transactions et commissions.</p>
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-4">
+            <FileText className="h-10 w-10 text-[#F97316]" />
+            <div>
+              <h1 className="text-3xl font-bold text-[#F97316]">Rapports</h1>
+              <p className="text-[#43A047]">Consultez et exportez vos rapports clés concernant les transactions et commissions.</p>
+            </div>
           </div>
+          <CreateTransactionButton />
         </div>
+
         {/* Filtres */}
         <div className="flex flex-wrap gap-4 items-center">
           <div className="flex items-center gap-2">
@@ -353,6 +363,7 @@ export default function Reports() {
                 </tbody>
               </table>
             </div>
+
             {/* Tableau détails transactions */}
             <div className="border rounded-md p-4 bg-[#fffbe8]">
               <h3 className="font-semibold text-[#F97316] mb-2">Détail transactions</h3>
@@ -394,14 +405,15 @@ export default function Reports() {
               </div>
             </div>
           </div>
+
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>ID</TableHead>
                 <TableHead>Titre</TableHead>
                 <TableHead>Date</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Action</TableHead>
+                <TableHead>Statut</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -416,23 +428,23 @@ export default function Reports() {
                     <TableCell>{report.title}</TableCell>
                     <TableCell className="text-[#F2C94C]">{format(parseISO(report.date), "PPP", { locale: fr })}</TableCell>
                     <TableCell className={statusColors[report.status]}>{report.status}</TableCell>
-                    <TableCell>
+                    <TableCell className="space-x-2">
                       <Dialog>
                         <DialogTrigger asChild>
                           <Button
                             variant="outline"
                             size="sm"
-                            className="border-[#F97316] text-[#F97316] hover:bg-[#F2C94C] flex items-center gap-1"
-                            onClick={() => setSelected(report)}
+                            className="border-[#F97316] text-[#F97316] hover:bg-[#F2C94C]"
+                            onClick={() => handleShowDetails(report)}
                           >
                             <Info className="h-4 w-4 mr-1" />
-                            Information
+                            Détails
                           </Button>
                         </DialogTrigger>
                         <DialogContent>
                           <DialogHeader>
                             <DialogTitle>
-                              Détail du rapport
+                              Détails du rapport
                             </DialogTitle>
                           </DialogHeader>
                           {selected && (
@@ -441,14 +453,15 @@ export default function Reports() {
                                 <span className="font-semibold">Titre :</span> {selected.title}
                               </p>
                               <p>
-                                <span className="font-semibold">Date⯯:</span> {format(parseISO(selected.date), "PPP", { locale: fr })}
+                                <span className="font-semibold">Date :</span>{" "}
+                                {format(parseISO(selected.date), "PPP", { locale: fr })}
                               </p>
                               <p>
                                 <span className="font-semibold">Type :</span>{" "}
                                 {selected.type.charAt(0).toUpperCase() + selected.type.slice(1)}
                               </p>
                               <p>
-                                <span className="font-semibold">Status :</span>{" "}
+                                <span className="font-semibold">Statut :</span>{" "}
                                 <span className={statusColors[selected.status]}>{selected.status}</span>
                               </p>
                               <p>
@@ -458,6 +471,15 @@ export default function Reports() {
                           )}
                         </DialogContent>
                       </Dialog>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="bg-[#43A047] text-white hover:bg-[#F2C94C]"
+                        onClick={handleExportPDF}
+                      >
+                        <FileSpreadsheet className="h-4 w-4 mr-1" />
+                        Exporter
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))

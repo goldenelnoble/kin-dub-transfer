@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { 
   Table, 
   TableBody, 
@@ -27,7 +28,8 @@ import {
 import { 
   TransactionDirection, 
   TransactionStatus, 
-  Currency 
+  Currency,
+  Transaction
 } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { CURRENCY_SYMBOLS } from "@/lib/constants";
@@ -129,7 +131,7 @@ const getInitialTransactions = () => [
 ];
 
 export function TransactionList() {
-  const [transactions, setTransactions] = useState(getInitialTransactions());
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [directionFilter, setDirectionFilter] = useState(() => {
@@ -139,18 +141,70 @@ export function TransactionList() {
     return "all";
   });
 
-  // Handler for updating transaction status
-  const handleUpdateStatus = (id: string, newStatus: TransactionStatus) => {
-    setTransactions((prev) =>
-      prev.map((tx) =>
-        tx.id === id ? { ...tx, status: newStatus } : tx
-      )
-    );
-    if (newStatus === TransactionStatus.VALIDATED || newStatus === TransactionStatus.COMPLETED) {
-      toast.success("Transaction validée !");
+  // Charger les transactions au chargement du composant
+  useEffect(() => {
+    // Récupérer les transactions du localStorage
+    const storedTransactions = localStorage.getItem('transactions');
+    
+    if (storedTransactions) {
+      // Convertir les dates string en objets Date
+      const parsedTransactions = JSON.parse(storedTransactions).map((tx: any) => ({
+        ...tx,
+        createdAt: new Date(tx.createdAt),
+        updatedAt: new Date(tx.updatedAt),
+        validatedAt: tx.validatedAt ? new Date(tx.validatedAt) : undefined
+      }));
+      
+      // Combiner avec les transactions initiales
+      setTransactions([...parsedTransactions, ...getInitialTransactions()]);
+    } else {
+      // Si aucune transaction n'est dans le localStorage, utiliser les transactions initiales
+      setTransactions(getInitialTransactions());
     }
-    if (newStatus === TransactionStatus.CANCELLED) {
-      toast.error("Transaction annulée !");
+  }, []);
+
+  // Handler pour mettre à jour le statut d'une transaction
+  const handleUpdateStatus = (id: string, newStatus: TransactionStatus) => {
+    const now = new Date();
+    
+    // Mettre à jour la transaction dans le state
+    const updatedTransactions = transactions.map(tx => {
+      if (tx.id === id) {
+        const updated = { 
+          ...tx, 
+          status: newStatus,
+          updatedAt: now
+        };
+        
+        // Ajouter les informations de validation si la transaction est validée ou complétée
+        if (newStatus === TransactionStatus.VALIDATED || newStatus === TransactionStatus.COMPLETED) {
+          updated.validatedBy = "Admin User";
+          updated.validatedAt = now;
+        }
+        
+        return updated;
+      }
+      return tx;
+    });
+    
+    setTransactions(updatedTransactions);
+    
+    // Mettre à jour le localStorage
+    localStorage.setItem('transactions', JSON.stringify(updatedTransactions));
+    
+    // Afficher une notification appropriée
+    if (newStatus === TransactionStatus.VALIDATED) {
+      toast.success("Transaction validée !", {
+        description: `La transaction ${id} a été validée`
+      });
+    } else if (newStatus === TransactionStatus.COMPLETED) {
+      toast.success("Transaction complétée !", {
+        description: `La transaction ${id} a été marquée comme complétée`
+      });
+    } else if (newStatus === TransactionStatus.CANCELLED) {
+      toast.error("Transaction annulée !", {
+        description: `La transaction ${id} a été annulée`
+      });
     }
   };
 
@@ -187,6 +241,15 @@ export function TransactionList() {
       : "Dubaï → Kinshasa";
   };
 
+  // Calculer les statistiques pour les différents statuts
+  const stats = {
+    total: filteredTransactions.length,
+    pending: filteredTransactions.filter(tx => tx.status === TransactionStatus.PENDING).length,
+    validated: filteredTransactions.filter(tx => tx.status === TransactionStatus.VALIDATED).length,
+    completed: filteredTransactions.filter(tx => tx.status === TransactionStatus.COMPLETED).length,
+    cancelled: filteredTransactions.filter(tx => tx.status === TransactionStatus.CANCELLED).length,
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -196,6 +259,28 @@ export function TransactionList() {
         <CardDescription>
           Liste des transactions récentes dans le système
         </CardDescription>
+        <div className="mt-2 grid grid-cols-1 md:grid-cols-5 gap-2">
+          <div className="bg-[#f3f4f6] p-2 rounded-md text-center">
+            <div className="text-sm text-gray-500">Total</div>
+            <div className="text-lg font-bold">{stats.total}</div>
+          </div>
+          <div className="bg-[#FEF3CF] p-2 rounded-md text-center">
+            <div className="text-sm text-[#F7C33F]">En attente</div>
+            <div className="text-lg font-bold text-[#F7C33F]">{stats.pending}</div>
+          </div>
+          <div className="bg-[#F2C94C]/20 p-2 rounded-md text-center">
+            <div className="text-sm text-[#F7C33F]">Validées</div>
+            <div className="text-lg font-bold text-[#F7C33F]">{stats.validated}</div>
+          </div>
+          <div className="bg-[#43A047]/20 p-2 rounded-md text-center">
+            <div className="text-sm text-[#43A047]">Complétées</div>
+            <div className="text-lg font-bold text-[#43A047]">{stats.completed}</div>
+          </div>
+          <div className="bg-[#FEC6A1] p-2 rounded-md text-center">
+            <div className="text-sm text-[#F97316]">Annulées</div>
+            <div className="text-lg font-bold text-[#F97316]">{stats.cancelled}</div>
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,14 +7,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { 
   Currency, 
   PaymentMethod, 
-  TransactionDirection 
+  TransactionDirection,
+  TransactionStatus 
 } from "@/types";
 import { AVAILABLE_CURRENCIES, CURRENCY_SYMBOLS, DEFAULT_COMMISSION_PERCENTAGES, MOBILE_MONEY_NETWORKS } from "@/lib/constants";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "@/components/ui/sonner";
 import { ArrowRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export function TransactionForm() {
+  const navigate = useNavigate();
   const [direction, setDirection] = useState<TransactionDirection>(TransactionDirection.KINSHASA_TO_DUBAI);
   const [amount, setAmount] = useState<string>("");
   const [currency, setCurrency] = useState<Currency>(Currency.USD);
@@ -69,16 +71,20 @@ export function TransactionForm() {
       return;
     }
     
-    // Create transaction object (in a real app, this would be sent to an API)
+    // Create transaction object
+    const transactionId = "TXN" + Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
+    const now = new Date();
+    
     const transaction = {
+      id: transactionId,
       direction,
       amount: amountValue,
       currency,
       commissionPercentage: commissionValue,
       commissionAmount,
-      totalAmount,
       paymentMethod,
       mobileMoneyNetwork: mobileMoneyNetwork || undefined,
+      status: TransactionStatus.PENDING,
       sender: {
         name: senderName,
         phone: senderPhone,
@@ -89,11 +95,26 @@ export function TransactionForm() {
         name: recipientName,
         phone: recipientPhone
       },
-      notes: notes || undefined
+      notes: notes || undefined,
+      createdBy: "Operator User",
+      createdAt: now,
+      updatedAt: now
     };
     
     console.log("Transaction created:", transaction);
-    toast.success("Transaction créée avec succès");
+    
+    // Ajouter la transaction à la liste existante dans le localStorage
+    const existingTransactions = JSON.parse(localStorage.getItem('transactions') || '[]');
+    const updatedTransactions = [transaction, ...existingTransactions];
+    localStorage.setItem('transactions', JSON.stringify(updatedTransactions));
+    
+    toast.success("Transaction créée avec succès", {
+      description: `Identifiant: ${transactionId}`,
+      action: {
+        label: "Voir les transactions",
+        onClick: () => navigate("/transactions")
+      }
+    });
     
     // Reset form
     setAmount("");
@@ -103,6 +124,9 @@ export function TransactionForm() {
     setRecipientName("");
     setRecipientPhone("");
     setNotes("");
+    
+    // Rediriger vers la liste des transactions
+    navigate("/transactions");
   };
 
   return (

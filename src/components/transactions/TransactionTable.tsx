@@ -1,8 +1,7 @@
-
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Info, Check, X, CheckCircle } from "lucide-react";
+import { Info, Check, X, CheckCircle, Trash2, Edit } from "lucide-react";
 import { Transaction, TransactionDirection, TransactionStatus } from "@/types";
 import { CURRENCY_SYMBOLS } from "@/lib/constants";
 import { useNavigate } from "react-router-dom";
@@ -10,11 +9,20 @@ import { useNavigate } from "react-router-dom";
 interface TransactionTableProps {
   transactions: Transaction[];
   onUpdateStatus: (id: string, status: TransactionStatus) => void;
+  canEdit?: boolean;
+  onEdit?: (id: string) => void;
+  onDelete?: (id: string) => void;
 }
 
-export const TransactionTable = ({ transactions, onUpdateStatus }: TransactionTableProps) => {
+export const TransactionTable = ({
+  transactions,
+  onUpdateStatus,
+  canEdit = false,
+  onEdit,
+  onDelete,
+}: TransactionTableProps) => {
   const navigate = useNavigate();
-  
+
   const getStatusBadge = (status: TransactionStatus) => {
     switch (status) {
       case TransactionStatus.PENDING:
@@ -36,7 +44,6 @@ export const TransactionTable = ({ transactions, onUpdateStatus }: TransactionTa
       : "Dubaï → Kinshasa";
   };
 
-  // Fonction pour naviguer vers les détails de la transaction
   const goToTransactionDetails = (id: string) => {
     navigate(`/transactions/${id}`);
   };
@@ -110,6 +117,34 @@ export const TransactionTable = ({ transactions, onUpdateStatus }: TransactionTa
                     >
                       <Info className="h-4 w-4" />
                     </Button>
+                    {canEdit && (
+                      <>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          title="Modifier"
+                          className="text-[#43A047] hover:bg-[#C6EFD3]"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onEdit?.(transaction.id);
+                          }}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          title="Supprimer"
+                          className="text-[#F97316] hover:bg-[#FFE5E0]"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDelete?.(transaction.id);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </>
+                    )}
                     {transaction.status === TransactionStatus.PENDING && (
                       <>
                         <Button 

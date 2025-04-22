@@ -1,12 +1,12 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Transaction, TransactionStatus, TransactionDirection, Currency, PaymentMethod, UserRole } from "@/types";
+import { Transaction, TransactionStatus, Currency, UserRole } from "@/types";
 import { toast } from "@/components/ui/sonner";
 import { TransactionStats } from "./TransactionStats";
 import { TransactionFilters } from "./TransactionFilters";
 import { TransactionTable } from "./TransactionTable";
 import { filterTransactions, TransactionManager } from "./utils/transactionUtils";
+import { useAuth } from "@/context/AuthContext";
 
 export function TransactionList() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -17,29 +17,17 @@ export function TransactionList() {
   const [paymentMethodFilter, setPaymentMethodFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("all");
 
-  // Effet pour réinitialiser toutes les données au chargement
+  const { user } = useAuth();
+
   useEffect(() => {
-    // Reset TransactionManager stats
-    TransactionManager.resetStats();
-    
-    // Clear localStorage
-    localStorage.clear();
-    
-    // Initialize empty transactions state
-    setTransactions([]);
-    
-    // Afficher une notification de confirmation
-    toast.success("Toutes les données ont été réinitialisées", {
-      description: "Les compteurs et transactions ont été remis à zéro"
-    });
-    
-    // S'abonner aux événements du gestionnaire de transactions
+    // Suppression de la réinitialisation automatique (plus de clear localStorage ou resetStats ici)
+    // Charger toutes les transactions existantes si elles existent
+    loadTransactions();
+
+    // S'abonner uniquement aux événements de création et mise à jour
     const unsubscribeCreated = TransactionManager.subscribe('transaction:created', handleTransactionCreated);
     const unsubscribeUpdated = TransactionManager.subscribe('transaction:updated', handleTransactionUpdated);
-    
-    // Charger les transactions initiales (s'il y en a)
-    loadTransactions();
-    
+
     return () => {
       unsubscribeCreated();
       unsubscribeUpdated();
@@ -49,7 +37,6 @@ export function TransactionList() {
   // Fonction pour charger les transactions depuis localStorage
   const loadTransactions = () => {
     const storedTransactions = localStorage.getItem('transactions');
-    
     if (storedTransactions) {
       try {
         const parsedTransactions = JSON.parse(storedTransactions).map((tx: any) => ({
@@ -58,7 +45,6 @@ export function TransactionList() {
           updatedAt: new Date(tx.updatedAt),
           validatedAt: tx.validatedAt ? new Date(tx.validatedAt) : undefined
         }));
-        
         setTransactions(parsedTransactions);
         TransactionManager.calculateStatsFromTransactions(parsedTransactions);
       } catch (error) {
@@ -74,26 +60,42 @@ export function TransactionList() {
 
   // Gestionnaire pour une nouvelle transaction créée
   const handleTransactionCreated = (transaction: Transaction) => {
+    loadTransactions(); // Recharger les transactions
     toast.success("Nouvelle transaction créée", {
       description: `La transaction ${transaction.id} a été créée avec succès`
     });
-    loadTransactions(); // Recharger les transactions
   };
 
   // Gestionnaire pour une transaction mise à jour
   const handleTransactionUpdated = (transaction: Transaction) => {
-    // Mettre à jour l'état local
     setTransactions(current => {
       const updated = current.map(tx => tx.id === transaction.id ? transaction : tx);
-      
-      // Mettre à jour les statistiques globales
       TransactionManager.calculateStatsFromTransactions(updated);
-      
-      // Sauvegarder dans localStorage
       localStorage.setItem('transactions', JSON.stringify(updated));
-      
       return updated;
     });
+  };
+
+  // Gestion suppression d’une transaction (ADMIN uniquement)
+  const handleDeleteTransaction = (id: string) => {
+    if (!user || user.role !== UserRole.ADMIN) {
+      toast.error("Seul un administrateur peut supprimer une transaction.");
+      return;
+    }
+    // Confirmation
+    if (!window.confirm("Voulez-vous vraiment supprimer cette transaction ?")) return;
+
+    const updatedTransactions = transactions.filter(tx => tx.id !== id);
+    setTransactions(updatedTransactions);
+    localStorage.setItem('transactions', JSON.stringify(updatedTransactions));
+    TransactionManager.calculateStatsFromTransactions(updatedTransactions);
+    toast.success("Transaction supprimée !");
+  };
+
+  // Gestion édition (remonte le contrôle à un parent ou navigation vers la fiche)
+  const handleEditTransaction = (id: string) => {
+    // Simple navigation vers la page de détails (fonction d’édition centralisée)
+    window.location.href = `/transactions/${id}?edit=1`;
   };
 
   const handleUpdateStatus = (id: string, newStatus: TransactionStatus) => {
@@ -181,17 +183,21 @@ export function TransactionList() {
             statusFilter={statusFilter}
             onStatusChange={setStatusFilter}
             directionFilter={directionFilter}
-            onDirectionChange={setDirectionFilter}
+            onDirectionChange={setDirectionChange}
             currencyFilter={currencyFilter}
-            onCurrencyChange={setCurrencyFilter}
+            onCurrencyChange={setCurrencyChange}
             paymentMethodFilter={paymentMethodFilter}
-            onPaymentMethodChange={setPaymentMethodFilter}
+            onPaymentMethodChange={setPaymentMethodChange}
             dateFilter={dateFilter}
             onDateFilterChange={setDateFilter}
           />
           <TransactionTable 
             transactions={filteredTransactions}
             onUpdateStatus={handleUpdateStatus}
+            // Ajout des props d’admin
+            canEdit={!!user && user.role === UserRole.ADMIN}
+            onEdit={handleEditTransaction}
+            onDelete={handleDeleteTransaction}
           />
         </div>
       </CardContent>

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Transaction, TransactionStatus, TransactionDirection, Currency, PaymentMethod, UserRole } from "@/types";
@@ -17,22 +16,26 @@ export function TransactionList() {
   const [paymentMethodFilter, setPaymentMethodFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("all");
 
-  // Charger les transactions et configurer les écouteurs d'événements
+  // Effet pour réinitialiser toutes les données au chargement
   useEffect(() => {
     // Reset TransactionManager stats
     TransactionManager.resetStats();
     
     // Clear localStorage
-    localStorage.removeItem('transactions');
+    localStorage.clear();
     
     // Initialize empty transactions state
     setTransactions([]);
+    
+    // Afficher une notification de confirmation
+    toast.success("Toutes les données ont été réinitialisées", {
+      description: "Les compteurs et transactions ont été remis à zéro"
+    });
     
     // S'abonner aux événements du gestionnaire de transactions
     const unsubscribeCreated = TransactionManager.subscribe('transaction:created', handleTransactionCreated);
     const unsubscribeUpdated = TransactionManager.subscribe('transaction:updated', handleTransactionUpdated);
     
-    // Nettoyer les abonnements lors du démontage du composant
     return () => {
       unsubscribeCreated();
       unsubscribeUpdated();

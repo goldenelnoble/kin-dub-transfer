@@ -21,17 +21,23 @@ export function TransactionList() {
   const { user } = useAuth();
 
   useEffect(() => {
-    // Suppression de la réinitialisation automatique (plus de clear localStorage ou resetStats ici)
-    // Charger toutes les transactions existantes si elles existent
+    // Charger toutes les transactions existantes
     loadTransactions();
 
-    // S'abonner uniquement aux événements de création et mise à jour
+    // S'abonner aux événements de transaction pour des mises à jour en temps réel
     const unsubscribeCreated = TransactionManager.subscribe('transaction:created', handleTransactionCreated);
     const unsubscribeUpdated = TransactionManager.subscribe('transaction:updated', handleTransactionUpdated);
+    const unsubscribeValidated = TransactionManager.subscribe('transaction:validated', handleTransactionUpdated);
+    const unsubscribeCompleted = TransactionManager.subscribe('transaction:completed', handleTransactionUpdated);
+    const unsubscribeCancelled = TransactionManager.subscribe('transaction:cancelled', handleTransactionUpdated);
 
     return () => {
+      // Nettoyage des abonnements lors du démontage du composant
       unsubscribeCreated();
       unsubscribeUpdated();
+      unsubscribeValidated();
+      unsubscribeCompleted();
+      unsubscribeCancelled();
     };
   }, []);
 
@@ -61,7 +67,14 @@ export function TransactionList() {
 
   // Gestionnaire pour une nouvelle transaction créée
   const handleTransactionCreated = (transaction: Transaction) => {
-    loadTransactions(); // Recharger les transactions
+    // Mettre à jour l'état local avec la nouvelle transaction
+    setTransactions(current => {
+      const newTransactions = [transaction, ...current];
+      // Mettre à jour les statistiques globales
+      TransactionManager.calculateStatsFromTransactions(newTransactions);
+      return newTransactions;
+    });
+    
     toast.success("Nouvelle transaction créée", {
       description: `La transaction ${transaction.id} a été créée avec succès`
     });
@@ -71,6 +84,7 @@ export function TransactionList() {
   const handleTransactionUpdated = (transaction: Transaction) => {
     setTransactions(current => {
       const updated = current.map(tx => tx.id === transaction.id ? transaction : tx);
+      // Recalculer les statistiques avec les transactions mises à jour
       TransactionManager.calculateStatsFromTransactions(updated);
       localStorage.setItem('transactions', JSON.stringify(updated));
       return updated;
@@ -123,17 +137,13 @@ export function TransactionList() {
     const result = TransactionManager.validateTransaction(
       transactions,
       id,
-      "Admin User", // Normalement, cela devrait venir de l'utilisateur connecté
+      user?.name || "Admin User", // Utiliser le nom de l'utilisateur connecté si disponible
       action,
-      UserRole.ADMIN // Utilisation de l'énumération UserRole au lieu de la chaîne
+      user?.role || UserRole.ADMIN 
     );
     
     if (result.success) {
-      // Mettre à jour l'état des transactions
-      setTransactions([...transactions]);
-      
-      // Enregistrer les modifications dans localStorage
-      localStorage.setItem('transactions', JSON.stringify(transactions));
+      // Mettre à jour l'état des transactions - déjà géré via les événements
       
       // Afficher une notification appropriée
       const statusMessages = {
@@ -195,7 +205,6 @@ export function TransactionList() {
           <TransactionTable 
             transactions={filteredTransactions}
             onUpdateStatus={handleUpdateStatus}
-            // Ajout des props d'admin
             canEdit={!!user && user.role === UserRole.ADMIN}
             onEdit={handleEditTransaction}
             onDelete={handleDeleteTransaction}

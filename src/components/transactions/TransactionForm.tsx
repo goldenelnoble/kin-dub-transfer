@@ -105,8 +105,10 @@ export function TransactionForm() {
     };
     
     // Utiliser le TransactionManager pour créer et sauvegarder la transaction
-    TransactionManager.createTransaction(transaction);
-    TransactionManager.saveTransaction(transaction);
+    // Cette fonction va déclencher les événements nécessaires pour mettre à jour
+    // tous les composants abonnés
+    const createdTransaction = TransactionManager.createTransaction(transaction);
+    TransactionManager.saveTransaction(createdTransaction);
     
     toast.success("Transaction créée avec succès", {
       description: `Identifiant: ${transactionId}`,

@@ -48,6 +48,7 @@ export const filterTransactions = (
 
 /**
  * Gestionnaire de transactions avec validation par superviseur/administrateur
+ * et mise à jour en temps réel des statistiques
  */
 export class TransactionManager {
   // Statistiques globales
@@ -108,7 +109,31 @@ export class TransactionManager {
     // Emettre l'événement de création
     this.emit('transaction:created', transaction);
     
+    // Mettre à jour les statistiques avec la nouvelle transaction
+    this.updateStatsWithTransaction(transaction);
+    
     return transaction;
+  }
+
+  /**
+   * Mettre à jour les statistiques avec une seule transaction
+   */
+  private static updateStatsWithTransaction(transaction: Transaction) {
+    this.stats.transactionTotal++;
+    
+    if (transaction.status === TransactionStatus.COMPLETED) {
+      this.stats.transactionCompletee++;
+      this.stats.montantTotal += transaction.amount;
+      this.stats.commissionTotale += transaction.commissionAmount;
+    } 
+    else if (transaction.status === TransactionStatus.VALIDATED) {
+      this.stats.transactionValidee++;
+    } 
+    else if (transaction.status === TransactionStatus.CANCELLED) {
+      this.stats.transactionAnnulee++;
+    }
+    
+    return this.getStats();
   }
 
   /**
@@ -194,12 +219,9 @@ export class TransactionManager {
       updatedTransaction.validatedBy = validator;
       updatedTransaction.validatedAt = now;
       
-      // Mise à jour des statistiques
-      this.stats.transactionValidee++;
-      
-      if (this.stats.transactionTotal === 0) {
-        // Si pas encore comptabilisée dans le total
-        this.stats.transactionTotal++;
+      // Mettre à jour les statistiques
+      if (transaction.status !== TransactionStatus.VALIDATED) {
+        this.stats.transactionValidee++;
       }
       
       // Émettre l'événement
@@ -207,6 +229,7 @@ export class TransactionManager {
     } 
     else if (action === "complete") {
       // Mettre à jour en "complétée"
+      const wasAlreadyCompleted = transaction.status === TransactionStatus.COMPLETED;
       updatedTransaction.status = TransactionStatus.COMPLETED;
       
       // Si nécessaire, enregistrer qui a complété la transaction
@@ -216,32 +239,27 @@ export class TransactionManager {
       }
       
       // Mise à jour des statistiques
-      this.stats.transactionCompletee++;
-      
-      if (this.stats.transactionTotal === 0) {
-        // Si pas encore comptabilisée dans le total
-        this.stats.transactionTotal++;
+      if (!wasAlreadyCompleted) {
+        this.stats.transactionCompletee++;
+        
+        // Mettre à jour les montants
+        this.stats.montantTotal += transaction.amount;
+        this.stats.commissionTotale += transaction.commissionAmount;
       }
-      
-      // Mettre à jour les montants
-      this.stats.montantTotal += transaction.amount;
-      this.stats.commissionTotale += transaction.commissionAmount;
       
       // Émettre l'événement
       this.emit('transaction:completed', updatedTransaction);
     } 
     else if (action === "cancel") {
       // Mettre à jour en "annulée"
+      const wasAlreadyCancelled = transaction.status === TransactionStatus.CANCELLED;
       updatedTransaction.status = TransactionStatus.CANCELLED;
       updatedTransaction.validatedBy = validator;
       updatedTransaction.validatedAt = now;
       
       // Mise à jour des statistiques
-      this.stats.transactionAnnulee++;
-      
-      if (this.stats.transactionTotal === 0) {
-        // Si pas encore comptabilisée dans le total
-        this.stats.transactionTotal++;
+      if (!wasAlreadyCancelled) {
+        this.stats.transactionAnnulee++;
       }
       
       // Émettre l'événement
@@ -250,6 +268,9 @@ export class TransactionManager {
     
     // Mise à jour de la transaction
     transactions[transactionIndex] = updatedTransaction;
+    
+    // Sauvegarder les transactions mises à jour dans localStorage
+    localStorage.setItem('transactions', JSON.stringify(transactions));
     
     // Émettre l'événement de mise à jour
     this.emit('transaction:updated', updatedTransaction);

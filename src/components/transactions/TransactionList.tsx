@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Transaction, TransactionStatus, Currency, UserRole } from "@/types";
@@ -76,7 +77,7 @@ export function TransactionList() {
     });
   };
 
-  // Gestion suppression d’une transaction (ADMIN uniquement)
+  // Gestion suppression d'une transaction (ADMIN uniquement)
   const handleDeleteTransaction = (id: string) => {
     if (!user || user.role !== UserRole.ADMIN) {
       toast.error("Seul un administrateur peut supprimer une transaction.");
@@ -94,7 +95,7 @@ export function TransactionList() {
 
   // Gestion édition (remonte le contrôle à un parent ou navigation vers la fiche)
   const handleEditTransaction = (id: string) => {
-    // Simple navigation vers la page de détails (fonction d’édition centralisée)
+    // Simple navigation vers la page de détails (fonction d'édition centralisée)
     window.location.href = `/transactions/${id}?edit=1`;
   };
 
@@ -183,18 +184,18 @@ export function TransactionList() {
             statusFilter={statusFilter}
             onStatusChange={setStatusFilter}
             directionFilter={directionFilter}
-            onDirectionChange={setDirectionChange}
+            onDirectionChange={setDirectionFilter}
             currencyFilter={currencyFilter}
-            onCurrencyChange={setCurrencyChange}
+            onCurrencyChange={setCurrencyFilter}
             paymentMethodFilter={paymentMethodFilter}
-            onPaymentMethodChange={setPaymentMethodChange}
+            onPaymentMethodChange={setPaymentMethodFilter}
             dateFilter={dateFilter}
             onDateFilterChange={setDateFilter}
           />
           <TransactionTable 
             transactions={filteredTransactions}
             onUpdateStatus={handleUpdateStatus}
-            // Ajout des props d’admin
+            // Ajout des props d'admin
             canEdit={!!user && user.role === UserRole.ADMIN}
             onEdit={handleEditTransaction}
             onDelete={handleDeleteTransaction}

@@ -67,7 +67,8 @@ export class TransactionManager {
     'transaction:updated': [],
     'transaction:validated': [],
     'transaction:completed': [],
-    'transaction:cancelled': []
+    'transaction:cancelled': [],
+    'stats:updated': []  // Nouvel événement pour les mises à jour de statistiques
   };
 
   /**
@@ -106,6 +107,9 @@ export class TransactionManager {
     // Assurons-nous que la transaction est en statut "pending" (en attente)
     transaction.status = TransactionStatus.PENDING;
     
+    // Sauvegarder la transaction immédiatement
+    this.saveTransaction(transaction);
+    
     // Emettre l'événement de création
     this.emit('transaction:created', transaction);
     
@@ -132,6 +136,9 @@ export class TransactionManager {
     else if (transaction.status === TransactionStatus.CANCELLED) {
       this.stats.transactionAnnulee++;
     }
+    
+    // Émettre l'événement de mise à jour des stats
+    this.emit('stats:updated', this.getStats());
     
     return this.getStats();
   }
@@ -274,6 +281,8 @@ export class TransactionManager {
     
     // Émettre l'événement de mise à jour
     this.emit('transaction:updated', updatedTransaction);
+    // Émettre également l'événement de mise à jour des statistiques
+    this.emit('stats:updated', this.getStats());
     
     return {
       transaction: updatedTransaction,
@@ -295,6 +304,9 @@ export class TransactionManager {
       montantTotal: 0,
       commissionTotale: 0
     };
+    
+    // Notification que les stats ont été réinitialisées
+    this.emit('stats:updated', this.getStats());
   }
 
   /**
@@ -319,6 +331,9 @@ export class TransactionManager {
         this.stats.transactionAnnulee++;
       }
     });
+    
+    // Notifier tous les composants que les statistiques ont changé
+    this.emit('stats:updated', this.getStats());
     
     return this.getStats();
   }

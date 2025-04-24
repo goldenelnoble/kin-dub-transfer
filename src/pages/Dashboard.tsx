@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { CreateTransactionButton } from "@/components/transactions/CreateTransactionButton";
 import { useState, useEffect } from "react";
 import { TransactionManager } from "@/components/transactions/utils/transactionUtils";
+import { toast } from "@/components/ui/sonner";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -20,51 +21,21 @@ const Dashboard = () => {
     totalCommissions: 0
   });
   const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // Charger les statistiques au montage et lors des mises à jour
   useEffect(() => {
-    // Récupérer les statistiques du gestionnaire de transactions
-    const transactionStats = TransactionManager.getStats();
-    
-    // Convertir les statistiques du format du gestionnaire au format du tableau de bord
-    setStats({
-      totalTransactions: transactionStats.transactionTotal,
-      pendingTransactions: transactionStats.transactionTotal - 
-                          (transactionStats.transactionCompletee + 
-                           transactionStats.transactionValidee + 
-                           transactionStats.transactionAnnulee),
-      completedTransactions: transactionStats.transactionCompletee,
-      cancelledTransactions: transactionStats.transactionAnnulee,
-      totalAmount: transactionStats.montantTotal,
-      totalCommissions: transactionStats.commissionTotale
-    });
-
-    // Charger les transactions récentes depuis le localStorage
-    const storedTransactions = localStorage.getItem('transactions');
-    if (storedTransactions) {
-      const allTransactions = JSON.parse(storedTransactions).map((tx: any) => ({
-        ...tx,
-        createdAt: new Date(tx.createdAt),
-        updatedAt: new Date(tx.updatedAt),
-        validatedAt: tx.validatedAt ? new Date(tx.validatedAt) : undefined
-      }));
-      
-      // Prendre les 3 transactions les plus récentes
-      const recent = allTransactions
-        .sort((a: Transaction, b: Transaction) => 
-          b.createdAt.getTime() - a.createdAt.getTime()
-        )
-        .slice(0, 3);
-      
-      setRecentTransactions(recent);
-    }
+    // Charger les données initiales
+    updateDashboard();
+    setIsInitialized(true);
 
     // S'abonner aux événements pour mettre à jour automatiquement les stats et transactions
-    const unsubscribeCreated = TransactionManager.subscribe('transaction:created', updateDashboard);
+    const unsubscribeCreated = TransactionManager.subscribe('transaction:created', handleTransactionCreated);
     const unsubscribeUpdated = TransactionManager.subscribe('transaction:updated', updateDashboard);
     const unsubscribeValidated = TransactionManager.subscribe('transaction:validated', updateDashboard);
     const unsubscribeCompleted = TransactionManager.subscribe('transaction:completed', updateDashboard);
     const unsubscribeCancelled = TransactionManager.subscribe('transaction:cancelled', updateDashboard);
+    const unsubscribeStats = TransactionManager.subscribe('stats:updated', handleStatsUpdated);
     
     return () => {
       unsubscribeCreated();
@@ -72,25 +43,40 @@ const Dashboard = () => {
       unsubscribeValidated();
       unsubscribeCompleted();
       unsubscribeCancelled();
+      unsubscribeStats();
     };
   }, []);
 
-  // Fonction pour mettre à jour les statistiques et transactions récentes
-  const updateDashboard = () => {
-    const transactionStats = TransactionManager.getStats();
-    setStats({
-      totalTransactions: transactionStats.transactionTotal,
-      pendingTransactions: transactionStats.transactionTotal - 
-                          (transactionStats.transactionCompletee + 
-                           transactionStats.transactionValidee + 
-                           transactionStats.transactionAnnulee),
-      completedTransactions: transactionStats.transactionCompletee,
-      cancelledTransactions: transactionStats.transactionAnnulee,
-      totalAmount: transactionStats.montantTotal,
-      totalCommissions: transactionStats.commissionTotale
-    });
+  // Gestion spécifique pour les nouvelles transactions
+  const handleTransactionCreated = (transaction: Transaction) => {
+    // Mise à jour des transactions récentes avec priorité pour la nouvelle
+    updateRecentTransactions();
+    
+    // Notification visuelle pour l'utilisateur
+    if (isInitialized) {
+      toast.success("Nouvelle transaction créée", {
+        description: `La transaction ${transaction.id} a été ajoutée avec succès`,
+      });
+    }
+  };
 
-    // Mettre à jour les transactions récentes
+  // Gestion des mises à jour de statistiques
+  const handleStatsUpdated = (updatedStats: typeof TransactionManager.stats) => {
+    setStats({
+      totalTransactions: updatedStats.transactionTotal,
+      pendingTransactions: updatedStats.transactionTotal - 
+                          (updatedStats.transactionCompletee + 
+                           updatedStats.transactionValidee + 
+                           updatedStats.transactionAnnulee),
+      completedTransactions: updatedStats.transactionCompletee,
+      cancelledTransactions: updatedStats.transactionAnnulee,
+      totalAmount: updatedStats.montantTotal,
+      totalCommissions: updatedStats.commissionTotale
+    });
+  };
+
+  // Mise à jour des transactions récentes uniquement
+  const updateRecentTransactions = () => {
     const storedTransactions = localStorage.getItem('transactions');
     if (storedTransactions) {
       const allTransactions = JSON.parse(storedTransactions).map((tx: any) => ({
@@ -110,6 +96,24 @@ const Dashboard = () => {
     } else {
       setRecentTransactions([]);
     }
+  };
+
+  // Fonction pour mettre à jour les statistiques et transactions récentes
+  const updateDashboard = () => {
+    const transactionStats = TransactionManager.getStats();
+    setStats({
+      totalTransactions: transactionStats.transactionTotal,
+      pendingTransactions: transactionStats.transactionTotal - 
+                          (transactionStats.transactionCompletee + 
+                           transactionStats.transactionValidee + 
+                           transactionStats.transactionAnnulee),
+      completedTransactions: transactionStats.transactionCompletee,
+      cancelledTransactions: transactionStats.transactionAnnulee,
+      totalAmount: transactionStats.montantTotal,
+      totalCommissions: transactionStats.commissionTotale
+    });
+
+    updateRecentTransactions();
   };
 
   // Nouvelle navigation après clic sur une statistique

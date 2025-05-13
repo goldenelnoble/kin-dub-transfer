@@ -61,7 +61,7 @@ const Dashboard = () => {
   };
 
   // Gestion des mises à jour de statistiques
-  const handleStatsUpdated = (updatedStats: typeof TransactionManager.stats) => {
+  const handleStatsUpdated = (updatedStats: ReturnType<typeof TransactionManager.getStats>) => {
     setStats({
       totalTransactions: updatedStats.transactionTotal,
       pendingTransactions: updatedStats.transactionTotal - 

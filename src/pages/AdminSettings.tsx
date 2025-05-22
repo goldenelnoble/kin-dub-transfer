@@ -9,19 +9,30 @@ import { toast } from "@/components/ui/sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { Shield, Database, Trash2, RotateCcw, Save, RefreshCw } from "lucide-react";
+import { Shield, Database, Trash2, RotateCcw, Save, RefreshCw, DollarSign, Percent } from "lucide-react";
 import { DataManagementService, AuditLogEntry } from "@/services/DataManagementService";
-import { UserRole } from "@/types";
+import { UserRole, Currency } from "@/types";
 import { useNavigate } from "react-router-dom";
+import { DEFAULT_COMMISSION_PERCENTAGES, CURRENCY_SYMBOLS, AVAILABLE_CURRENCIES } from "@/lib/constants";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function AdminSettings() {
   const { user, hasPermission } = useAuth();
   const navigate = useNavigate();
   const [isConfirmPasswordOpen, setIsConfirmPasswordOpen] = useState(false);
   const [password, setPassword] = useState("");
-  const [pendingAction, setPendingAction] = useState<null | 'reset' | 'backup' | 'restore'>(null);
+  const [pendingAction, setPendingAction] = useState<null | 'reset' | 'backup' | 'restore' | 'saveFinance'>(null);
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>(() => DataManagementService.getAuditLog());
   const [searchTerm, setSearchTerm] = useState("");
+
+  // Financial parameters state
+  const [kinshasaToDubaiCommission, setKinshasaToDubaiCommission] = useState(DEFAULT_COMMISSION_PERCENTAGES.kinshasa_to_dubai);
+  const [dubaiToKinshasaCommission, setDubaiToKinshasaCommission] = useState(DEFAULT_COMMISSION_PERCENTAGES.dubai_to_kinshasa);
+  const [defaultCurrency, setDefaultCurrency] = useState<Currency>(Currency.USD);
+  const [minTransactionAmount, setMinTransactionAmount] = useState(10);
+  const [maxTransactionAmount, setMaxTransactionAmount] = useState(100000);
 
   // Vérifier les autorisations
   if (!hasPermission("canConfigureSystem")) {
@@ -35,6 +46,12 @@ export default function AdminSettings() {
     log.user.toLowerCase().includes(searchTerm.toLowerCase()) ||
     log.details.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Save financial settings
+  const saveFinancialSettings = () => {
+    setPendingAction('saveFinance');
+    setIsConfirmPasswordOpen(true);
+  };
 
   // Exécuter l'action après confirmation
   const executeAction = () => {
@@ -68,6 +85,35 @@ export default function AdminSettings() {
       } else {
         toast.error("Une erreur est survenue lors de la restauration de la sauvegarde");
       }
+    } else if (pendingAction === 'saveFinance') {
+      // Simuler la sauvegarde des paramètres financiers
+      // Dans une vraie application, vous appelleriez un service pour mettre à jour ces valeurs dans la base de données
+      const updatedSettings = {
+        commissionPercentages: {
+          kinshasa_to_dubai: kinshasaToDubaiCommission,
+          dubai_to_kinshasa: dubaiToKinshasaCommission,
+        },
+        defaultCurrency,
+        transactionLimits: {
+          min: minTransactionAmount,
+          max: maxTransactionAmount,
+        }
+      };
+      
+      // Log l'action dans le journal d'audit
+      DataManagementService.addAuditLogEntry({
+        id: String(Date.now()),
+        date: new Date().toISOString(),
+        user: user?.name || "Unknown",
+        action: "Mise à jour des paramètres financiers",
+        status: "Succès",
+        details: `Commissions: ${kinshasaToDubaiCommission}% / ${dubaiToKinshasaCommission}%, Devise par défaut: ${defaultCurrency}`
+      });
+      
+      // Mettre à jour les logs d'audit pour l'affichage
+      setAuditLogs(DataManagementService.getAuditLog());
+      
+      toast.success("Paramètres financiers mis à jour avec succès");
     }
     
     // Rafraîchir les logs
@@ -103,11 +149,135 @@ export default function AdminSettings() {
           </div>
         </div>
 
-        <Tabs defaultValue="data" className="w-full">
+        <Tabs defaultValue="finance" className="w-full">
           <TabsList className="mb-4">
+            <TabsTrigger value="finance">Paramètres Financiers</TabsTrigger>
             <TabsTrigger value="data">Gestion des données</TabsTrigger>
             <TabsTrigger value="audit">Journal d'audit complet</TabsTrigger>
           </TabsList>
+          
+          <TabsContent value="finance">
+            <Card>
+              <CardHeader className="bg-amber-50">
+                <CardTitle className="flex items-center gap-2 text-[#F97316]">
+                  <DollarSign className="h-5 w-5" />
+                  Paramètres Financiers
+                </CardTitle>
+                <CardDescription>
+                  Configuration des commissions et autres paramètres financiers
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6 pt-6">
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Commissions de transaction</h3>
+                  <Separator />
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="kinshasa-dubai">
+                        Commission Kinshasa → Dubai (%)
+                      </Label>
+                      <div className="flex items-center">
+                        <Input
+                          id="kinshasa-dubai"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          max="20"
+                          value={kinshasaToDubaiCommission}
+                          onChange={(e) => setKinshasaToDubaiCommission(parseFloat(e.target.value))}
+                          className="mr-2"
+                        />
+                        <Percent className="h-4 w-4 text-gray-500" />
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        Taux appliqué aux transferts de Kinshasa vers Dubai
+                      </p>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="dubai-kinshasa">
+                        Commission Dubai → Kinshasa (%)
+                      </Label>
+                      <div className="flex items-center">
+                        <Input
+                          id="dubai-kinshasa"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          max="20"
+                          value={dubaiToKinshasaCommission}
+                          onChange={(e) => setDubaiToKinshasaCommission(parseFloat(e.target.value))}
+                          className="mr-2"
+                        />
+                        <Percent className="h-4 w-4 text-gray-500" />
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        Taux appliqué aux transferts de Dubai vers Kinshasa
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Devises et limites</h3>
+                  <Separator />
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="default-currency">Devise par défaut</Label>
+                      <Select
+                        value={defaultCurrency}
+                        onValueChange={(value) => setDefaultCurrency(value as Currency)}
+                      >
+                        <SelectTrigger id="default-currency">
+                          <SelectValue placeholder="Sélectionner une devise" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {AVAILABLE_CURRENCIES.map((currency) => (
+                            <SelectItem key={currency} value={currency}>
+                              {currency} ({CURRENCY_SYMBOLS[currency]})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="min-amount">Montant minimum (USD)</Label>
+                      <Input
+                        id="min-amount"
+                        type="number"
+                        min="1"
+                        value={minTransactionAmount}
+                        onChange={(e) => setMinTransactionAmount(parseInt(e.target.value))}
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="max-amount">Montant maximum (USD)</Label>
+                      <Input
+                        id="max-amount"
+                        type="number"
+                        min="1"
+                        value={maxTransactionAmount}
+                        onChange={(e) => setMaxTransactionAmount(parseInt(e.target.value))}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+              <CardFooter>
+                <Button 
+                  onClick={saveFinancialSettings}
+                  className="ml-auto bg-[#43A047] hover:bg-[#2E7D32]"
+                >
+                  <Save className="mr-2 h-4 w-4" />
+                  Sauvegarder les paramètres
+                </Button>
+              </CardFooter>
+            </Card>
+          </TabsContent>
           
           <TabsContent value="data">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

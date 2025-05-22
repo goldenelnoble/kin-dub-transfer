@@ -114,6 +114,24 @@ const TransactionDetail = () => {
     }
   };
 
+  // Génère l'URL de vérification pour l'application actuelle
+  const getVerificationUrl = (transaction: Transaction) => {
+    const verificationData = {
+      id: transaction.id,
+      amount: transaction.amount,
+      currency: transaction.currency,
+      createdAt: transaction.createdAt.toISOString(),
+      sender: transaction.sender.name,
+      recipient: transaction.recipient.name,
+    };
+    
+    // Create a base64 encoded verification string
+    const encodedData = btoa(JSON.stringify(verificationData));
+    
+    // Use the current origin for verification instead of hardcoded domain
+    return `${window.location.origin}/verify?data=${encodedData}`;
+  };
+
   const viewReceipt = () => {
     if (transaction) {
       setShowReceipt(true);
@@ -341,7 +359,12 @@ const TransactionDetail = () => {
             <DialogHeader>
               <DialogTitle>Reçu de la transaction</DialogTitle>
             </DialogHeader>
-            <TransactionReceipt transaction={transaction} />
+            {transaction && (
+              <TransactionReceipt 
+                transaction={transaction} 
+                verificationUrl={getVerificationUrl(transaction)} 
+              />
+            )}
           </DialogContent>
         </Dialog>
       </div>

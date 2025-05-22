@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/context/AuthContext";
@@ -100,15 +99,13 @@ export default function AdminSettings() {
         }
       };
       
-      // Log l'action dans le journal d'audit
-      DataManagementService.addAuditLogEntry({
-        id: String(Date.now()),
-        date: new Date().toISOString(),
-        user: user?.name || "Unknown",
-        action: "Mise à jour des paramètres financiers",
-        status: "Succès",
-        details: `Commissions: ${kinshasaToDubaiCommission}% / ${dubaiToKinshasaCommission}%, Devise par défaut: ${defaultCurrency}`
-      });
+      // Log l'action dans le journal d'audit - Changing from addAuditLogEntry to logAction
+      DataManagementService.logAction(
+        "Mise à jour des paramètres financiers",
+        user?.name || "Unknown",
+        "Succès",
+        `Commissions: ${kinshasaToDubaiCommission}% / ${dubaiToKinshasaCommission}%, Devise par défaut: ${defaultCurrency}`
+      );
       
       // Mettre à jour les logs d'audit pour l'affichage
       setAuditLogs(DataManagementService.getAuditLog());

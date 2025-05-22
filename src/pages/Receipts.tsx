@@ -61,6 +61,24 @@ const Receipts = () => {
     });
   };
 
+  // Génère l'URL de vérification pour l'application actuelle
+  const getVerificationUrl = (transaction: Transaction) => {
+    const verificationData = {
+      id: transaction.id,
+      amount: transaction.amount,
+      currency: transaction.currency,
+      createdAt: transaction.createdAt.toISOString(),
+      sender: transaction.sender.name,
+      recipient: transaction.recipient.name,
+    };
+    
+    // Create a base64 encoded verification string
+    const encodedData = btoa(JSON.stringify(verificationData));
+    
+    // Use the current origin for verification instead of hardcoded domain
+    return `${window.location.origin}/verify?data=${encodedData}`;
+  };
+
   return (
     <AppLayout>
       <div className="space-y-6">
@@ -152,7 +170,10 @@ const Receipts = () => {
 
           <TabsContent value="receipt">
             {selectedTransaction ? (
-              <TransactionReceipt transaction={selectedTransaction} />
+              <TransactionReceipt 
+                transaction={selectedTransaction} 
+                verificationUrl={getVerificationUrl(selectedTransaction)} 
+              />
             ) : (
               <Card>
                 <CardContent className="p-6 text-center">

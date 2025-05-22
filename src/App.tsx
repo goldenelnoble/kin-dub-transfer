@@ -15,6 +15,7 @@ import AuditLog from "./pages/AuditLog";
 import Users from "./pages/Users";
 import NotFound from "./pages/NotFound";
 import AdminSettings from "./pages/AdminSettings";
+import Verify from "./pages/Verify";
 
 const queryClient = new QueryClient();
 
@@ -35,6 +36,7 @@ function App() {
           <Route path="/audit-log" element={<AuditLog />} />
           <Route path="/users" element={<Users />} />
           <Route path="/admin-settings" element={<AdminSettings />} />
+          <Route path="/verify" element={<Verify />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </QueryClientProvider>

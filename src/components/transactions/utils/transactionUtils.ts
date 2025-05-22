@@ -1,4 +1,3 @@
-
 import { Transaction, TransactionStatus, UserRole } from "@/types";
 
 export const filterTransactions = (
@@ -68,7 +67,7 @@ export class TransactionManager {
     'transaction:validated': [],
     'transaction:completed': [],
     'transaction:cancelled': [],
-    'stats:updated': []  // Nouvel événement pour les mises à jour de statistiques
+    'stats:updated': []  // Événement pour les mises à jour de statistiques
   };
 
   /**
@@ -89,7 +88,13 @@ export class TransactionManager {
    */
   private static emit(event: string, data: any) {
     if (this.listeners[event]) {
-      this.listeners[event].forEach(callback => callback(data));
+      this.listeners[event].forEach(callback => {
+        try {
+          callback(data);
+        } catch (error) {
+          console.error(`Erreur dans le gestionnaire d'événement ${event}:`, error);
+        }
+      });
     }
   }
 
@@ -110,13 +115,34 @@ export class TransactionManager {
     // Sauvegarder la transaction immédiatement
     this.saveTransaction(transaction);
     
-    // Emettre l'événement de création
+    // Récupérer toutes les transactions pour recalculer les statistiques
+    const existingTransactions = this.getAllTransactions();
+    this.calculateStatsFromTransactions(existingTransactions);
+    
+    // Émettre l'événement de création
     this.emit('transaction:created', transaction);
     
-    // Mettre à jour les statistiques avec la nouvelle transaction
-    this.updateStatsWithTransaction(transaction);
-    
     return transaction;
+  }
+  
+  /**
+   * Récupérer toutes les transactions du localStorage
+   */
+  static getAllTransactions(): Transaction[] {
+    try {
+      const storedTransactions = localStorage.getItem('transactions');
+      if (storedTransactions) {
+        return JSON.parse(storedTransactions).map((tx: any) => ({
+          ...tx,
+          createdAt: new Date(tx.createdAt),
+          updatedAt: new Date(tx.updatedAt),
+          validatedAt: tx.validatedAt ? new Date(tx.validatedAt) : undefined
+        }));
+      }
+    } catch (error) {
+      console.error("Erreur lors de la récupération des transactions:", error);
+    }
+    return [];
   }
 
   /**
@@ -148,7 +174,7 @@ export class TransactionManager {
    */
   static saveTransaction(transaction: Transaction) {
     // Récupérer les transactions existantes
-    const existingTransactions = JSON.parse(localStorage.getItem('transactions') || '[]');
+    const existingTransactions = this.getAllTransactions();
     
     // Vérifier si la transaction existe déjà
     const existingIndex = existingTransactions.findIndex((tx: Transaction) => tx.id === transaction.id);
@@ -162,7 +188,14 @@ export class TransactionManager {
     }
     
     // Sauvegarder les transactions
-    localStorage.setItem('transactions', JSON.stringify(existingTransactions));
+    try {
+      localStorage.setItem('transactions', JSON.stringify(existingTransactions));
+      
+      // Déclencher une mise à jour des statistiques
+      this.calculateStatsFromTransactions(existingTransactions);
+    } catch (error) {
+      console.error("Erreur lors de la sauvegarde des transactions:", error);
+    }
     
     return transaction;
   }
@@ -281,13 +314,14 @@ export class TransactionManager {
     
     // Émettre l'événement de mise à jour
     this.emit('transaction:updated', updatedTransaction);
-    // Émettre également l'événement de mise à jour des statistiques
-    this.emit('stats:updated', this.getStats());
+    
+    // Recalculer les statistiques avec toutes les transactions à jour
+    this.calculateStatsFromTransactions(transactions);
     
     return {
       transaction: updatedTransaction,
       success: true,
-      message: `Transaction ${transactionId} ${action === "validate" ? "validée" : action === "complete" ? "complétée" : "annulée"} avec succès`,
+      message: `Transaction mise à jour avec succès`,
       stats: this.getStats()
     };
   }

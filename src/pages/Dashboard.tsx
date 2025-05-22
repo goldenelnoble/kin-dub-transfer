@@ -2,7 +2,7 @@
 import { AppLayout } from "@/components/layout/AppLayout";
 import { DashboardSummary } from "@/components/dashboard/DashboardSummary";
 import { Currency, DashboardStats, Transaction } from "@/types";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ChartBar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { CreateTransactionButton } from "@/components/transactions/CreateTransactionButton";
@@ -22,12 +22,14 @@ const Dashboard = () => {
   });
   const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Charger les statistiques au montage et lors des mises à jour
   useEffect(() => {
     // Charger les données initiales
     updateDashboard();
     setIsInitialized(true);
+    setIsLoading(false);
 
     // S'abonner aux événements pour mettre à jour automatiquement les stats et transactions
     const unsubscribeCreated = TransactionManager.subscribe('transaction:created', handleTransactionCreated);
@@ -49,8 +51,8 @@ const Dashboard = () => {
 
   // Gestion spécifique pour les nouvelles transactions
   const handleTransactionCreated = (transaction: Transaction) => {
-    // Mise à jour des transactions récentes avec priorité pour la nouvelle
-    updateRecentTransactions();
+    // Mise à jour immédiate des statistiques
+    updateDashboard();
     
     // Notification visuelle pour l'utilisateur
     if (isInitialized) {
@@ -73,26 +75,34 @@ const Dashboard = () => {
       totalAmount: updatedStats.montantTotal,
       totalCommissions: updatedStats.commissionTotale
     });
+
+    // Mise à jour immédiate des transactions récentes également
+    updateRecentTransactions();
   };
 
   // Mise à jour des transactions récentes uniquement
   const updateRecentTransactions = () => {
     const storedTransactions = localStorage.getItem('transactions');
     if (storedTransactions) {
-      const allTransactions = JSON.parse(storedTransactions).map((tx: any) => ({
-        ...tx,
-        createdAt: new Date(tx.createdAt),
-        updatedAt: new Date(tx.updatedAt),
-        validatedAt: tx.validatedAt ? new Date(tx.validatedAt) : undefined
-      }));
-      
-      const recent = allTransactions
-        .sort((a: Transaction, b: Transaction) => 
-          b.createdAt.getTime() - a.createdAt.getTime()
-        )
-        .slice(0, 3);
-      
-      setRecentTransactions(recent);
+      try {
+        const allTransactions = JSON.parse(storedTransactions).map((tx: any) => ({
+          ...tx,
+          createdAt: new Date(tx.createdAt),
+          updatedAt: new Date(tx.updatedAt),
+          validatedAt: tx.validatedAt ? new Date(tx.validatedAt) : undefined
+        }));
+        
+        const recent = allTransactions
+          .sort((a: Transaction, b: Transaction) => 
+            b.createdAt.getTime() - a.createdAt.getTime()
+          )
+          .slice(0, 3);
+        
+        setRecentTransactions(recent);
+      } catch (error) {
+        console.error("Erreur lors du chargement des transactions récentes:", error);
+        setRecentTransactions([]);
+      }
     } else {
       setRecentTransactions([]);
     }
@@ -100,19 +110,40 @@ const Dashboard = () => {
 
   // Fonction pour mettre à jour les statistiques et transactions récentes
   const updateDashboard = () => {
-    const transactionStats = TransactionManager.getStats();
-    setStats({
-      totalTransactions: transactionStats.transactionTotal,
-      pendingTransactions: transactionStats.transactionTotal - 
-                          (transactionStats.transactionCompletee + 
-                           transactionStats.transactionValidee + 
-                           transactionStats.transactionAnnulee),
-      completedTransactions: transactionStats.transactionCompletee,
-      cancelledTransactions: transactionStats.transactionAnnulee,
-      totalAmount: transactionStats.montantTotal,
-      totalCommissions: transactionStats.commissionTotale
-    });
+    // Vérifier que les transactions existent
+    const storedTransactions = localStorage.getItem('transactions');
+    if (storedTransactions) {
+      try {
+        // Forcer le recalcul complet des statistiques
+        const parsedTransactions = JSON.parse(storedTransactions).map((tx: any) => ({
+          ...tx,
+          createdAt: new Date(tx.createdAt),
+          updatedAt: new Date(tx.updatedAt),
+          validatedAt: tx.validatedAt ? new Date(tx.validatedAt) : undefined
+        }));
+        
+        // Recalculer les statistiques à partir de toutes les transactions
+        TransactionManager.calculateStatsFromTransactions(parsedTransactions);
+        
+        // Obtenir les statistiques mises à jour
+        const transactionStats = TransactionManager.getStats();
+        setStats({
+          totalTransactions: transactionStats.transactionTotal,
+          pendingTransactions: transactionStats.transactionTotal - 
+                            (transactionStats.transactionCompletee + 
+                             transactionStats.transactionValidee + 
+                             transactionStats.transactionAnnulee),
+          completedTransactions: transactionStats.transactionCompletee,
+          cancelledTransactions: transactionStats.transactionAnnulee,
+          totalAmount: transactionStats.montantTotal,
+          totalCommissions: transactionStats.commissionTotale
+        });
+      } catch (error) {
+        console.error("Erreur lors de la mise à jour du tableau de bord:", error);
+      }
+    }
 
+    // Mettre à jour les transactions récentes dans tous les cas
     updateRecentTransactions();
   };
 
@@ -152,11 +183,17 @@ const Dashboard = () => {
           <CreateTransactionButton />
         </div>
 
-        <DashboardSummary 
-          stats={stats} 
-          currency={Currency.USD}
-          onStatClick={handleSummaryClick}
-        />
+        {isLoading ? (
+          <div className="flex items-center justify-center p-8">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#F97316]"></div>
+          </div>
+        ) : (
+          <DashboardSummary 
+            stats={stats} 
+            currency={Currency.USD}
+            onStatClick={handleSummaryClick}
+          />
+        )}
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <div className="col-span-2">
@@ -166,7 +203,10 @@ const Dashboard = () => {
               </div>
               <div className="p-6">
                 <div className="h-[200px] bg-[#FEF7CD] rounded-md flex items-center justify-center">
-                  <p className="text-[#43A047]">Graphique d'activité des transactions</p>
+                  <div className="flex flex-col items-center text-[#43A047]">
+                    <ChartBar className="h-8 w-8 mb-2" />
+                    <p>Graphique d'activité des transactions</p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -182,11 +222,19 @@ const Dashboard = () => {
               </div>
               <div className="p-6">
                 <div className="space-y-4">
-                  {recentTransactions.length === 0 ? (
+                  {isLoading ? (
+                    <div className="flex items-center justify-center p-4">
+                      <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-[#F97316]"></div>
+                    </div>
+                  ) : recentTransactions.length === 0 ? (
                     <p className="text-center text-muted-foreground">Aucune transaction récente</p>
                   ) : (
                     recentTransactions.map(transaction => (
-                      <div key={transaction.id} className="flex items-center justify-between border-b pb-2 last:border-0 last:pb-0">
+                      <div 
+                        key={transaction.id} 
+                        className="flex items-center justify-between border-b pb-2 last:border-0 last:pb-0 cursor-pointer hover:bg-gray-50 p-2 rounded"
+                        onClick={() => navigate(`/transactions/${transaction.id}`)}
+                      >
                         <div>
                           <p className="font-medium text-[#F97316]">{transaction.id}</p>
                           <p className="text-sm text-[#F2C94C]">

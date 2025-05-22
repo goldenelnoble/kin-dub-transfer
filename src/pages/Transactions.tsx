@@ -2,8 +2,16 @@
 import { AppLayout } from "@/components/layout/AppLayout";
 import { TransactionList } from "@/components/transactions/TransactionList";
 import { CreateTransactionButton } from "@/components/transactions/CreateTransactionButton";
+import { useEffect } from "react";
+import { TransactionManager } from "@/components/transactions/utils/transactionUtils";
 
 const Transactions = () => {
+  // Recalculer les stats quand la page de transactions est chargée
+  useEffect(() => {
+    const transactions = TransactionManager.getAllTransactions();
+    TransactionManager.calculateStatsFromTransactions(transactions);
+  }, []);
+
   return (
     <AppLayout>
       <div className="space-y-6">

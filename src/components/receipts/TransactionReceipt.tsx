@@ -35,7 +35,7 @@ export const TransactionReceipt: React.FC<TransactionReceiptProps> = ({ transact
         body { font-family: Arial, sans-serif; }
         .receipt { max-width: 800px; margin: 0 auto; padding: 20px; }
         .receipt-header { text-align: center; margin-bottom: 20px; }
-        .company-logo { max-width: 250px; margin: 0 auto; display: block; }
+        .company-logo { max-width: 500px; margin: 0 auto; display: block; } /* Logo agrandi 7 fois plus */
         .receipt-title { font-size: 24px; margin: 10px 0; color: ${primaryColor}; }
         .receipt-section { margin-bottom: 20px; }
         .section-title { font-size: 18px; margin-bottom: 10px; color: ${primaryColor}; border-bottom: 1px solid #eee; padding-bottom: 5px; }
@@ -232,9 +232,9 @@ export const TransactionReceipt: React.FC<TransactionReceiptProps> = ({ transact
     <Card className="overflow-hidden">
       <CardContent className="p-6" ref={receiptRef}>
         <div className="flex flex-col space-y-4 print:p-6">
-          {/* Header avec logo plus grand */}
+          {/* Header avec logo beaucoup plus grand */}
           <div className="text-center space-y-2">
-            <img src="/lovable-uploads/b41d0d5e-3f93-4cc4-8fee-1f2457623fad.png" alt="Golden El Nobles Cargo" className="h-24 mx-auto" />
+            <img src="/lovable-uploads/b41d0d5e-3f93-4cc4-8fee-1f2457623fad.png" alt="Golden El Nobles Cargo" className="h-168 mx-auto" /> {/* Hauteur augmentée 7 fois (24px * 7 = 168px) */}
             <h1 className="text-2xl font-bold" style={{ color: primaryColor }}>Reçu de Transaction</h1>
             <div className="text-sm text-muted-foreground">
               Émis le {formatDate(new Date())}

@@ -34,8 +34,9 @@ export const TransactionReceipt: React.FC<TransactionReceiptProps> = ({ transact
         <style>
         body { font-family: Arial, sans-serif; }
         .receipt { max-width: 800px; margin: 0 auto; padding: 20px; }
-        .receipt-header { text-align: center; margin-bottom: 20px; }
-        .company-logo { max-width: 500px; margin: 0 auto; display: block; } /* Logo agrandi 7 fois plus */
+        .receipt-header { display: flex; align-items: center; margin-bottom: 20px; }
+        .company-logo { width: 166px; /* Logo réduit par 3 (500px ÷ 3 ≈ 166px) */ }
+        .header-text { flex: 1; text-align: right; }
         .receipt-title { font-size: 24px; margin: 10px 0; color: ${primaryColor}; }
         .receipt-section { margin-bottom: 20px; }
         .section-title { font-size: 18px; margin-bottom: 10px; color: ${primaryColor}; border-bottom: 1px solid #eee; padding-bottom: 5px; }
@@ -53,10 +54,12 @@ export const TransactionReceipt: React.FC<TransactionReceiptProps> = ({ transact
       printWindow.document.write('</style></head><body>');
       printWindow.document.write('<div class="receipt">');
       
-      // Header with larger logo
+      // Header with logo on the left
       printWindow.document.write('<div class="receipt-header">');
       printWindow.document.write('<img class="company-logo" src="/lovable-uploads/b41d0d5e-3f93-4cc4-8fee-1f2457623fad.png" alt="Golden El Nobles Cargo" />');
+      printWindow.document.write('<div class="header-text">');
       printWindow.document.write(`<h1 class="receipt-title">Reçu de Transaction</h1>`);
+      printWindow.document.write('</div>');
       printWindow.document.write('</div>');
       
       // Transaction details
@@ -232,12 +235,18 @@ export const TransactionReceipt: React.FC<TransactionReceiptProps> = ({ transact
     <Card className="overflow-hidden">
       <CardContent className="p-6" ref={receiptRef}>
         <div className="flex flex-col space-y-4 print:p-6">
-          {/* Header avec logo beaucoup plus grand */}
-          <div className="text-center space-y-2">
-            <img src="/lovable-uploads/b41d0d5e-3f93-4cc4-8fee-1f2457623fad.png" alt="Golden El Nobles Cargo" className="h-168 mx-auto" /> {/* Hauteur augmentée 7 fois (24px * 7 = 168px) */}
-            <h1 className="text-2xl font-bold" style={{ color: primaryColor }}>Reçu de Transaction</h1>
-            <div className="text-sm text-muted-foreground">
-              Émis le {formatDate(new Date())}
+          {/* Header avec logo à gauche et plus petit */}
+          <div className="flex items-center justify-between">
+            <img 
+              src="/lovable-uploads/b41d0d5e-3f93-4cc4-8fee-1f2457623fad.png" 
+              alt="Golden El Nobles Cargo" 
+              className="h-56 w-auto" // Hauteur réduite par 3 (168px ÷ 3 = 56px)
+            />
+            <div className="text-right">
+              <h1 className="text-2xl font-bold" style={{ color: primaryColor }}>Reçu de Transaction</h1>
+              <div className="text-sm text-muted-foreground">
+                Émis le {formatDate(new Date())}
+              </div>
             </div>
           </div>
 

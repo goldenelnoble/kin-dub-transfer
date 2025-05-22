@@ -1,5 +1,6 @@
+
 import { Routes, Route } from "react-router-dom";
-import { QueryClient, QueryClientProvider } from "react-query";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/context/AuthContext";
 import Index from "./pages/Index";
@@ -12,8 +13,6 @@ import Reports from "./pages/Reports";
 import AuditLog from "./pages/AuditLog";
 import Users from "./pages/Users";
 import NotFound from "./pages/NotFound";
-
-// Ajouter la route vers la page d'administration
 import AdminSettings from "./pages/AdminSettings";
 
 const queryClient = new QueryClient();

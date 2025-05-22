@@ -9,11 +9,13 @@ import { TransactionReceipt } from "@/components/receipts/TransactionReceipt";
 import { Transaction } from "@/types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from "react-router-dom";
+import { toast } from "@/components/ui/sonner";
 
 const Receipts = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const [activeTab, setActiveTab] = useState("list");
   const navigate = useNavigate();
 
   // Récupérer toutes les transactions depuis le localStorage
@@ -45,6 +47,8 @@ const Receipts = () => {
 
   const handleSelectTransaction = (transaction: Transaction) => {
     setSelectedTransaction(transaction);
+    setActiveTab("receipt");
+    toast.success("Reçu généré avec succès");
   };
 
   const formatDate = (date: Date) => {
@@ -67,7 +71,7 @@ const Receipts = () => {
           </p>
         </div>
 
-        <Tabs defaultValue="list" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList>
             <TabsTrigger value="list">Liste des Transactions</TabsTrigger>
             <TabsTrigger value="receipt" disabled={!selectedTransaction}>Reçu</TabsTrigger>

@@ -13,6 +13,7 @@ import {
   XAxis,
   YAxis,
   Tooltip,
+  Legend,
 } from "recharts";
 import { formatDate } from "@/lib/utils";
 
@@ -113,6 +114,8 @@ export const ActivityChart = ({ transactions, days = 7 }: ActivityChartProps) =>
           }}
         />
         <Bar dataKey="Transactions" fill="#F97316" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="Montant" fill="#43A047" radius={[4, 4, 0, 0]} />
+        <Legend />
       </BarChart>
     </ChartContainer>
   );

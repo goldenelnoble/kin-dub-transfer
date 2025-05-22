@@ -16,6 +16,8 @@ interface TransactionReceiptProps {
 
 export const TransactionReceipt: React.FC<TransactionReceiptProps> = ({ transaction, verificationUrl }) => {
   const receiptRef = useRef<HTMLDivElement>(null);
+  // Utilisation de la couleur du logo (dorée) au lieu de orange
+  const primaryColor = "#F2C94C"; // Couleur dorée du logo
   
   const printReceipt = () => {
     const printWindow = window.open('', '', 'width=800,height=600');
@@ -33,10 +35,10 @@ export const TransactionReceipt: React.FC<TransactionReceiptProps> = ({ transact
         body { font-family: Arial, sans-serif; }
         .receipt { max-width: 800px; margin: 0 auto; padding: 20px; }
         .receipt-header { text-align: center; margin-bottom: 20px; }
-        .company-logo { max-width: 150px; margin: 0 auto; display: block; }
-        .receipt-title { font-size: 24px; margin: 10px 0; color: #F97316; }
+        .company-logo { max-width: 250px; margin: 0 auto; display: block; }
+        .receipt-title { font-size: 24px; margin: 10px 0; color: ${primaryColor}; }
         .receipt-section { margin-bottom: 20px; }
-        .section-title { font-size: 18px; margin-bottom: 10px; color: #F97316; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+        .section-title { font-size: 18px; margin-bottom: 10px; color: ${primaryColor}; border-bottom: 1px solid #eee; padding-bottom: 5px; }
         .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .info-label { font-weight: bold; color: #666; }
         .info-value { }
@@ -44,22 +46,22 @@ export const TransactionReceipt: React.FC<TransactionReceiptProps> = ({ transact
         .badge-pending { background: #FEF3CF; color: #F7C33F; }
         .badge-validated { background: #F2C94C20; color: #F7C33F; }
         .badge-completed { background: #43A04720; color: #43A047; }
-        .badge-cancelled { background: #FEC6A1; color: #F97316; }
+        .badge-cancelled { background: #FEC6A1; color: ${primaryColor}; }
         .qr-code-container { text-align: center; margin-top: 20px; }
         .qr-code-text { font-size: 12px; margin-top: 5px; color: #777; text-align: center; }
       `);
       printWindow.document.write('</style></head><body>');
       printWindow.document.write('<div class="receipt">');
       
-      // Header
+      // Header with larger logo
       printWindow.document.write('<div class="receipt-header">');
       printWindow.document.write('<img class="company-logo" src="/lovable-uploads/b41d0d5e-3f93-4cc4-8fee-1f2457623fad.png" alt="Golden El Nobles Cargo" />');
-      printWindow.document.write('<h1 class="receipt-title">Reçu de Transaction</h1>');
+      printWindow.document.write(`<h1 class="receipt-title">Reçu de Transaction</h1>`);
       printWindow.document.write('</div>');
       
       // Transaction details
       printWindow.document.write('<div class="receipt-section">');
-      printWindow.document.write('<h2 class="section-title">Détails de la Transaction</h2>');
+      printWindow.document.write(`<h2 class="section-title">Détails de la Transaction</h2>`);
       printWindow.document.write('<div class="info-grid">');
       printWindow.document.write(`<div class="info-label">ID de transaction:</div><div class="info-value">${transaction.id}</div>`);
       printWindow.document.write(`<div class="info-label">Date:</div><div class="info-value">${formatDate(transaction.createdAt)}</div>`);
@@ -74,7 +76,7 @@ export const TransactionReceipt: React.FC<TransactionReceiptProps> = ({ transact
       
       // Financial information
       printWindow.document.write('<div class="receipt-section">');
-      printWindow.document.write('<h2 class="section-title">Informations Financières</h2>');
+      printWindow.document.write(`<h2 class="section-title">Informations Financières</h2>`);
       printWindow.document.write('<div class="info-grid">');
       printWindow.document.write(`<div class="info-label">Montant envoyé:</div><div class="info-value">${transaction.amount.toLocaleString()} ${transaction.currency}</div>`);
       printWindow.document.write(`<div class="info-label">Commission (${transaction.commissionPercentage}%):</div><div class="info-value">${transaction.commissionAmount.toLocaleString()} ${transaction.currency}</div>`);
@@ -84,7 +86,7 @@ export const TransactionReceipt: React.FC<TransactionReceiptProps> = ({ transact
       
       // Sender information
       printWindow.document.write('<div class="receipt-section">');
-      printWindow.document.write('<h2 class="section-title">Expéditeur</h2>');
+      printWindow.document.write(`<h2 class="section-title">Expéditeur</h2>`);
       printWindow.document.write('<div class="info-grid">');
       printWindow.document.write(`<div class="info-label">Nom:</div><div class="info-value">${transaction.sender.name}</div>`);
       printWindow.document.write(`<div class="info-label">Téléphone:</div><div class="info-value">${transaction.sender.phone}</div>`);
@@ -95,7 +97,7 @@ export const TransactionReceipt: React.FC<TransactionReceiptProps> = ({ transact
       
       // Recipient information
       printWindow.document.write('<div class="receipt-section">');
-      printWindow.document.write('<h2 class="section-title">Destinataire</h2>');
+      printWindow.document.write(`<h2 class="section-title">Destinataire</h2>`);
       printWindow.document.write('<div class="info-grid">');
       printWindow.document.write(`<div class="info-label">Nom:</div><div class="info-value">${transaction.recipient.name}</div>`);
       printWindow.document.write(`<div class="info-label">Téléphone:</div><div class="info-value">${transaction.recipient.phone}</div>`);
@@ -109,7 +111,7 @@ export const TransactionReceipt: React.FC<TransactionReceiptProps> = ({ transact
       // Additional information
       if (transaction.notes) {
         printWindow.document.write('<div class="receipt-section">');
-        printWindow.document.write('<h2 class="section-title">Informations supplémentaires</h2>');
+        printWindow.document.write(`<h2 class="section-title">Informations supplémentaires</h2>`);
         printWindow.document.write(`<div>${transaction.notes}</div>`);
         printWindow.document.write('</div>');
       }
@@ -153,7 +155,7 @@ export const TransactionReceipt: React.FC<TransactionReceiptProps> = ({ transact
           // Set up the document
           doc.setFont("helvetica");
           doc.setFontSize(18);
-          doc.setTextColor("#F97316");
+          doc.setTextColor(primaryColor); // Utilisation de la couleur dorée
           
           // Add logo placeholder (in real app, would add actual image)
           // Adding logo requires more complex setup with image loading
@@ -173,7 +175,7 @@ export const TransactionReceipt: React.FC<TransactionReceiptProps> = ({ transact
           
           // Financial information
           doc.setFontSize(14);
-          doc.setTextColor("#F97316");
+          doc.setTextColor(primaryColor); // Utilisation de la couleur dorée
           doc.text("Informations Financières", 20, 110);
           
           doc.setFontSize(12);
@@ -184,7 +186,7 @@ export const TransactionReceipt: React.FC<TransactionReceiptProps> = ({ transact
           
           // Sender information
           doc.setFontSize(14);
-          doc.setTextColor("#F97316");
+          doc.setTextColor(primaryColor); // Utilisation de la couleur dorée
           doc.text("Expéditeur", 20, 160);
           
           doc.setFontSize(12);
@@ -194,7 +196,7 @@ export const TransactionReceipt: React.FC<TransactionReceiptProps> = ({ transact
           
           // Recipient information
           doc.setFontSize(14);
-          doc.setTextColor("#F97316");
+          doc.setTextColor(primaryColor); // Utilisation de la couleur dorée
           doc.text("Destinataire", 20, 200);
           
           doc.setFontSize(12);
@@ -230,10 +232,10 @@ export const TransactionReceipt: React.FC<TransactionReceiptProps> = ({ transact
     <Card className="overflow-hidden">
       <CardContent className="p-6" ref={receiptRef}>
         <div className="flex flex-col space-y-4 print:p-6">
-          {/* Header */}
+          {/* Header avec logo plus grand */}
           <div className="text-center space-y-2">
-            <img src="/lovable-uploads/b41d0d5e-3f93-4cc4-8fee-1f2457623fad.png" alt="Golden El Nobles Cargo" className="h-12 mx-auto" />
-            <h1 className="text-2xl font-bold text-[#F97316]">Reçu de Transaction</h1>
+            <img src="/lovable-uploads/b41d0d5e-3f93-4cc4-8fee-1f2457623fad.png" alt="Golden El Nobles Cargo" className="h-24 mx-auto" />
+            <h1 className="text-2xl font-bold" style={{ color: primaryColor }}>Reçu de Transaction</h1>
             <div className="text-sm text-muted-foreground">
               Émis le {formatDate(new Date())}
             </div>
@@ -241,7 +243,7 @@ export const TransactionReceipt: React.FC<TransactionReceiptProps> = ({ transact
 
           {/* Transaction Details */}
           <div className="border rounded-md p-4 bg-muted/20">
-            <h2 className="font-semibold text-[#F97316] mb-2">Détails de la Transaction</h2>
+            <h2 className="font-semibold mb-2" style={{ color: primaryColor }}>Détails de la Transaction</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
               <div className="flex justify-between md:flex-col">
                 <span className="text-muted-foreground">ID:</span>
@@ -270,7 +272,7 @@ export const TransactionReceipt: React.FC<TransactionReceiptProps> = ({ transact
                   ${transaction.status === 'pending' ? 'bg-[#FEF3CF] text-[#F7C33F]' : 
                     transaction.status === 'validated' ? 'bg-[#F2C94C]/20 text-[#F7C33F]' :
                     transaction.status === 'completed' ? 'bg-[#43A047]/20 text-[#43A047]' : 
-                    'bg-[#FEC6A1] text-[#F97316]'
+                    `bg-[${primaryColor}]/20 text-[${primaryColor}]`
                   }`}
                 >
                   {transaction.status}
@@ -281,7 +283,7 @@ export const TransactionReceipt: React.FC<TransactionReceiptProps> = ({ transact
 
           {/* Financial Information */}
           <div className="border rounded-md p-4">
-            <h2 className="font-semibold text-[#F97316] mb-2">Informations Financières</h2>
+            <h2 className="font-semibold mb-2" style={{ color: primaryColor }}>Informations Financières</h2>
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <span className="text-muted-foreground">Montant envoyé:</span>
@@ -309,7 +311,7 @@ export const TransactionReceipt: React.FC<TransactionReceiptProps> = ({ transact
           {/* Sender and Recipient */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="border rounded-md p-4">
-              <h2 className="font-semibold text-[#F97316] mb-2">Expéditeur</h2>
+              <h2 className="font-semibold mb-2" style={{ color: primaryColor }}>Expéditeur</h2>
               <div className="space-y-1 text-sm">
                 <div className="flex justify-between md:flex-col">
                   <span className="text-muted-foreground">Nom:</span>
@@ -329,7 +331,7 @@ export const TransactionReceipt: React.FC<TransactionReceiptProps> = ({ transact
             </div>
 
             <div className="border rounded-md p-4">
-              <h2 className="font-semibold text-[#F97316] mb-2">Destinataire</h2>
+              <h2 className="font-semibold mb-2" style={{ color: primaryColor }}>Destinataire</h2>
               <div className="space-y-1 text-sm">
                 <div className="flex justify-between md:flex-col">
                   <span className="text-muted-foreground">Nom:</span>
@@ -366,11 +368,11 @@ export const TransactionReceipt: React.FC<TransactionReceiptProps> = ({ transact
 
           {/* Actions */}
           <div className="flex justify-end space-x-2 border-t pt-4">
-            <Button variant="outline" onClick={downloadPDF}>
+            <Button variant="outline" onClick={downloadPDF} style={{ borderColor: primaryColor, color: primaryColor }}>
               <Download className="h-4 w-4 mr-2" />
               Télécharger PDF
             </Button>
-            <Button onClick={printReceipt}>
+            <Button onClick={printReceipt} style={{ backgroundColor: primaryColor }}>
               <Printer className="h-4 w-4 mr-2" />
               Imprimer
             </Button>

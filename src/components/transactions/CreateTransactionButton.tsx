@@ -22,8 +22,8 @@ export const CreateTransactionButton = () => {
       }
     });
     
-    // Navigation vers la page de création
-    navigate("/transactions/new");
+    // Navigation vers la page de création - correction du chemin
+    navigate("/new-transaction");
   };
 
   return (

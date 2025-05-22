@@ -1,21 +1,23 @@
-
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Check, X, CheckCircle } from "lucide-react";
+import { ArrowLeft, Check, X, CheckCircle, FileText } from "lucide-react";
 import { Transaction, TransactionStatus, UserRole } from "@/types";
 import { CURRENCY_SYMBOLS } from "@/lib/constants";
 import { toast } from "@/components/ui/sonner";
 import { TransactionManager } from "@/components/transactions/utils/transactionUtils";
+import { TransactionReceipt } from "@/components/receipts/TransactionReceipt";
+import { Dialog, DialogContent, DialogTitle, DialogHeader } from "@/components/ui/dialog";
 
 const TransactionDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [transaction, setTransaction] = useState<Transaction | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showReceipt, setShowReceipt] = useState(false);
 
   useEffect(() => {
     // Charger les transactions depuis localStorage
@@ -112,6 +114,12 @@ const TransactionDetail = () => {
     }
   };
 
+  const viewReceipt = () => {
+    if (transaction) {
+      setShowReceipt(true);
+    }
+  };
+
   if (loading) {
     return (
       <AppLayout>
@@ -169,6 +177,13 @@ const TransactionDetail = () => {
             </div>
           </div>
           <div className="flex space-x-2">
+            <Button
+              variant="outline"
+              onClick={viewReceipt}
+            >
+              <FileText className="mr-2 h-4 w-4" />
+              Voir le reçu
+            </Button>
             {transaction.status === TransactionStatus.PENDING && (
               <>
                 <Button 
@@ -320,6 +335,15 @@ const TransactionDetail = () => {
             </Card>
           </div>
         </div>
+
+        <Dialog open={showReceipt} onOpenChange={setShowReceipt}>
+          <DialogContent className="max-w-3xl">
+            <DialogHeader>
+              <DialogTitle>Reçu de la transaction</DialogTitle>
+            </DialogHeader>
+            <TransactionReceipt transaction={transaction} />
+          </DialogContent>
+        </Dialog>
       </div>
     </AppLayout>
   );

@@ -9,6 +9,7 @@ import Dashboard from "./pages/Dashboard";
 import Transactions from "./pages/Transactions";
 import TransactionDetail from "./pages/TransactionDetail";
 import NewTransaction from "./pages/NewTransaction";
+import Receipts from "./pages/Receipts";
 import Reports from "./pages/Reports";
 import AuditLog from "./pages/AuditLog";
 import Users from "./pages/Users";
@@ -29,6 +30,7 @@ function App() {
           <Route path="/transactions" element={<Transactions />} />
           <Route path="/transactions/:id" element={<TransactionDetail />} />
           <Route path="/new-transaction" element={<NewTransaction />} />
+          <Route path="/receipts" element={<Receipts />} />
           <Route path="/reports" element={<Reports />} />
           <Route path="/audit-log" element={<AuditLog />} />
           <Route path="/users" element={<Users />} />

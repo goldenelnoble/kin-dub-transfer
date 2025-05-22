@@ -4,7 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { UserRole } from "@/types";
-import { ArrowLeft, ArrowRight, BarChart, Settings, User, Users, History, Shield } from "lucide-react";
+import { ArrowLeft, ArrowRight, BarChart, Settings, User, Users, History, Shield, FileText } from "lucide-react";
 import { useState } from "react";
 
 export function Sidebar() {
@@ -25,6 +25,13 @@ export function Sidebar() {
       name: "Transactions",
       path: "/transactions",
       icon: <ArrowRight className="h-5 w-5" />,
+      visible: true
+    },
+    // Reçus (nouveau)
+    {
+      name: "Reçus",
+      path: "/receipts",
+      icon: <FileText className="h-5 w-5" />,
       visible: true
     },
     // Rapports

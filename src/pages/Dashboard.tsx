@@ -1,8 +1,9 @@
 
 import { AppLayout } from "@/components/layout/AppLayout";
 import { DashboardSummary } from "@/components/dashboard/DashboardSummary";
+import { ActivityChart } from "@/components/dashboard/ActivityChart";
 import { Currency, DashboardStats, Transaction } from "@/types";
-import { ArrowRight, ChartBar } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { CreateTransactionButton } from "@/components/transactions/CreateTransactionButton";
@@ -21,6 +22,7 @@ const Dashboard = () => {
     totalCommissions: 0
   });
   const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
+  const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -85,14 +87,16 @@ const Dashboard = () => {
     const storedTransactions = localStorage.getItem('transactions');
     if (storedTransactions) {
       try {
-        const allTransactions = JSON.parse(storedTransactions).map((tx: any) => ({
+        const allTx = JSON.parse(storedTransactions).map((tx: any) => ({
           ...tx,
           createdAt: new Date(tx.createdAt),
           updatedAt: new Date(tx.updatedAt),
           validatedAt: tx.validatedAt ? new Date(tx.validatedAt) : undefined
         }));
         
-        const recent = allTransactions
+        setAllTransactions(allTx);
+        
+        const recent = allTx
           .sort((a: Transaction, b: Transaction) => 
             b.createdAt.getTime() - a.createdAt.getTime()
           )
@@ -102,9 +106,11 @@ const Dashboard = () => {
       } catch (error) {
         console.error("Erreur lors du chargement des transactions récentes:", error);
         setRecentTransactions([]);
+        setAllTransactions([]);
       }
     } else {
       setRecentTransactions([]);
+      setAllTransactions([]);
     }
   };
 
@@ -138,6 +144,9 @@ const Dashboard = () => {
           totalAmount: transactionStats.montantTotal,
           totalCommissions: transactionStats.commissionTotale
         });
+        
+        // Mettre à jour les transactions complètes
+        setAllTransactions(parsedTransactions);
       } catch (error) {
         console.error("Erreur lors de la mise à jour du tableau de bord:", error);
       }
@@ -202,12 +211,13 @@ const Dashboard = () => {
                 <h3 className="font-semibold leading-none tracking-tight text-[#F97316]">Activité récente</h3>
               </div>
               <div className="p-6">
-                <div className="h-[200px] bg-[#FEF7CD] rounded-md flex items-center justify-center">
-                  <div className="flex flex-col items-center text-[#43A047]">
-                    <ChartBar className="h-8 w-8 mb-2" />
-                    <p>Graphique d'activité des transactions</p>
+                {allTransactions.length > 0 ? (
+                  <ActivityChart transactions={allTransactions} />
+                ) : (
+                  <div className="h-[200px] bg-[#FEF7CD] rounded-md flex items-center justify-center">
+                    <p className="text-[#43A047]">Aucune donnée d'activité disponible</p>
                   </div>
-                </div>
+                )}
               </div>
             </div>
           </div>

@@ -1,3 +1,4 @@
+
 import React, { useRef } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,6 +7,7 @@ import { Transaction, TransactionStatus } from "@/types";
 import { CURRENCY_SYMBOLS } from "@/lib/constants";
 import { formatDate } from "@/lib/utils";
 import { toast } from "@/components/ui/sonner";
+import { QRCodeSVG } from 'qrcode.react';
 
 interface TransactionReceiptProps {
   transaction: Transaction;
@@ -13,6 +15,28 @@ interface TransactionReceiptProps {
 
 export const TransactionReceipt: React.FC<TransactionReceiptProps> = ({ transaction }) => {
   const receiptRef = useRef<HTMLDivElement>(null);
+  
+  // Create verification URL that includes transaction ID and a signature
+  const createVerificationData = () => {
+    // We'll create a simple encoded string with the transaction data
+    // In a real-world scenario, you would include a proper digital signature
+    const verificationData = {
+      id: transaction.id,
+      amount: transaction.amount,
+      currency: transaction.currency,
+      createdAt: transaction.createdAt.toISOString(),
+      sender: transaction.sender.name,
+      recipient: transaction.recipient.name,
+    };
+    
+    // Create a base64 encoded verification string
+    return btoa(JSON.stringify(verificationData));
+  };
+  
+  const verificationData = createVerificationData();
+  
+  // Create a verification URL (in a real app this would be a proper URL to your verification page)
+  const verificationUrl = `https://golden-el-nobles.com/verify?data=${verificationData}`;
   
   const printReceipt = () => {
     const printWindow = window.open('', '', 'width=800,height=600');
@@ -35,6 +59,8 @@ export const TransactionReceipt: React.FC<TransactionReceiptProps> = ({ transact
         .badge-validated { background: #F2C94C20; color: #F7C33F; }
         .badge-completed { background: #43A04720; color: #43A047; }
         .badge-cancelled { background: #FEC6A1; color: #F97316; }
+        .qr-code-container { text-align: center; margin-top: 20px; }
+        .qr-code-text { font-size: 12px; margin-top: 5px; color: #777; text-align: center; }
       `);
       printWindow.document.write('</style></head><body>');
       printWindow.document.write('<div class="receipt">');
@@ -115,6 +141,12 @@ export const TransactionReceipt: React.FC<TransactionReceiptProps> = ({ transact
         printWindow.document.write('</div>');
       }
       
+      // QR Code
+      printWindow.document.write('<div class="qr-code-container">');
+      printWindow.document.write(`<img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(verificationUrl)}" width="150" height="150" alt="Code QR de vérification" />`);
+      printWindow.document.write('<div class="qr-code-text">Scannez ce code QR pour vérifier l\'authenticité de ce reçu</div>');
+      printWindow.document.write('</div>');
+      
       // Footer
       printWindow.document.write('<div class="receipt-footer">');
       printWindow.document.write('<p>Golden El Nobles - Services de transfert d\'argent</p>');
@@ -155,6 +187,8 @@ export const TransactionReceipt: React.FC<TransactionReceiptProps> = ({ transact
         .badge-validated { background: #F2C94C20; color: #F7C33F; }
         .badge-completed { background: #43A04720; color: #43A047; }
         .badge-cancelled { background: #FEC6A1; color: #F97316; }
+        .qr-code-container { text-align: center; margin-top: 20px; }
+        .qr-code-text { font-size: 12px; margin-top: 5px; color: #777; text-align: center; }
         @media print {
           .no-print, .no-print * {
             display: none !important;
@@ -240,6 +274,12 @@ export const TransactionReceipt: React.FC<TransactionReceiptProps> = ({ transact
         printWindow.document.write('</div>');
       }
       
+      // QR Code
+      printWindow.document.write('<div class="qr-code-container">');
+      printWindow.document.write(`<img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(verificationUrl)}" width="150" height="150" alt="Code QR de vérification" />`);
+      printWindow.document.write('<div class="qr-code-text">Scannez ce code QR pour vérifier l\'authenticité de ce reçu</div>');
+      printWindow.document.write('</div>');
+      
       // Footer
       printWindow.document.write('<div class="receipt-footer">');
       printWindow.document.write('<p>Golden El Nobles - Services de transfert d\'argent</p>');
@@ -324,6 +364,19 @@ export const TransactionReceipt: React.FC<TransactionReceiptProps> = ({ transact
               <div className="text-muted-foreground">Téléphone:</div>
               <div className="text-right font-medium">{transaction.recipient.phone}</div>
             </div>
+          </div>
+
+          {/* QR Code */}
+          <div className="flex flex-col items-center justify-center mt-6">
+            <QRCodeSVG 
+              value={verificationUrl}
+              size={150}
+              level="H"
+              includeMargin={true}
+            />
+            <p className="mt-2 text-xs text-muted-foreground text-center">
+              Scannez ce code QR pour vérifier l'authenticité de ce reçu
+            </p>
           </div>
 
           {/* Actions */}

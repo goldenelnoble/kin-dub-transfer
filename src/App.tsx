@@ -1,47 +1,44 @@
-
+import { Routes, Route } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "react-query";
 import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Transactions from "./pages/Transactions";
-import NewTransaction from "./pages/NewTransaction";
 import TransactionDetail from "./pages/TransactionDetail";
-import NotFound from "./pages/NotFound";
+import NewTransaction from "./pages/NewTransaction";
 import Reports from "./pages/Reports";
 import AuditLog from "./pages/AuditLog";
 import Users from "./pages/Users";
+import NotFound from "./pages/NotFound";
+
+// Ajouter la route vers la page d'administration
+import AdminSettings from "./pages/AdminSettings";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
+function App() {
+  return (
     <AuthProvider>
-      <TooltipProvider>
+      <QueryClientProvider client={queryClient}>
         <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/transactions" element={<Transactions />} />
-            <Route path="/transactions/new" element={<NewTransaction />} />
-            <Route path="/transactions/:id" element={<TransactionDetail />} />
-            <Route path="/reports" element={<Reports />} />
-            <Route path="/audit-log" element={<AuditLog />} />
-            <Route path="/users" element={<Users />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/transactions" element={<Transactions />} />
+          <Route path="/transactions/:id" element={<TransactionDetail />} />
+          <Route path="/new-transaction" element={<NewTransaction />} />
+          <Route path="/reports" element={<Reports />} />
+          <Route path="/audit-log" element={<AuditLog />} />
+          <Route path="/users" element={<Users />} />
+          <Route path="/admin-settings" element={<AdminSettings />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </QueryClientProvider>
     </AuthProvider>
-  </QueryClientProvider>
-);
+  );
+}
 
 export default App;

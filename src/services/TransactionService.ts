@@ -43,57 +43,33 @@ export class TransactionService {
   // Create a new transaction with sender and recipient
   static async createTransaction(transaction: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>) {
     try {
-      // First, create the sender using raw SQL since the table isn't in types yet
+      // First, create the sender - use direct table access with proper typing
       const { data: senderData, error: senderError } = await supabase
-        .rpc('create_sender', {
-          p_name: transaction.sender.name,
-          p_phone: transaction.sender.phone,
-          p_id_number: transaction.sender.idNumber,
-          p_id_type: transaction.sender.idType
-        });
+        .from('senders')
+        .insert({
+          name: transaction.sender.name,
+          phone: transaction.sender.phone,
+          id_number: transaction.sender.idNumber,
+          id_type: transaction.sender.idType
+        })
+        .select()
+        .single();
 
-      if (senderError) {
-        // Fallback to direct insert if RPC doesn't exist
-        const { data: fallbackSenderData, error: fallbackSenderError } = await supabase
-          .from('senders' as any)
-          .insert({
-            name: transaction.sender.name,
-            phone: transaction.sender.phone,
-            id_number: transaction.sender.idNumber,
-            id_type: transaction.sender.idType
-          })
-          .select()
-          .single();
-
-        if (fallbackSenderError) throw fallbackSenderError;
-        var senderId = fallbackSenderData.id;
-      } else {
-        var senderId = senderData;
-      }
+      if (senderError) throw senderError;
+      const senderId = senderData.id;
 
       // Then, create the recipient
       const { data: recipientData, error: recipientError } = await supabase
-        .rpc('create_recipient', {
-          p_name: transaction.recipient.name,
-          p_phone: transaction.recipient.phone
-        });
+        .from('recipients')
+        .insert({
+          name: transaction.recipient.name,
+          phone: transaction.recipient.phone
+        })
+        .select()
+        .single();
 
-      if (recipientError) {
-        // Fallback to direct insert if RPC doesn't exist
-        const { data: fallbackRecipientData, error: fallbackRecipientError } = await supabase
-          .from('recipients' as any)
-          .insert({
-            name: transaction.recipient.name,
-            phone: transaction.recipient.phone
-          })
-          .select()
-          .single();
-
-        if (fallbackRecipientError) throw fallbackRecipientError;
-        var recipientId = fallbackRecipientData.id;
-      } else {
-        var recipientId = recipientData;
-      }
+      if (recipientError) throw recipientError;
+      const recipientId = recipientData.id;
 
       // Finally, create the transaction
       const { data: transactionData, error: transactionError } = await supabase
@@ -115,10 +91,8 @@ export class TransactionService {
           fees: transaction.commissionAmount,
           total: transaction.amount + transaction.commissionAmount,
           txn_id: `TXN${Date.now()}`
-        } as any)
-        .select(`
-          *
-        `)
+        })
+        .select()
         .single();
 
       if (transactionError) throw transactionError;
@@ -143,19 +117,27 @@ export class TransactionService {
 
       const enrichedTransactions = await Promise.all(
         (transactions || []).map(async (tx) => {
-          // Get sender data
-          const { data: senderData } = await supabase
-            .from('senders' as any)
+          // Get sender data with proper error handling
+          const { data: senderData, error: senderError } = await supabase
+            .from('senders')
             .select('*')
             .eq('id', tx.sender_id)
             .single();
 
-          // Get recipient data
-          const { data: recipientData } = await supabase
-            .from('recipients' as any)
+          if (senderError) {
+            console.warn('Failed to fetch sender:', senderError);
+          }
+
+          // Get recipient data with proper error handling
+          const { data: recipientData, error: recipientError } = await supabase
+            .from('recipients')
             .select('*')
             .eq('id', tx.recipient_id)
             .single();
+
+          if (recipientError) {
+            console.warn('Failed to fetch recipient:', recipientError);
+          }
 
           return this.mapDatabaseTransactionToTransaction({
             ...tx,
@@ -185,19 +167,27 @@ export class TransactionService {
 
       if (!transaction) return null;
 
-      // Get sender data
-      const { data: senderData } = await supabase
-        .from('senders' as any)
+      // Get sender data with proper error handling
+      const { data: senderData, error: senderError } = await supabase
+        .from('senders')
         .select('*')
         .eq('id', transaction.sender_id)
         .single();
 
-      // Get recipient data
-      const { data: recipientData } = await supabase
-        .from('recipients' as any)
+      if (senderError) {
+        console.warn('Failed to fetch sender:', senderError);
+      }
+
+      // Get recipient data with proper error handling
+      const { data: recipientData, error: recipientError } = await supabase
+        .from('recipients')
         .select('*')
         .eq('id', transaction.recipient_id)
         .single();
+
+      if (recipientError) {
+        console.warn('Failed to fetch recipient:', recipientError);
+      }
 
       return this.mapDatabaseTransactionToTransaction({
         ...transaction,

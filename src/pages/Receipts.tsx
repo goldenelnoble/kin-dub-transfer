@@ -40,8 +40,9 @@ const Receipts = () => {
       setIsLoading(true);
       const fetchedTransactions = await TransactionService.getAllTransactions();
       setTransactions(fetchedTransactions);
+      console.log(`Receipts: Loaded ${fetchedTransactions.length} transactions`);
     } catch (error) {
-      console.error('Error loading transactions:', error);
+      console.error('Receipts: Error loading transactions:', error);
       toast.error("Erreur lors du chargement des transactions");
     } finally {
       setIsLoading(false);
@@ -50,6 +51,30 @@ const Receipts = () => {
 
   useEffect(() => {
     loadTransactions();
+    
+    // Subscribe to real-time updates
+    const subscription = TransactionService.subscribeToTransactionChanges((updatedTransaction) => {
+      console.log('Receipts: Received real-time update for transaction:', updatedTransaction.id);
+      setTransactions(current => {
+        const existingIndex = current.findIndex(tx => tx.id === updatedTransaction.id);
+        if (existingIndex >= 0) {
+          const updated = [...current];
+          updated[existingIndex] = updatedTransaction;
+          console.log('Receipts: Updated existing transaction in list');
+          return updated;
+        } else {
+          console.log('Receipts: Added new transaction to list');
+          return [updatedTransaction, ...current];
+        }
+      });
+    });
+
+    return () => {
+      console.log('Receipts: Cleaning up subscription...');
+      if (subscription) {
+        subscription.unsubscribe();
+      }
+    };
   }, []);
 
   // Filtrer les transactions en fonction de la recherche
@@ -72,6 +97,7 @@ const Receipts = () => {
   });
 
   const handleSelectTransaction = (transaction: Transaction) => {
+    console.log('Receipts: Selecting transaction for receipt generation:', transaction.id);
     setSelectedTransaction(transaction);
     setActiveTab("receipt");
     toast.success("Reçu généré avec succès");
@@ -84,6 +110,7 @@ const Receipts = () => {
     }
 
     try {
+      console.log(`Receipts: Deleting transaction ${transactionId}...`);
       await TransactionService.deleteTransaction(transactionId);
       
       // Mettre à jour l'état local
@@ -98,10 +125,18 @@ const Receipts = () => {
       }
       
       toast.success("Reçu supprimé avec succès");
+      console.log(`Receipts: Successfully deleted transaction ${transactionId}`);
     } catch (error) {
-      console.error('Error deleting transaction:', error);
+      console.error('Receipts: Error deleting transaction:', error);
       toast.error("Erreur lors de la suppression du reçu");
     }
+  };
+
+  const handleSortToggle = () => {
+    const newDirection = sortDirection === "asc" ? "desc" : "asc";
+    setSortDirection(newDirection);
+    console.log(`Receipts: Changed sort direction to ${newDirection}`);
+    toast.success(`Tri ${newDirection === "asc" ? "croissant" : "décroissant"} appliqué`);
   };
 
   const formatDate = (date: Date) => {
@@ -146,6 +181,7 @@ const Receipts = () => {
           </div>
           <Card>
             <CardContent className="p-6 text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#F97316] mx-auto mb-2"></div>
               <p>Chargement des transactions...</p>
             </CardContent>
           </Card>
@@ -183,8 +219,9 @@ const Receipts = () => {
               <Button
                 variant="outline"
                 size="icon"
-                onClick={() => setSortDirection(sortDirection === "asc" ? "desc" : "asc")}
+                onClick={handleSortToggle}
                 className="flex-shrink-0"
+                title={`Trier par date ${sortDirection === "asc" ? "décroissante" : "croissante"}`}
               >
                 {sortDirection === "asc" ? (
                   <ArrowUp className="h-4 w-4" />
@@ -210,7 +247,7 @@ const Receipts = () => {
                   {sortedTransactions.length > 0 ? (
                     sortedTransactions.map((tx: Transaction) => (
                       <tr key={tx.id} className="border-b hover:bg-muted/50">
-                        <td className="p-2 pl-4">{tx.id.substring(0, 8)}...</td>
+                        <td className="p-2 pl-4" title={tx.id}>{tx.id.substring(0, 8)}...</td>
                         <td className="p-2">{formatDate(tx.createdAt)}</td>
                         <td className="p-2">{tx.sender.name}</td>
                         <td className="p-2">{tx.recipient.name}</td>
@@ -224,6 +261,7 @@ const Receipts = () => {
                               size="icon"
                               onClick={() => handleSelectTransaction(tx)}
                               title="Voir le reçu"
+                              className="text-[#F97316] hover:bg-[#FEF7CD]"
                             >
                               <FileText className="h-4 w-4" />
                             </Button>
@@ -266,7 +304,7 @@ const Receipts = () => {
                   ) : (
                     <tr>
                       <td colSpan={6} className="p-4 text-center text-muted-foreground">
-                        Aucune transaction trouvée.
+                        {searchQuery ? "Aucune transaction trouvée pour cette recherche." : "Aucune transaction trouvée."}
                       </td>
                     </tr>
                   )}
@@ -277,14 +315,35 @@ const Receipts = () => {
 
           <TabsContent value="receipt">
             {selectedTransaction ? (
-              <TransactionReceipt 
-                transaction={selectedTransaction} 
-                verificationUrl={getVerificationUrl(selectedTransaction)} 
-              />
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-semibold">Reçu de transaction</h3>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setActiveTab("list");
+                      console.log('Receipts: Returning to transaction list');
+                    }}
+                  >
+                    Retour à la liste
+                  </Button>
+                </div>
+                <TransactionReceipt 
+                  transaction={selectedTransaction} 
+                  verificationUrl={getVerificationUrl(selectedTransaction)} 
+                />
+              </div>
             ) : (
               <Card>
                 <CardContent className="p-6 text-center">
                   <p>Sélectionnez une transaction pour afficher son reçu.</p>
+                  <Button 
+                    variant="outline" 
+                    className="mt-4"
+                    onClick={() => setActiveTab("list")}
+                  >
+                    Retour à la liste
+                  </Button>
                 </CardContent>
               </Card>
             )}

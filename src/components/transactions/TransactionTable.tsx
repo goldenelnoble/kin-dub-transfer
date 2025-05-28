@@ -1,3 +1,4 @@
+
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -5,6 +6,17 @@ import { Info, Check, X, CheckCircle, Trash2, Edit } from "lucide-react";
 import { Transaction, TransactionDirection, TransactionStatus } from "@/types";
 import { CURRENCY_SYMBOLS } from "@/lib/constants";
 import { useNavigate } from "react-router-dom";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface TransactionTableProps {
   transactions: Transaction[];
@@ -46,6 +58,34 @@ export const TransactionTable = ({
 
   const goToTransactionDetails = (id: string) => {
     navigate(`/transactions/${id}`);
+  };
+
+  const handleValidate = (e: React.MouseEvent, transactionId: string) => {
+    e.stopPropagation();
+    onUpdateStatus(transactionId, TransactionStatus.VALIDATED);
+  };
+
+  const handleComplete = (e: React.MouseEvent, transactionId: string) => {
+    e.stopPropagation();
+    onUpdateStatus(transactionId, TransactionStatus.COMPLETED);
+  };
+
+  const handleCancel = (e: React.MouseEvent, transactionId: string) => {
+    e.stopPropagation();
+    onUpdateStatus(transactionId, TransactionStatus.CANCELLED);
+  };
+
+  const handleEdit = (e: React.MouseEvent, transactionId: string) => {
+    e.stopPropagation();
+    if (onEdit) {
+      onEdit(transactionId);
+    }
+  };
+
+  const handleDelete = (transactionId: string) => {
+    if (onDelete) {
+      onDelete(transactionId);
+    }
   };
 
   return (
@@ -117,34 +157,8 @@ export const TransactionTable = ({
                     >
                       <Info className="h-4 w-4" />
                     </Button>
-                    {canEdit && (
-                      <>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          title="Modifier"
-                          className="text-[#43A047] hover:bg-[#C6EFD3]"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onEdit?.(transaction.id);
-                          }}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          title="Supprimer"
-                          className="text-[#F97316] hover:bg-[#FFE5E0]"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onDelete?.(transaction.id);
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </>
-                    )}
+                    
+                    {/* Actions basées sur le statut */}
                     {transaction.status === TransactionStatus.PENDING && (
                       <>
                         <Button 
@@ -152,10 +166,7 @@ export const TransactionTable = ({
                           variant="ghost" 
                           className="text-[#43A047] hover:bg-[#C6EFD3]" 
                           title="Valider"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onUpdateStatus(transaction.id, TransactionStatus.VALIDATED);
-                          }}
+                          onClick={(e) => handleValidate(e, transaction.id)}
                         >
                           <Check className="h-4 w-4" />
                         </Button>
@@ -164,28 +175,69 @@ export const TransactionTable = ({
                           variant="ghost" 
                           className="text-[#F97316] hover:bg-[#FEF7CD]" 
                           title="Annuler"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onUpdateStatus(transaction.id, TransactionStatus.CANCELLED);
-                          }}
+                          onClick={(e) => handleCancel(e, transaction.id)}
                         >
                           <X className="h-4 w-4" />
                         </Button>
                       </>
                     )}
+                    
                     {transaction.status === TransactionStatus.VALIDATED && (
                       <Button
                         size="icon"
                         variant="ghost"
                         className="text-[#F2C94C] hover:bg-[#FEF7CD]"
                         title="Compléter"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onUpdateStatus(transaction.id, TransactionStatus.COMPLETED);
-                        }}
+                        onClick={(e) => handleComplete(e, transaction.id)}
                       >
                         <CheckCircle className="h-4 w-4" />
                       </Button>
+                    )}
+
+                    {/* Actions administrateur */}
+                    {canEdit && (
+                      <>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          title="Modifier"
+                          className="text-[#43A047] hover:bg-[#C6EFD3]"
+                          onClick={(e) => handleEdit(e, transaction.id)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              title="Supprimer"
+                              className="text-[#F97316] hover:bg-[#FFE5E0]"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Supprimer la transaction</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Êtes-vous sûr de vouloir supprimer définitivement cette transaction ? 
+                                Cette action ne peut pas être annulée.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Annuler</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDelete(transaction.id)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Supprimer
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </>
                     )}
                   </div>
                 </TableCell>

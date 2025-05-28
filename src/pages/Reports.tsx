@@ -1,6 +1,6 @@
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
-import { FileText, FileSpreadsheet, Info, Filter, Plus } from "lucide-react";
+import { FileText, FileSpreadsheet, Info, Filter } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import * as React from "react";
 import { format, isSameMonth, isSameWeek, isSameDay, parseISO } from "date-fns";
@@ -47,12 +47,8 @@ const statusColors: Record<string, string> = {
   "Annulé": "text-red-500",
 };
 
-// Ajouter la dépendance pour gérer les images base64
-// (jspdf permet d'utiliser des URLs ou des données base64 pour addImage)
-
 const LOGO_URL = "/public/lovable-uploads/b41d0d5e-3f93-4cc4-8fee-1f2457623fad.png";
 
-// Ajout de la fonction utilitaire pour filtrer les transactions selon la période
 function filterTransactionsByDate(
   transactions: Transaction[],
   type: ReportType | "tous",
@@ -68,25 +64,22 @@ function filterTransactionsByDate(
       return isSameWeek(txDate, date, { locale: fr });
     if (type === "journalier")
       return isSameDay(txDate, date);
-    // Si "tous", on accepte tous les types (par défaut mensuel)
     return true;
   });
 }
 
 export default function Reports() {
-  // Filtres: type et période
   const [reportType, setReportType] = React.useState<ReportType | "tous">("tous");
   const [filterDate, setFilterDate] = React.useState<Date | undefined>(undefined);
   const [selected, setSelected] = React.useState<ReportData | null>(null);
   const [popoverOpen, setPopoverOpen] = React.useState(false);
-  // Transactions filtrées
+
   const filteredTransactions = filterTransactionsByDate(
     DEMO_TRANSACTIONS,
     reportType,
     filterDate
   );
 
-  // Résumé financier de la période demandée
   const summary = React.useMemo(() => {
     let totalAmount = 0;
     let totalCommissions = 0;
@@ -108,7 +101,6 @@ export default function Reports() {
     };
   }, [filteredTransactions]);
 
-  // Gère les filtres sur la liste de rapports
   const filteredReports = sampleReports.filter((report) => {
     let typeMatch = reportType === "tous" || report.type === reportType;
     let dateMatch = true;
@@ -124,20 +116,6 @@ export default function Reports() {
     return typeMatch && dateMatch;
   });
 
-  // Pour le résumé
-  const total = filteredReports.length;
-  const byType = {
-    mensuel: filteredReports.filter(r => r.type === "mensuel").length,
-    hebdomadaire: filteredReports.filter(r => r.type === "hebdomadaire").length,
-    journalier: filteredReports.filter(r => r.type === "journalier").length,
-  };
-  const byStatus = {
-    Complété: filteredReports.filter(r => r.status === "Complété").length,
-    "En cours": filteredReports.filter(r => r.status === "En cours").length,
-    Annulé: filteredReports.filter(r => r.status === "Annulé").length,
-  };
-
-  // Fonction utilitaire pour charger une image et retourner les données base64 pour jsPDF
   const fetchImageBase64 = (url: string): Promise<string> => {
     return fetch(url)
       .then(response => response.blob())
@@ -151,7 +129,6 @@ export default function Reports() {
       });
   };
 
-  // Modification de l'export PDF pour inclure le tableau des transactions détaillées
   const handleExportPDF = async () => {
     const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
     let y = 14;

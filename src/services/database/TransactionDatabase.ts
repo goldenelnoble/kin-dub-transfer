@@ -34,6 +34,7 @@ export class TransactionDatabase {
       throw transactionError;
     }
 
+    console.log('Transaction created successfully:', dbTransaction);
     return dbTransaction;
   }
 

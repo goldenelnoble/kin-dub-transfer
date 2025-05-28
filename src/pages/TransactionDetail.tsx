@@ -120,7 +120,9 @@ const TransactionDetail = () => {
       id: transaction.id,
       amount: transaction.amount,
       currency: transaction.currency,
-      createdAt: transaction.createdAt.toISOString(),
+      createdAt: transaction.createdAt instanceof Date 
+        ? transaction.createdAt.toISOString() 
+        : new Date(transaction.createdAt).toISOString(),
       sender: transaction.sender.name,
       recipient: transaction.recipient.name,
     };

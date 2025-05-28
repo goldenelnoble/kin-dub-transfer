@@ -77,48 +77,126 @@ export type Database = {
         }
         Relationships: []
       }
+      recipients: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          phone: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          phone: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          phone?: string
+        }
+        Relationships: []
+      }
+      senders: {
+        Row: {
+          created_at: string
+          id: string
+          id_number: string
+          id_type: string
+          name: string
+          phone: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          id_number: string
+          id_type?: string
+          name: string
+          phone: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          id_number?: string
+          id_type?: string
+          name?: string
+          phone?: string
+        }
+        Relationships: []
+      }
       transactions: {
         Row: {
           amount: number
+          commission_amount: number | null
+          commission_percentage: number | null
           created_at: string | null
+          created_by: string | null
+          currency: string | null
+          direction: string | null
           fees: number
           id: string
+          mobile_money_network: string | null
+          notes: string | null
           payment_method: string
           purpose: string | null
+          receiving_amount: number | null
           recipient_id: string | null
           sender_id: string | null
           status: string
           total: number
           txn_id: string
           updated_at: string | null
+          validated_at: string | null
+          validated_by: string | null
         }
         Insert: {
           amount: number
+          commission_amount?: number | null
+          commission_percentage?: number | null
           created_at?: string | null
+          created_by?: string | null
+          currency?: string | null
+          direction?: string | null
           fees?: number
           id?: string
+          mobile_money_network?: string | null
+          notes?: string | null
           payment_method: string
           purpose?: string | null
+          receiving_amount?: number | null
           recipient_id?: string | null
           sender_id?: string | null
           status: string
           total: number
           txn_id: string
           updated_at?: string | null
+          validated_at?: string | null
+          validated_by?: string | null
         }
         Update: {
           amount?: number
+          commission_amount?: number | null
+          commission_percentage?: number | null
           created_at?: string | null
+          created_by?: string | null
+          currency?: string | null
+          direction?: string | null
           fees?: number
           id?: string
+          mobile_money_network?: string | null
+          notes?: string | null
           payment_method?: string
           purpose?: string | null
+          receiving_amount?: number | null
           recipient_id?: string | null
           sender_id?: string | null
           status?: string
           total?: number
           txn_id?: string
           updated_at?: string | null
+          validated_at?: string | null
+          validated_by?: string | null
         }
         Relationships: [
           {

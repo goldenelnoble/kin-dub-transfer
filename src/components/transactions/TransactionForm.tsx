@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -46,8 +47,8 @@ export function TransactionForm() {
 
   const handleDirectionChange = (newDirection: TransactionDirection) => {
     setDirection(newDirection);
-    // Update default commission when direction changes
     setCommissionPercentage(DEFAULT_COMMISSION_PERCENTAGES[newDirection].toString());
+    console.log('TransactionForm: Direction changed to:', newDirection);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -55,18 +56,20 @@ export function TransactionForm() {
     
     if (isSubmitting) return;
     
+    console.log('TransactionForm: Starting form submission...');
+    
     // Valider les champs requis
     if (!amount || parseFloat(amount) <= 0) {
       toast.error("Veuillez saisir un montant valide");
       return;
     }
     
-    if (!senderName || !senderPhone || !senderIdNumber) {
+    if (!senderName.trim() || !senderPhone.trim() || !senderIdNumber.trim()) {
       toast.error("Veuillez compléter les informations de l'expéditeur");
       return;
     }
     
-    if (!recipientName || !recipientPhone) {
+    if (!recipientName.trim() || !recipientPhone.trim()) {
       toast.error("Veuillez compléter les informations du bénéficiaire");
       return;
     }
@@ -79,6 +82,15 @@ export function TransactionForm() {
     setIsSubmitting(true);
     
     try {
+      console.log('TransactionForm: Creating transaction with data:', {
+        direction,
+        amount: amountValue,
+        currency,
+        paymentMethod,
+        sender: { name: senderName, phone: senderPhone },
+        recipient: { name: recipientName, phone: recipientPhone }
+      });
+      
       // Créer la transaction via Supabase
       const transaction = {
         direction,
@@ -91,23 +103,24 @@ export function TransactionForm() {
         mobileMoneyNetwork: mobileMoneyNetwork || undefined,
         status: TransactionStatus.PENDING,
         sender: {
-          name: senderName,
-          phone: senderPhone,
-          idNumber: senderIdNumber,
+          name: senderName.trim(),
+          phone: senderPhone.trim(),
+          idNumber: senderIdNumber.trim(),
           idType: senderIdType
         },
         recipient: {
-          name: recipientName,
-          phone: recipientPhone
+          name: recipientName.trim(),
+          phone: recipientPhone.trim()
         },
-        notes: notes || undefined,
+        notes: notes.trim() || undefined,
         createdBy: "Operator User"
       };
       
       const createdTransaction = await TransactionService.createTransaction(transaction);
+      console.log('TransactionForm: Transaction created successfully:', createdTransaction.id);
       
-      toast.success("Transaction créée avec succès", {
-        description: `Identifiant: ${createdTransaction.id}`,
+      toast.success("Transaction créée avec succès !", {
+        description: `ID: ${createdTransaction.id.slice(0, 8)}... - Montant: ${currencySymbol}${amountValue.toLocaleString()}`,
         action: {
           label: "Voir les transactions",
           onClick: () => navigate("/transactions")
@@ -122,13 +135,17 @@ export function TransactionForm() {
       setRecipientName("");
       setRecipientPhone("");
       setNotes("");
+      setMobileMoneyNetwork("");
       
-      // Rediriger vers la liste des transactions
-      navigate("/transactions");
+      // Rediriger vers la liste des transactions après un délai
+      setTimeout(() => {
+        navigate("/transactions");
+      }, 2000);
+      
     } catch (error) {
-      console.error("Erreur lors de la création de la transaction:", error);
+      console.error("TransactionForm: Error creating transaction:", error);
       toast.error("Erreur lors de la création de la transaction", {
-        description: "Veuillez réessayer ou contacter le support technique"
+        description: "Veuillez vérifier les données et réessayer"
       });
     } finally {
       setIsSubmitting(false);
@@ -139,7 +156,9 @@ export function TransactionForm() {
     <Card className="w-full">
       <CardHeader>
         <CardTitle>Nouvelle Transaction</CardTitle>
-        <CardDescription>Créer une nouvelle transaction de transfert d'argent</CardDescription>
+        <CardDescription>
+          Créer une nouvelle transaction synchronisée avec la base de données
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -172,13 +191,14 @@ export function TransactionForm() {
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="amount">Montant</Label>
+                <Label htmlFor="amount">Montant *</Label>
                 <Input
                   id="amount"
                   type="number"
                   placeholder="0.00"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
+                  required
                 />
               </div>
               
@@ -232,7 +252,7 @@ export function TransactionForm() {
               
               {paymentMethod === PaymentMethod.MOBILE_MONEY && (
                 <div className="space-y-2">
-                  <Label htmlFor="mobile-network">Réseau Mobile Money</Label>
+                  <Label htmlFor="mobile-network">Réseau Mobile Money *</Label>
                   <Select 
                     value={mobileMoneyNetwork} 
                     onValueChange={setMobileMoneyNetwork}
@@ -244,7 +264,6 @@ export function TransactionForm() {
                       {MOBILE_MONEY_NETWORKS
                         .filter(network => network.active)
                         .filter(network => {
-                          // Filter networks by country based on direction
                           if (direction === TransactionDirection.KINSHASA_TO_DUBAI) {
                             return network.country === "Congo DRC";
                           } else {
@@ -264,24 +283,26 @@ export function TransactionForm() {
             </div>
             
             <div className="border-t pt-4">
-              <h3 className="font-medium mb-2">Informations de l'expéditeur</h3>
+              <h3 className="font-medium mb-2">Informations de l'expéditeur *</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="sender-name">Nom complet</Label>
+                  <Label htmlFor="sender-name">Nom complet *</Label>
                   <Input
                     id="sender-name"
                     placeholder="Nom de l'expéditeur"
                     value={senderName}
                     onChange={(e) => setSenderName(e.target.value)}
+                    required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="sender-phone">Téléphone</Label>
+                  <Label htmlFor="sender-phone">Téléphone *</Label>
                   <Input
                     id="sender-phone"
                     placeholder="Numéro de téléphone"
                     value={senderPhone}
                     onChange={(e) => setSenderPhone(e.target.value)}
+                    required
                   />
                 </div>
                 <div className="space-y-2">
@@ -299,36 +320,39 @@ export function TransactionForm() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="sender-id-number">Numéro de pièce d'identité</Label>
+                  <Label htmlFor="sender-id-number">Numéro de pièce d'identité *</Label>
                   <Input
                     id="sender-id-number"
                     placeholder="Numéro de la pièce d'identité"
                     value={senderIdNumber}
                     onChange={(e) => setSenderIdNumber(e.target.value)}
+                    required
                   />
                 </div>
               </div>
             </div>
             
             <div className="border-t pt-4">
-              <h3 className="font-medium mb-2">Informations du bénéficiaire</h3>
+              <h3 className="font-medium mb-2">Informations du bénéficiaire *</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="recipient-name">Nom complet</Label>
+                  <Label htmlFor="recipient-name">Nom complet *</Label>
                   <Input
                     id="recipient-name"
                     placeholder="Nom du bénéficiaire"
                     value={recipientName}
                     onChange={(e) => setRecipientName(e.target.value)}
+                    required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="recipient-phone">Téléphone</Label>
+                  <Label htmlFor="recipient-phone">Téléphone *</Label>
                   <Input
                     id="recipient-phone"
                     placeholder="Numéro de téléphone"
                     value={recipientPhone}
                     onChange={(e) => setRecipientPhone(e.target.value)}
+                    required
                   />
                 </div>
               </div>
@@ -349,30 +373,29 @@ export function TransactionForm() {
             <div className="space-y-1">
               <div className="flex justify-between">
                 <span>Montant:</span>
-                <span>{currencySymbol}{parseFloat(amount || "0").toLocaleString()}</span>
+                <span className="font-medium">{currencySymbol}{amountValue.toLocaleString()}</span>
               </div>
               <div className="flex justify-between">
-                <span>Commission ({commissionPercentage}%):</span>
-                <span>{currencySymbol}{commissionAmount.toLocaleString()}</span>
+                <span>Commission ({commissionValue}%):</span>
+                <span className="font-medium">{currencySymbol}{commissionAmount.toLocaleString()}</span>
               </div>
               <div className="flex justify-between font-bold pt-2 border-t">
                 <span>Total à payer:</span>
-                <span>{currencySymbol}{totalAmount.toLocaleString()}</span>
+                <span className="text-[#F97316]">{currencySymbol}{totalAmount.toLocaleString()}</span>
               </div>
             </div>
           </div>
-          
-          <div className="flex justify-end">
-            <Button 
-              type="submit" 
-              className="bg-app-blue-500 hover:bg-app-blue-600"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "Création en cours..." : "Créer la transaction"}
-            </Button>
-          </div>
         </form>
       </CardContent>
+      <CardFooter>
+        <Button 
+          onClick={handleSubmit}
+          className="w-full bg-[#43A047] hover:bg-[#2E7D32]"
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? "Création en cours..." : "Créer la transaction"}
+        </Button>
+      </CardFooter>
     </Card>
   );
 }

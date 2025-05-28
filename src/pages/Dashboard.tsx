@@ -3,13 +3,14 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { DashboardSummary } from "@/components/dashboard/DashboardSummary";
 import { ActivityChart } from "@/components/dashboard/ActivityChart";
 import { Currency, DashboardStats, Transaction, TransactionStatus } from "@/types";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { CreateTransactionButton } from "@/components/transactions/CreateTransactionButton";
 import { useState, useEffect } from "react";
 import { toast } from "@/components/ui/sonner";
 import { TransactionService } from "@/services/TransactionService";
+import { SystemResetService } from "@/services/SystemResetService";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -24,16 +25,20 @@ const Dashboard = () => {
   const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
+    console.log('Dashboard: Component mounted, loading data...');
     loadDashboardData();
 
     // Subscribe to real-time updates
     const subscription = TransactionService.subscribeToTransactionChanges(() => {
+      console.log('Dashboard: Received real-time update, refreshing data...');
       loadDashboardData();
     });
 
     return () => {
+      console.log('Dashboard: Cleaning up subscription...');
       if (subscription) {
         subscription.unsubscribe();
       }
@@ -42,8 +47,11 @@ const Dashboard = () => {
 
   const loadDashboardData = async () => {
     try {
+      console.log('Dashboard: Loading dashboard data...');
       setIsLoading(true);
+      
       const transactions = await TransactionService.getAllTransactions();
+      console.log(`Dashboard: Loaded ${transactions.length} transactions`);
       
       setAllTransactions(transactions);
       
@@ -58,6 +66,7 @@ const Dashboard = () => {
       };
       
       setStats(newStats);
+      console.log('Dashboard: Calculated stats:', newStats);
       
       // Get recent transactions (last 3)
       const recent = transactions
@@ -66,14 +75,34 @@ const Dashboard = () => {
       setRecentTransactions(recent);
       
     } catch (error) {
-      console.error("Erreur lors du chargement du tableau de bord:", error);
-      toast.error("Erreur lors du chargement des données");
+      console.error("Dashboard: Error loading data:", error);
+      toast.error("Erreur lors du chargement des données du tableau de bord");
+      
+      // Reset to default values on error
+      setStats({
+        totalTransactions: 0,
+        pendingTransactions: 0,
+        completedTransactions: 0,
+        cancelledTransactions: 0,
+        totalAmount: 0,
+        totalCommissions: 0
+      });
+      setAllTransactions([]);
+      setRecentTransactions([]);
     } finally {
       setIsLoading(false);
     }
   };
 
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await loadDashboardData();
+    setIsRefreshing(false);
+    toast.success("Données actualisées");
+  };
+
   const handleSummaryClick = (type: keyof DashboardStats) => {
+    console.log(`Dashboard: Summary card clicked: ${type}`);
     switch (type) {
       case "totalTransactions":
       case "pendingTransactions":
@@ -101,11 +130,21 @@ const Dashboard = () => {
             <div>
               <h1 className="text-3xl font-bold tracking-tight text-[#F97316]">Tableau de bord</h1>
               <p className="text-[#43A047]">
-                Vue d'ensemble des transactions et statistiques
+                Vue d'ensemble des transactions et statistiques - Synchronisé en temps réel
               </p>
             </div>
           </div>
-          <CreateTransactionButton />
+          <div className="flex gap-2">
+            <Button 
+              onClick={handleRefresh} 
+              variant="outline"
+              disabled={isRefreshing}
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+              Actualiser
+            </Button>
+            <CreateTransactionButton />
+          </div>
         </div>
 
         {isLoading ? (
@@ -126,13 +165,17 @@ const Dashboard = () => {
             <div className="rounded-xl border bg-card text-card-foreground shadow">
               <div className="p-6 flex flex-row items-center justify-between space-y-0 pb-2">
                 <h3 className="font-semibold leading-none tracking-tight text-[#F97316]">Activité récente</h3>
+                <span className="text-sm text-muted-foreground">
+                  {allTransactions.length} transaction(s)
+                </span>
               </div>
               <div className="p-6">
                 {allTransactions.length > 0 ? (
                   <ActivityChart transactions={allTransactions} />
                 ) : (
-                  <div className="h-[200px] bg-[#FEF7CD] rounded-md flex items-center justify-center">
-                    <p className="text-[#43A047]">Aucune donnée d'activité disponible</p>
+                  <div className="h-[200px] bg-[#FEF7CD] rounded-md flex flex-col items-center justify-center">
+                    <p className="text-[#43A047] mb-2">Aucune donnée d'activité disponible</p>
+                    <CreateTransactionButton />
                   </div>
                 )}
               </div>
@@ -154,16 +197,19 @@ const Dashboard = () => {
                       <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-[#F97316]"></div>
                     </div>
                   ) : recentTransactions.length === 0 ? (
-                    <p className="text-center text-muted-foreground">Aucune transaction récente</p>
+                    <div className="text-center text-muted-foreground space-y-2">
+                      <p>Aucune transaction récente</p>
+                      <CreateTransactionButton />
+                    </div>
                   ) : (
                     recentTransactions.map(transaction => (
                       <div 
                         key={transaction.id} 
-                        className="flex items-center justify-between border-b pb-2 last:border-0 last:pb-0 cursor-pointer hover:bg-gray-50 p-2 rounded"
+                        className="flex items-center justify-between border-b pb-2 last:border-0 last:pb-0 cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors"
                         onClick={() => navigate(`/transactions/${transaction.id}`)}
                       >
                         <div>
-                          <p className="font-medium text-[#F97316]">{transaction.id}</p>
+                          <p className="font-medium text-[#F97316]">{transaction.id.slice(0, 8)}...</p>
                           <p className="text-sm text-[#F2C94C]">
                             {getDirectionLabel(transaction.direction)}
                           </p>

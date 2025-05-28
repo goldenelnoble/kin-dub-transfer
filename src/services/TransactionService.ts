@@ -23,27 +23,13 @@ export interface DatabaseTransaction {
   recipient_id: string;
 }
 
-export interface DatabaseSender {
-  id: string;
-  name: string;
-  phone: string;
-  id_number: string;
-  id_type: string;
-  created_at: string;
-}
-
-export interface DatabaseRecipient {
-  id: string;
-  name: string;
-  phone: string;
-  created_at: string;
-}
-
 export class TransactionService {
   // Create a new transaction with sender and recipient
   static async createTransaction(transaction: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>) {
     try {
-      // First, create the sender - use direct table access with proper typing
+      console.log('Creating transaction:', transaction);
+      
+      // First, create the sender
       const { data: senderData, error: senderError } = await supabase
         .from('senders')
         .insert({
@@ -55,8 +41,12 @@ export class TransactionService {
         .select()
         .single();
 
-      if (senderError) throw senderError;
-      const senderId = senderData.id;
+      if (senderError) {
+        console.error('Error creating sender:', senderError);
+        throw senderError;
+      }
+      
+      console.log('Sender created:', senderData);
 
       // Then, create the recipient
       const { data: recipientData, error: recipientError } = await supabase
@@ -68,8 +58,12 @@ export class TransactionService {
         .select()
         .single();
 
-      if (recipientError) throw recipientError;
-      const recipientId = recipientData.id;
+      if (recipientError) {
+        console.error('Error creating recipient:', recipientError);
+        throw recipientError;
+      }
+      
+      console.log('Recipient created:', recipientData);
 
       // Finally, create the transaction
       const { data: transactionData, error: transactionError } = await supabase
@@ -86,8 +80,8 @@ export class TransactionService {
           direction: transaction.direction,
           notes: transaction.notes,
           created_by: transaction.createdBy,
-          sender_id: senderId,
-          recipient_id: recipientId,
+          sender_id: senderData.id,
+          recipient_id: recipientData.id,
           fees: transaction.commissionAmount,
           total: transaction.amount + transaction.commissionAmount,
           txn_id: `TXN${Date.now()}`
@@ -95,79 +89,114 @@ export class TransactionService {
         .select()
         .single();
 
-      if (transactionError) throw transactionError;
+      if (transactionError) {
+        console.error('Error creating transaction:', transactionError);
+        throw transactionError;
+      }
 
-      // Get the full transaction data with sender and recipient
-      return await this.getTransactionById(transactionData.id);
+      console.log('Transaction created:', transactionData);
+
+      // Return the complete transaction with sender and recipient data
+      return this.mapDatabaseTransactionToTransaction({
+        ...transactionData,
+        senders: senderData,
+        recipients: recipientData
+      });
     } catch (error) {
-      console.error('Error creating transaction:', error);
+      console.error('Error in createTransaction:', error);
       throw error;
     }
   }
 
-  // Get all transactions
+  // Get all transactions with proper error handling
   static async getAllTransactions(): Promise<Transaction[]> {
     try {
+      console.log('Fetching all transactions...');
+      
       const { data: transactions, error: transactionsError } = await supabase
         .from('transactions')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (transactionsError) throw transactionsError;
+      if (transactionsError) {
+        console.error('Error fetching transactions:', transactionsError);
+        throw transactionsError;
+      }
+
+      console.log(`Found ${transactions?.length || 0} transactions`);
+
+      if (!transactions || transactions.length === 0) {
+        return [];
+      }
 
       const enrichedTransactions = await Promise.all(
-        (transactions || []).map(async (tx) => {
-          // Get sender data with proper error handling
-          const { data: senderData, error: senderError } = await supabase
-            .from('senders')
-            .select('*')
-            .eq('id', tx.sender_id)
-            .single();
+        transactions.map(async (tx) => {
+          try {
+            // Get sender data
+            const { data: senderData, error: senderError } = await supabase
+              .from('senders')
+              .select('*')
+              .eq('id', tx.sender_id)
+              .single();
 
-          if (senderError) {
-            console.warn('Failed to fetch sender:', senderError);
+            if (senderError) {
+              console.warn(`Failed to fetch sender ${tx.sender_id}:`, senderError);
+            }
+
+            // Get recipient data
+            const { data: recipientData, error: recipientError } = await supabase
+              .from('recipients')
+              .select('*')
+              .eq('id', tx.recipient_id)
+              .single();
+
+            if (recipientError) {
+              console.warn(`Failed to fetch recipient ${tx.recipient_id}:`, recipientError);
+            }
+
+            return this.mapDatabaseTransactionToTransaction({
+              ...tx,
+              senders: senderData,
+              recipients: recipientData
+            });
+          } catch (error) {
+            console.error(`Error processing transaction ${tx.id}:`, error);
+            // Return a basic transaction if there's an error
+            return this.mapDatabaseTransactionToTransaction(tx);
           }
-
-          // Get recipient data with proper error handling
-          const { data: recipientData, error: recipientError } = await supabase
-            .from('recipients')
-            .select('*')
-            .eq('id', tx.recipient_id)
-            .single();
-
-          if (recipientError) {
-            console.warn('Failed to fetch recipient:', recipientError);
-          }
-
-          return this.mapDatabaseTransactionToTransaction({
-            ...tx,
-            senders: senderData,
-            recipients: recipientData
-          });
         })
       );
 
+      console.log('Successfully enriched all transactions');
       return enrichedTransactions;
     } catch (error) {
-      console.error('Error fetching transactions:', error);
+      console.error('Error in getAllTransactions:', error);
       throw error;
     }
   }
 
-  // Get transaction by ID
+  // Get transaction by ID with proper error handling
   static async getTransactionById(id: string): Promise<Transaction | null> {
     try {
+      console.log(`Fetching transaction ${id}...`);
+      
       const { data: transaction, error: transactionError } = await supabase
         .from('transactions')
         .select('*')
         .eq('id', id)
         .single();
 
-      if (transactionError) throw transactionError;
+      if (transactionError) {
+        console.error(`Error fetching transaction ${id}:`, transactionError);
+        throw transactionError;
+      }
 
-      if (!transaction) return null;
+      if (!transaction) {
+        console.log(`Transaction ${id} not found`);
+        return null;
+      }
 
-      // Get sender data with proper error handling
+      // Get sender data
       const { data: senderData, error: senderError } = await supabase
         .from('senders')
         .select('*')
@@ -175,10 +204,10 @@ export class TransactionService {
         .single();
 
       if (senderError) {
-        console.warn('Failed to fetch sender:', senderError);
+        console.warn(`Failed to fetch sender for transaction ${id}:`, senderError);
       }
 
-      // Get recipient data with proper error handling
+      // Get recipient data
       const { data: recipientData, error: recipientError } = await supabase
         .from('recipients')
         .select('*')
@@ -186,27 +215,32 @@ export class TransactionService {
         .single();
 
       if (recipientError) {
-        console.warn('Failed to fetch recipient:', recipientError);
+        console.warn(`Failed to fetch recipient for transaction ${id}:`, recipientError);
       }
 
-      return this.mapDatabaseTransactionToTransaction({
+      const result = this.mapDatabaseTransactionToTransaction({
         ...transaction,
         senders: senderData,
         recipients: recipientData
       });
+
+      console.log(`Successfully fetched transaction ${id}`);
+      return result;
     } catch (error) {
-      console.error('Error fetching transaction:', error);
+      console.error(`Error in getTransactionById(${id}):`, error);
       throw error;
     }
   }
 
-  // Update transaction status
+  // Update transaction status with proper validation
   static async updateTransactionStatus(
     id: string, 
     status: TransactionStatus, 
     validatedBy?: string
   ): Promise<Transaction> {
     try {
+      console.log(`Updating transaction ${id} status to ${status}`);
+      
       const updateData: any = {
         status,
         updated_at: new Date().toISOString()
@@ -224,56 +258,73 @@ export class TransactionService {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error(`Error updating transaction ${id}:`, error);
+        throw error;
+      }
 
+      console.log(`Successfully updated transaction ${id}`);
+      
       // Return the updated transaction with full data
-      return await this.getTransactionById(id) as Transaction;
+      const updatedTransaction = await this.getTransactionById(id);
+      if (!updatedTransaction) {
+        throw new Error(`Failed to fetch updated transaction ${id}`);
+      }
+      
+      return updatedTransaction;
     } catch (error) {
-      console.error('Error updating transaction status:', error);
+      console.error(`Error in updateTransactionStatus(${id}):`, error);
       throw error;
     }
   }
 
-  // Delete transaction
+  // Delete transaction with proper cleanup
   static async deleteTransaction(id: string): Promise<void> {
     try {
+      console.log(`Deleting transaction ${id}...`);
+      
       const { error } = await supabase
         .from('transactions')
         .delete()
         .eq('id', id);
 
-      if (error) throw error;
+      if (error) {
+        console.error(`Error deleting transaction ${id}:`, error);
+        throw error;
+      }
+
+      console.log(`Successfully deleted transaction ${id}`);
     } catch (error) {
-      console.error('Error deleting transaction:', error);
+      console.error(`Error in deleteTransaction(${id}):`, error);
       throw error;
     }
   }
 
-  // Map database transaction to application transaction
+  // Map database transaction to application transaction with better defaults
   private static mapDatabaseTransactionToTransaction(dbTransaction: any): Transaction {
     return {
       id: dbTransaction.id,
       direction: dbTransaction.direction || TransactionDirection.KINSHASA_TO_DUBAI,
-      amount: dbTransaction.amount || 0,
-      receivingAmount: dbTransaction.receiving_amount || dbTransaction.amount || 0,
+      amount: Number(dbTransaction.amount) || 0,
+      receivingAmount: Number(dbTransaction.receiving_amount) || Number(dbTransaction.amount) || 0,
       currency: dbTransaction.currency || Currency.USD,
-      commissionPercentage: dbTransaction.commission_percentage || 0,
-      commissionAmount: dbTransaction.commission_amount || dbTransaction.fees || 0,
+      commissionPercentage: Number(dbTransaction.commission_percentage) || 0,
+      commissionAmount: Number(dbTransaction.commission_amount) || Number(dbTransaction.fees) || 0,
       paymentMethod: dbTransaction.payment_method || PaymentMethod.AGENCY,
       mobileMoneyNetwork: dbTransaction.mobile_money_network,
       status: dbTransaction.status || TransactionStatus.PENDING,
       sender: {
-        name: dbTransaction.senders?.name || 'Unknown Sender',
+        name: dbTransaction.senders?.name || 'Expéditeur inconnu',
         phone: dbTransaction.senders?.phone || '',
         idNumber: dbTransaction.senders?.id_number || '',
         idType: dbTransaction.senders?.id_type || 'passport'
       },
       recipient: {
-        name: dbTransaction.recipients?.name || 'Unknown Recipient',
+        name: dbTransaction.recipients?.name || 'Bénéficiaire inconnu',
         phone: dbTransaction.recipients?.phone || ''
       },
       notes: dbTransaction.notes,
-      createdBy: dbTransaction.created_by || 'System',
+      createdBy: dbTransaction.created_by || 'Système',
       createdAt: new Date(dbTransaction.created_at),
       updatedAt: new Date(dbTransaction.updated_at),
       validatedBy: dbTransaction.validated_by,
@@ -281,8 +332,10 @@ export class TransactionService {
     };
   }
 
-  // Subscribe to real-time changes
+  // Subscribe to real-time changes with proper error handling
   static subscribeToTransactionChanges(callback: (transaction: Transaction) => void) {
+    console.log('Setting up real-time subscription...');
+    
     return supabase
       .channel('transactions-changes')
       .on(
@@ -293,14 +346,68 @@ export class TransactionService {
           table: 'transactions'
         },
         async (payload) => {
-          if (payload.new && (payload.new as any).id) {
-            const transaction = await this.getTransactionById((payload.new as any).id);
-            if (transaction) {
-              callback(transaction);
+          try {
+            console.log('Real-time update received:', payload);
+            
+            if (payload.new && (payload.new as any).id) {
+              const transaction = await this.getTransactionById((payload.new as any).id);
+              if (transaction) {
+                console.log('Broadcasting updated transaction:', transaction.id);
+                callback(transaction);
+              }
             }
+          } catch (error) {
+            console.error('Error in real-time subscription:', error);
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Subscription status:', status);
+      });
+  }
+
+  // Reset all data (for admin use)
+  static async resetAllData(): Promise<void> {
+    try {
+      console.log('Resetting all transaction data...');
+      
+      // Delete all transactions first (due to foreign key constraints)
+      const { error: transactionsError } = await supabase
+        .from('transactions')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
+
+      if (transactionsError) {
+        console.error('Error deleting transactions:', transactionsError);
+        throw transactionsError;
+      }
+
+      // Delete all recipients
+      const { error: recipientsError } = await supabase
+        .from('recipients')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
+
+      if (recipientsError) {
+        console.error('Error deleting recipients:', recipientsError);
+        throw recipientsError;
+      }
+
+      // Delete all senders
+      const { error: sendersError } = await supabase
+        .from('senders')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
+
+      if (sendersError) {
+        console.error('Error deleting senders:', sendersError);
+        throw sendersError;
+      }
+
+      console.log('Successfully reset all transaction data');
+    } catch (error) {
+      console.error('Error in resetAllData:', error);
+      throw error;
+    }
   }
 }

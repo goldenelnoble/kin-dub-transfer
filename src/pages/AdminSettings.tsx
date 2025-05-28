@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/context/AuthContext";
@@ -6,25 +7,22 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "@/components/ui/sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { Shield, Database, Trash2, RotateCcw, Save, RefreshCw, DollarSign, Percent } from "lucide-react";
-import { DataManagementService, AuditLogEntry } from "@/services/DataManagementService";
+import { Shield, Database, RotateCcw, Save, DollarSign, Percent } from "lucide-react";
 import { UserRole, Currency } from "@/types";
 import { useNavigate } from "react-router-dom";
 import { DEFAULT_COMMISSION_PERCENTAGES, CURRENCY_SYMBOLS, AVAILABLE_CURRENCIES } from "@/lib/constants";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SystemResetService } from "@/services/SystemResetService";
 
 export default function AdminSettings() {
   const { user, hasPermission } = useAuth();
   const navigate = useNavigate();
   const [isConfirmPasswordOpen, setIsConfirmPasswordOpen] = useState(false);
   const [password, setPassword] = useState("");
-  const [pendingAction, setPendingAction] = useState<null | 'reset' | 'backup' | 'restore' | 'saveFinance'>(null);
-  const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>(() => DataManagementService.getAuditLog());
-  const [searchTerm, setSearchTerm] = useState("");
+  const [isResetting, setIsResetting] = useState(false);
 
   // Financial parameters state
   const [kinshasaToDubaiCommission, setKinshasaToDubaiCommission] = useState(DEFAULT_COMMISSION_PERCENTAGES.kinshasa_to_dubai);
@@ -39,55 +37,10 @@ export default function AdminSettings() {
     navigate("/dashboard");
   }
 
-  // Filtrer les logs d'audit
-  const filteredLogs = auditLogs.filter(log => 
-    log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    log.user.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    log.details.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
   // Save financial settings
   const saveFinancialSettings = () => {
-    setPendingAction('saveFinance');
-    setIsConfirmPasswordOpen(true);
-  };
-
-  // Exécuter l'action après confirmation
-  const executeAction = () => {
-    // Dans un système réel, on vérifierait le mot de passe avec le backend
-    // Ici on simule une vérification basique
-    const isPasswordValid = password === 'admin123';
-    
-    if (!isPasswordValid) {
-      toast.error("Mot de passe incorrect");
-      return;
-    }
-    
-    if (pendingAction === 'reset') {
-      const success = DataManagementService.resetAllData(user);
-      if (success) {
-        toast.success("Toutes les données ont été réinitialisées avec succès");
-      } else {
-        toast.error("Une erreur est survenue lors de la réinitialisation");
-      }
-    } else if (pendingAction === 'backup') {
-      const success = DataManagementService.createBackup(user);
-      if (success) {
-        toast.success("Sauvegarde créée avec succès");
-      } else {
-        toast.error("Une erreur est survenue lors de la création de la sauvegarde");
-      }
-    } else if (pendingAction === 'restore') {
-      const success = DataManagementService.restoreFromBackup(user);
-      if (success) {
-        toast.success("Données restaurées avec succès");
-      } else {
-        toast.error("Une erreur est survenue lors de la restauration de la sauvegarde");
-      }
-    } else if (pendingAction === 'saveFinance') {
-      // Simuler la sauvegarde des paramètres financiers
-      // Dans une vraie application, vous appelleriez un service pour mettre à jour ces valeurs dans la base de données
-      const updatedSettings = {
+    try {
+      const settings = {
         commissionPercentages: {
           kinshasa_to_dubai: kinshasaToDubaiCommission,
           dubai_to_kinshasa: dubaiToKinshasaCommission,
@@ -99,38 +52,45 @@ export default function AdminSettings() {
         }
       };
       
-      // Log l'action dans le journal d'audit - Changing from addAuditLogEntry to logAction
-      DataManagementService.logAction(
-        "Mise à jour des paramètres financiers",
-        user?.name || "Unknown",
-        "Succès",
-        `Commissions: ${kinshasaToDubaiCommission}% / ${dubaiToKinshasaCommission}%, Devise par défaut: ${defaultCurrency}`
-      );
+      localStorage.setItem('financial_settings', JSON.stringify(settings));
+      toast.success("Paramètres financiers sauvegardés avec succès");
+      console.log('AdminSettings: Financial settings saved:', settings);
       
-      // Mettre à jour les logs d'audit pour l'affichage
-      setAuditLogs(DataManagementService.getAuditLog());
-      
-      toast.success("Paramètres financiers mis à jour avec succès");
+    } catch (error) {
+      console.error('AdminSettings: Error saving financial settings:', error);
+      toast.error("Erreur lors de la sauvegarde des paramètres");
+    }
+  };
+
+  // Reset system
+  const handleResetSystem = async () => {
+    // Simple password check (in real app, this would be more secure)
+    if (password !== 'admin123') {
+      toast.error("Mot de passe incorrect");
+      return;
     }
     
-    // Rafraîchir les logs
-    setAuditLogs(DataManagementService.getAuditLog());
+    setIsResetting(true);
     
-    // Réinitialiser
-    setPassword("");
-    setIsConfirmPasswordOpen(false);
-    setPendingAction(null);
-  };
-
-  const statusColors: Record<string, string> = {
-    "Succès": "text-green-500",
-    "Échec": "text-red-500",
-  };
-
-  // Formater la date
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleString('fr-FR');
+    try {
+      console.log('AdminSettings: Starting system reset...');
+      const success = await SystemResetService.resetSystem({
+        resetTransactions: true,
+        resetUsers: false,
+        resetSettings: false
+      });
+      
+      if (success) {
+        toast.success("Système réinitialisé avec succès ! Rechargement en cours...");
+      }
+    } catch (error) {
+      console.error('AdminSettings: Error during system reset:', error);
+      toast.error("Erreur lors de la réinitialisation du système");
+    } finally {
+      setIsResetting(false);
+      setPassword("");
+      setIsConfirmPasswordOpen(false);
+    }
   };
 
   return (
@@ -141,7 +101,7 @@ export default function AdminSettings() {
           <div>
             <h1 className="text-3xl font-bold text-[#F97316]">Administration Système</h1>
             <p className="text-[#43A047]">
-              Configuration et gestion des données de l'application
+              Configuration et gestion synchronisée du système
             </p>
           </div>
         </div>
@@ -149,8 +109,7 @@ export default function AdminSettings() {
         <Tabs defaultValue="finance" className="w-full">
           <TabsList className="mb-4">
             <TabsTrigger value="finance">Paramètres Financiers</TabsTrigger>
-            <TabsTrigger value="data">Gestion des données</TabsTrigger>
-            <TabsTrigger value="audit">Journal d'audit complet</TabsTrigger>
+            <TabsTrigger value="system">Gestion Système</TabsTrigger>
           </TabsList>
           
           <TabsContent value="finance">
@@ -187,9 +146,6 @@ export default function AdminSettings() {
                         />
                         <Percent className="h-4 w-4 text-gray-500" />
                       </div>
-                      <p className="text-xs text-gray-500">
-                        Taux appliqué aux transferts de Kinshasa vers Dubai
-                      </p>
                     </div>
                     
                     <div className="space-y-2">
@@ -209,9 +165,6 @@ export default function AdminSettings() {
                         />
                         <Percent className="h-4 w-4 text-gray-500" />
                       </div>
-                      <p className="text-xs text-gray-500">
-                        Taux appliqué aux transferts de Dubai vers Kinshasa
-                      </p>
                     </div>
                   </div>
                 </div>
@@ -276,143 +229,63 @@ export default function AdminSettings() {
             </Card>
           </TabsContent>
           
-          <TabsContent value="data">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader className="bg-amber-50">
-                  <CardTitle className="text-[#F97316]">Sauvegarde et restauration</CardTitle>
-                  <CardDescription>
-                    Créer des points de sauvegarde et restaurer en cas de besoin
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="pt-6">
-                  <p className="text-sm text-gray-600 mb-4">
-                    Les sauvegardes contiennent toutes les données de l'application, y compris les transactions et les journaux d'audit.
-                  </p>
-                </CardContent>
-                <CardFooter className="flex flex-col space-y-2">
-                  <Button 
-                    variant="outline" 
-                    className="w-full border-[#43A047] text-[#43A047] hover:bg-[#43A047] hover:text-white"
-                    onClick={() => {
-                      setPendingAction('backup');
-                      setIsConfirmPasswordOpen(true);
-                    }}
-                  >
-                    <Save className="mr-2 h-4 w-4" />
-                    Créer une sauvegarde
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    className="w-full border-amber-500 text-amber-500 hover:bg-amber-500 hover:text-white"
-                    onClick={() => {
-                      setPendingAction('restore');
-                      setIsConfirmPasswordOpen(true);
-                    }}
-                  >
-                    <RefreshCw className="mr-2 h-4 w-4" />
-                    Restaurer la dernière sauvegarde
-                  </Button>
-                </CardFooter>
-              </Card>
-              
-              <Card>
-                <CardHeader className="bg-red-50">
-                  <CardTitle className="text-red-500">Réinitialisation des données</CardTitle>
-                  <CardDescription>
-                    Effacer toutes les données de l'application
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="pt-6">
-                  <p className="text-sm text-red-600 mb-4">
-                    Cette action supprimera toutes les transactions et réinitialisera le système. Les logs de sécurité seront conservés. Cette action est irréversible.
-                  </p>
-                </CardContent>
-                <CardFooter>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button 
-                        variant="destructive" 
-                        className="w-full"
-                      >
-                        <RotateCcw className="mr-2 h-4 w-4" />
-                        Tout réinitialiser
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Réinitialisation complète du système</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Êtes-vous absolument sûr ? Cette action supprimera toutes les transactions et données du système, et créera automatiquement une sauvegarde avant de procéder.
-                          <br /><br />
-                          <span className="font-bold text-red-500">Cette action est irréversible</span>.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Annuler</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => {
-                          setPendingAction('reset');
-                          setIsConfirmPasswordOpen(true);
-                        }}>
-                          Continuer
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </CardFooter>
-              </Card>
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="audit">
+          <TabsContent value="system">
             <Card>
-              <CardHeader>
-                <CardTitle className="flex justify-between items-center">
-                  <span>Journal d'audit complet</span>
-                  <div className="w-64">
-                    <Input 
-                      placeholder="Rechercher..." 
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                  </div>
+              <CardHeader className="bg-red-50">
+                <CardTitle className="flex items-center gap-2 text-red-500">
+                  <Database className="h-5 w-5" />
+                  Réinitialisation du Système
                 </CardTitle>
                 <CardDescription>
-                  Historique complet des actions système importantes
+                  Remettre les compteurs à zéro et nettoyer toutes les données
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Date & Heure</TableHead>
-                      <TableHead>Action</TableHead>
-                      <TableHead>Utilisateur</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Détails</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredLogs.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center py-4">
-                          Aucune entrée de journal trouvée
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      filteredLogs.map((entry) => (
-                        <TableRow key={entry.id}>
-                          <TableCell className="text-[#F2C94C]">{formatDate(entry.date)}</TableCell>
-                          <TableCell>{entry.action}</TableCell>
-                          <TableCell>{entry.user}</TableCell>
-                          <TableCell className={statusColors[entry.status] || ""}>{entry.status}</TableCell>
-                          <TableCell className="max-w-xs truncate">{entry.details}</TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
+              <CardContent className="pt-6">
+                <div className="space-y-4">
+                  <p className="text-sm text-red-600">
+                    Cette action supprimera toutes les transactions, expéditeurs et bénéficiaires de la base de données.
+                    Le système sera remis à zéro complet pour une synchronisation parfaite.
+                  </p>
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
+                    <p className="text-sm text-yellow-800 font-medium">
+                      ⚠️ Action irréversible - Toutes les données seront perdues
+                    </p>
+                  </div>
+                </div>
               </CardContent>
+              <CardFooter>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button 
+                      variant="destructive" 
+                      className="w-full"
+                      disabled={isResetting}
+                    >
+                      <RotateCcw className="mr-2 h-4 w-4" />
+                      {isResetting ? "Réinitialisation..." : "Remettre à Zéro"}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Réinitialisation complète du système</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Êtes-vous absolument sûr ? Cette action supprimera TOUTES les données :
+                        <br />• Toutes les transactions
+                        <br />• Tous les expéditeurs  
+                        <br />• Tous les bénéficiaires
+                        <br /><br />
+                        <span className="font-bold text-red-500">Cette action est irréversible</span>.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Annuler</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => setIsConfirmPasswordOpen(true)}>
+                        Continuer
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </CardFooter>
             </Card>
           </TabsContent>
         </Tabs>
@@ -422,21 +295,24 @@ export default function AdminSettings() {
             <AlertDialogHeader>
               <AlertDialogTitle>Confirmation requise</AlertDialogTitle>
               <AlertDialogDescription>
-                Pour des raisons de sécurité, veuillez confirmer votre mot de passe pour continuer.
+                Pour des raisons de sécurité, veuillez confirmer votre mot de passe pour la réinitialisation complète.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <div className="py-4">
               <Input 
                 type="password" 
-                placeholder="Mot de passe"
+                placeholder="Mot de passe (admin123)"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
             <AlertDialogFooter>
-              <AlertDialogCancel>Annuler</AlertDialogCancel>
-              <AlertDialogAction onClick={executeAction}>
-                Confirmer
+              <AlertDialogCancel disabled={isResetting}>Annuler</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={handleResetSystem}
+                disabled={isResetting}
+              >
+                {isResetting ? "Réinitialisation..." : "Confirmer la réinitialisation"}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

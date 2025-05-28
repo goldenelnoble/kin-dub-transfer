@@ -23,23 +23,28 @@ export function TransactionList() {
   const { user } = useAuth();
 
   useEffect(() => {
+    console.log('TransactionList: Component mounted, loading transactions...');
     loadTransactions();
 
     // Subscribe to real-time updates
     const subscription = TransactionService.subscribeToTransactionChanges((updatedTransaction) => {
+      console.log('TransactionList: Received real-time update for transaction:', updatedTransaction.id);
       setTransactions(current => {
         const existingIndex = current.findIndex(tx => tx.id === updatedTransaction.id);
         if (existingIndex >= 0) {
           const updated = [...current];
           updated[existingIndex] = updatedTransaction;
+          console.log('TransactionList: Updated existing transaction in list');
           return updated;
         } else {
+          console.log('TransactionList: Added new transaction to list');
           return [updatedTransaction, ...current];
         }
       });
     });
 
     return () => {
+      console.log('TransactionList: Cleaning up subscription...');
       if (subscription) {
         subscription.unsubscribe();
       }
@@ -48,12 +53,18 @@ export function TransactionList() {
 
   const loadTransactions = async () => {
     try {
+      console.log('TransactionList: Starting to load transactions...');
       setLoading(true);
+      
       const data = await TransactionService.getAllTransactions();
+      console.log(`TransactionList: Loaded ${data.length} transactions`);
+      
       setTransactions(data);
+      toast.success(`${data.length} transactions chargées avec succès`);
     } catch (error) {
-      console.error("Erreur lors du chargement des transactions:", error);
+      console.error("TransactionList: Error loading transactions:", error);
       toast.error("Erreur lors du chargement des transactions");
+      setTransactions([]); // Reset to empty array on error
     } finally {
       setLoading(false);
     }
@@ -68,20 +79,26 @@ export function TransactionList() {
     if (!window.confirm("Voulez-vous vraiment supprimer cette transaction ?")) return;
 
     try {
+      console.log(`TransactionList: Deleting transaction ${id}...`);
       await TransactionService.deleteTransaction(id);
+      
       setTransactions(current => current.filter(tx => tx.id !== id));
-      toast.success("Transaction supprimée !");
+      toast.success("Transaction supprimée avec succès !");
+      console.log(`TransactionList: Successfully deleted transaction ${id}`);
     } catch (error) {
-      console.error("Erreur lors de la suppression:", error);
+      console.error("TransactionList: Error deleting transaction:", error);
       toast.error("Erreur lors de la suppression de la transaction");
     }
   };
 
   const handleEditTransaction = (id: string) => {
+    console.log(`TransactionList: Navigating to edit transaction ${id}`);
     window.location.href = `/transactions/${id}?edit=1`;
   };
 
   const handleUpdateStatus = async (id: string, newStatus: TransactionStatus) => {
+    console.log(`TransactionList: Updating transaction ${id} status to ${newStatus}`);
+    
     let action: "validate" | "complete" | "cancel";
     switch (newStatus) {
       case TransactionStatus.VALIDATED:
@@ -111,8 +128,8 @@ export function TransactionList() {
       );
       
       const statusMessages = {
-        [TransactionStatus.VALIDATED]: "Transaction validée !",
-        [TransactionStatus.COMPLETED]: "Transaction complétée !",
+        [TransactionStatus.VALIDATED]: "Transaction validée avec succès !",
+        [TransactionStatus.COMPLETED]: "Transaction complétée avec succès !",
         [TransactionStatus.CANCELLED]: "Transaction annulée !"
       };
       
@@ -121,8 +138,10 @@ export function TransactionList() {
           statusMessages[newStatus]
         );
       }
+      
+      console.log(`TransactionList: Successfully updated transaction ${id} status`);
     } catch (error) {
-      console.error("Erreur lors de la mise à jour:", error);
+      console.error("TransactionList: Error updating transaction status:", error);
       toast.error("Erreur lors de la mise à jour du statut");
     }
   };
@@ -152,7 +171,9 @@ export function TransactionList() {
     <Card>
       <CardHeader>
         <CardTitle>Toutes les Transactions</CardTitle>
-        <CardDescription>Liste complète des transactions avec filtres</CardDescription>
+        <CardDescription>
+          Liste complète des transactions avec filtres - {transactions.length} transaction(s) au total
+        </CardDescription>
         <TransactionStats 
           transactions={filteredTransactions}
           currencyFilter={currencyFilter}

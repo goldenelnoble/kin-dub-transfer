@@ -8,70 +8,61 @@ import { ArrowLeft, Check, X, CheckCircle, FileText } from "lucide-react";
 import { Transaction, TransactionStatus, UserRole } from "@/types";
 import { CURRENCY_SYMBOLS } from "@/lib/constants";
 import { toast } from "@/components/ui/sonner";
-import { TransactionManager } from "@/components/transactions/utils/transactionUtils";
 import { TransactionReceipt } from "@/components/receipts/TransactionReceipt";
 import { Dialog, DialogContent, DialogTitle, DialogHeader } from "@/components/ui/dialog";
+import { TransactionService } from "@/services/TransactionService";
+import { useAuth } from "@/context/AuthContext";
 
 const TransactionDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [transaction, setTransaction] = useState<Transaction | null>(null);
   const [loading, setLoading] = useState(true);
   const [showReceipt, setShowReceipt] = useState(false);
 
   useEffect(() => {
-    // Charger les transactions depuis localStorage
-    const storedTransactions = localStorage.getItem('transactions');
-    
-    if (storedTransactions && id) {
-      try {
-        const parsedTransactions = JSON.parse(storedTransactions).map((tx: any) => ({
-          ...tx,
-          createdAt: new Date(tx.createdAt),
-          updatedAt: new Date(tx.updatedAt),
-          validatedAt: tx.validatedAt ? new Date(tx.validatedAt) : undefined
-        }));
-        
-        // Rechercher la transaction par ID
-        const foundTransaction = parsedTransactions.find((tx: Transaction) => tx.id === id);
-        
-        if (foundTransaction) {
-          setTransaction(foundTransaction);
-        } else {
-          toast.error("Transaction non trouvée");
-          navigate("/transactions");
+    if (id) {
+      loadTransaction(id);
+      
+      // Subscribe to real-time updates for this specific transaction
+      const subscription = TransactionService.subscribeToTransactionChanges((updatedTransaction) => {
+        if (updatedTransaction.id === id) {
+          setTransaction(updatedTransaction);
         }
-      } catch (error) {
-        console.error("Erreur lors du chargement de la transaction:", error);
-        toast.error("Erreur lors du chargement de la transaction");
-      }
-    } else {
-      toast.error("Aucune transaction trouvée");
-      navigate("/transactions");
-    }
-    
-    setLoading(false);
-    
-    // Abonnement aux événements de mise à jour
-    const unsubscribe = TransactionManager.subscribe('transaction:updated', handleTransactionUpdated);
-    
-    return () => {
-      unsubscribe();
-    };
-  }, [id, navigate]);
+      });
 
-  // Gestionnaire pour une mise à jour de la transaction
-  const handleTransactionUpdated = (updatedTransaction: Transaction) => {
-    if (updatedTransaction.id === id) {
-      setTransaction(updatedTransaction);
+      return () => {
+        if (subscription) {
+          subscription.unsubscribe();
+        }
+      };
+    }
+  }, [id]);
+
+  const loadTransaction = async (transactionId: string) => {
+    try {
+      setLoading(true);
+      const data = await TransactionService.getTransactionById(transactionId);
+      
+      if (data) {
+        setTransaction(data);
+      } else {
+        toast.error("Transaction non trouvée");
+        navigate("/transactions");
+      }
+    } catch (error) {
+      console.error("Erreur lors du chargement de la transaction:", error);
+      toast.error("Erreur lors du chargement de la transaction");
+      navigate("/transactions");
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Gérer les changements de statut
-  const handleStatusChange = (newStatus: TransactionStatus) => {
+  const handleStatusChange = async (newStatus: TransactionStatus) => {
     if (!transaction) return;
     
-    // Déterminer l'action
     let action: "validate" | "complete" | "cancel";
     switch (newStatus) {
       case TransactionStatus.VALIDATED:
@@ -88,33 +79,28 @@ const TransactionDetail = () => {
         return;
     }
     
-    // Récupérer toutes les transactions pour pouvoir les mettre à jour
-    const storedTransactions = JSON.parse(localStorage.getItem('transactions') || '[]');
-    
-    // Utiliser le TransactionManager pour effectuer la validation
-    const result = TransactionManager.validateTransaction(
-      storedTransactions,
-      transaction.id,
-      "Admin User", // À remplacer par l'utilisateur connecté
-      action,
-      UserRole.ADMIN
-    );
-    
-    if (result.success) {
-      // Mettre à jour le state local
-      setTransaction(result.transaction);
+    try {
+      const updatedTransaction = await TransactionService.updateTransactionStatus(
+        transaction.id,
+        newStatus,
+        user?.name || "Admin User"
+      );
       
-      // Enregistrer les modifications dans localStorage
-      localStorage.setItem('transactions', JSON.stringify(storedTransactions));
+      setTransaction(updatedTransaction);
       
-      // Afficher une notification
-      toast.success(`Transaction ${action === "validate" ? "validée" : action === "complete" ? "complétée" : "annulée"} avec succès`);
-    } else {
-      toast.error(result.message);
+      const actionMessages = {
+        "validate": "validée",
+        "complete": "complétée", 
+        "cancel": "annulée"
+      };
+      
+      toast.success(`Transaction ${actionMessages[action]} avec succès`);
+    } catch (error) {
+      console.error("Erreur lors de la mise à jour:", error);
+      toast.error("Erreur lors de la mise à jour du statut");
     }
   };
 
-  // Génère l'URL de vérification pour l'application actuelle
   const getVerificationUrl = (transaction: Transaction) => {
     const verificationData = {
       id: transaction.id,
@@ -127,10 +113,7 @@ const TransactionDetail = () => {
       recipient: transaction.recipient.name,
     };
     
-    // Create a base64 encoded verification string
     const encodedData = btoa(JSON.stringify(verificationData));
-    
-    // Use the current origin for verification instead of hardcoded domain
     return `${window.location.origin}/verify?data=${encodedData}`;
   };
 
@@ -144,7 +127,8 @@ const TransactionDetail = () => {
     return (
       <AppLayout>
         <div className="flex items-center justify-center h-64">
-          <p>Chargement...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#F97316]"></div>
+          <span className="ml-2">Chargement...</span>
         </div>
       </AppLayout>
     );
@@ -161,7 +145,6 @@ const TransactionDetail = () => {
     );
   }
 
-  // Obtenir le badge de statut
   const getStatusBadge = (status: TransactionStatus) => {
     switch (status) {
       case TransactionStatus.PENDING:

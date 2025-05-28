@@ -1,16 +1,18 @@
 
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Transaction, TransactionStatus, Currency, UserRole } from "@/types";
+import { Transaction, TransactionStatus, UserRole } from "@/types";
 import { toast } from "@/components/ui/sonner";
 import { TransactionStats } from "./TransactionStats";
 import { TransactionFilters } from "./TransactionFilters";
 import { TransactionTable } from "./TransactionTable";
-import { filterTransactions, TransactionManager } from "./utils/transactionUtils";
+import { filterTransactions } from "./utils/transactionUtils";
 import { useAuth } from "@/context/AuthContext";
+import { TransactionService } from "@/services/TransactionService";
 
 export function TransactionList() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [directionFilter, setDirectionFilter] = useState("all");
@@ -21,102 +23,65 @@ export function TransactionList() {
   const { user } = useAuth();
 
   useEffect(() => {
-    // Charger toutes les transactions existantes
     loadTransactions();
 
-    // S'abonner aux événements de transaction pour des mises à jour en temps réel
-    const unsubscribeCreated = TransactionManager.subscribe('transaction:created', handleTransactionCreated);
-    const unsubscribeUpdated = TransactionManager.subscribe('transaction:updated', handleTransactionUpdated);
-    const unsubscribeValidated = TransactionManager.subscribe('transaction:validated', handleTransactionUpdated);
-    const unsubscribeCompleted = TransactionManager.subscribe('transaction:completed', handleTransactionUpdated);
-    const unsubscribeCancelled = TransactionManager.subscribe('transaction:cancelled', handleTransactionUpdated);
+    // Subscribe to real-time updates
+    const subscription = TransactionService.subscribeToTransactionChanges((updatedTransaction) => {
+      setTransactions(current => {
+        const existingIndex = current.findIndex(tx => tx.id === updatedTransaction.id);
+        if (existingIndex >= 0) {
+          const updated = [...current];
+          updated[existingIndex] = updatedTransaction;
+          return updated;
+        } else {
+          return [updatedTransaction, ...current];
+        }
+      });
+    });
 
     return () => {
-      // Nettoyage des abonnements lors du démontage du composant
-      unsubscribeCreated();
-      unsubscribeUpdated();
-      unsubscribeValidated();
-      unsubscribeCompleted();
-      unsubscribeCancelled();
+      if (subscription) {
+        subscription.unsubscribe();
+      }
     };
   }, []);
 
-  // Fonction pour charger les transactions depuis localStorage
-  const loadTransactions = () => {
-    const storedTransactions = localStorage.getItem('transactions');
-    if (storedTransactions) {
-      try {
-        const parsedTransactions = JSON.parse(storedTransactions).map((tx: any) => ({
-          ...tx,
-          createdAt: new Date(tx.createdAt),
-          updatedAt: new Date(tx.updatedAt),
-          validatedAt: tx.validatedAt ? new Date(tx.validatedAt) : undefined
-        }));
-        setTransactions(parsedTransactions);
-        TransactionManager.calculateStatsFromTransactions(parsedTransactions);
-      } catch (error) {
-        console.error("Erreur lors du parsing des transactions:", error);
-        setTransactions([]);
-        toast.error("Erreur lors du chargement des transactions");
-      }
-    } else {
-      setTransactions([]);
-      TransactionManager.resetStats();
+  const loadTransactions = async () => {
+    try {
+      setLoading(true);
+      const data = await TransactionService.getAllTransactions();
+      setTransactions(data);
+    } catch (error) {
+      console.error("Erreur lors du chargement des transactions:", error);
+      toast.error("Erreur lors du chargement des transactions");
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Gestionnaire pour une nouvelle transaction créée
-  const handleTransactionCreated = (transaction: Transaction) => {
-    // Mettre à jour l'état local avec la nouvelle transaction
-    setTransactions(current => {
-      const newTransactions = [transaction, ...current];
-      // Mettre à jour les statistiques globales
-      TransactionManager.calculateStatsFromTransactions(newTransactions);
-      return newTransactions;
-    });
-    
-    toast.success("Nouvelle transaction créée", {
-      description: `La transaction ${transaction.id} a été créée avec succès`
-    });
-  };
-
-  // Gestionnaire pour une transaction mise à jour
-  const handleTransactionUpdated = (transaction: Transaction) => {
-    setTransactions(current => {
-      const updated = current.map(tx => tx.id === transaction.id ? transaction : tx);
-      // Recalculer les statistiques avec les transactions mises à jour
-      TransactionManager.calculateStatsFromTransactions(updated);
-      localStorage.setItem('transactions', JSON.stringify(updated));
-      return updated;
-    });
-  };
-
-  // Gestion suppression d'une transaction (ADMIN uniquement)
-  const handleDeleteTransaction = (id: string) => {
+  const handleDeleteTransaction = async (id: string) => {
     if (!user || user.role !== UserRole.ADMIN) {
       toast.error("Seul un administrateur peut supprimer une transaction.");
       return;
     }
-    // Confirmation
+    
     if (!window.confirm("Voulez-vous vraiment supprimer cette transaction ?")) return;
 
-    const updatedTransactions = transactions.filter(tx => tx.id !== id);
-    setTransactions(updatedTransactions);
-    localStorage.setItem('transactions', JSON.stringify(updatedTransactions));
-    TransactionManager.calculateStatsFromTransactions(updatedTransactions);
-    toast.success("Transaction supprimée !");
+    try {
+      await TransactionService.deleteTransaction(id);
+      setTransactions(current => current.filter(tx => tx.id !== id));
+      toast.success("Transaction supprimée !");
+    } catch (error) {
+      console.error("Erreur lors de la suppression:", error);
+      toast.error("Erreur lors de la suppression de la transaction");
+    }
   };
 
-  // Gestion édition (remonte le contrôle à un parent ou navigation vers la fiche)
   const handleEditTransaction = (id: string) => {
-    // Simple navigation vers la page de détails (fonction d'édition centralisée)
     window.location.href = `/transactions/${id}?edit=1`;
   };
 
-  const handleUpdateStatus = (id: string, newStatus: TransactionStatus) => {
-    const now = new Date();
-    
-    // Déterminer l'action appropriée en fonction du nouveau statut
+  const handleUpdateStatus = async (id: string, newStatus: TransactionStatus) => {
     let action: "validate" | "complete" | "cancel";
     switch (newStatus) {
       case TransactionStatus.VALIDATED:
@@ -133,19 +98,18 @@ export function TransactionList() {
         return;
     }
     
-    // Utiliser le TransactionManager pour effectuer la validation
-    const result = TransactionManager.validateTransaction(
-      transactions,
-      id,
-      user?.name || "Admin User", // Utiliser le nom de l'utilisateur connecté si disponible
-      action,
-      user?.role || UserRole.ADMIN 
-    );
-    
-    if (result.success) {
-      // Mettre à jour l'état des transactions - déjà géré via les événements
+    try {
+      const updatedTransaction = await TransactionService.updateTransactionStatus(
+        id,
+        newStatus,
+        user?.name || "Admin User"
+      );
       
-      // Afficher une notification appropriée
+      // Update local state
+      setTransactions(current => 
+        current.map(tx => tx.id === id ? updatedTransaction : tx)
+      );
+      
       const statusMessages = {
         [TransactionStatus.VALIDATED]: "Transaction validée !",
         [TransactionStatus.COMPLETED]: "Transaction complétée !",
@@ -154,15 +118,12 @@ export function TransactionList() {
       
       if (statusMessages[newStatus]) {
         toast[newStatus === TransactionStatus.CANCELLED ? "error" : "success"](
-          statusMessages[newStatus], 
-          {
-            description: `${result.message}`
-          }
+          statusMessages[newStatus]
         );
       }
-    } else {
-      // Afficher une erreur en cas d'échec
-      toast.error(result.message);
+    } catch (error) {
+      console.error("Erreur lors de la mise à jour:", error);
+      toast.error("Erreur lors de la mise à jour du statut");
     }
   };
 
@@ -175,6 +136,17 @@ export function TransactionList() {
     paymentMethodFilter,
     dateFilter
   );
+
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center p-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#F97316]"></div>
+          <span className="ml-2">Chargement des transactions...</span>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>

@@ -2,14 +2,14 @@
 import { AppLayout } from "@/components/layout/AppLayout";
 import { DashboardSummary } from "@/components/dashboard/DashboardSummary";
 import { ActivityChart } from "@/components/dashboard/ActivityChart";
-import { Currency, DashboardStats, Transaction } from "@/types";
+import { Currency, DashboardStats, Transaction, TransactionStatus } from "@/types";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { CreateTransactionButton } from "@/components/transactions/CreateTransactionButton";
 import { useState, useEffect } from "react";
-import { TransactionManager } from "@/components/transactions/utils/transactionUtils";
 import { toast } from "@/components/ui/sonner";
+import { TransactionService } from "@/services/TransactionService";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -23,140 +23,56 @@ const Dashboard = () => {
   });
   const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
-  const [isInitialized, setIsInitialized] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Charger les statistiques au montage et lors des mises à jour
   useEffect(() => {
-    // Charger les données initiales
-    updateDashboard();
-    setIsInitialized(true);
-    setIsLoading(false);
+    loadDashboardData();
 
-    // S'abonner aux événements pour mettre à jour automatiquement les stats et transactions
-    const unsubscribeCreated = TransactionManager.subscribe('transaction:created', handleTransactionCreated);
-    const unsubscribeUpdated = TransactionManager.subscribe('transaction:updated', updateDashboard);
-    const unsubscribeValidated = TransactionManager.subscribe('transaction:validated', updateDashboard);
-    const unsubscribeCompleted = TransactionManager.subscribe('transaction:completed', updateDashboard);
-    const unsubscribeCancelled = TransactionManager.subscribe('transaction:cancelled', updateDashboard);
-    const unsubscribeStats = TransactionManager.subscribe('stats:updated', handleStatsUpdated);
-    
+    // Subscribe to real-time updates
+    const subscription = TransactionService.subscribeToTransactionChanges(() => {
+      loadDashboardData();
+    });
+
     return () => {
-      unsubscribeCreated();
-      unsubscribeUpdated();
-      unsubscribeValidated();
-      unsubscribeCompleted();
-      unsubscribeCancelled();
-      unsubscribeStats();
+      if (subscription) {
+        subscription.unsubscribe();
+      }
     };
   }, []);
 
-  // Gestion spécifique pour les nouvelles transactions
-  const handleTransactionCreated = (transaction: Transaction) => {
-    // Mise à jour immédiate des statistiques
-    updateDashboard();
-    
-    // Notification visuelle pour l'utilisateur
-    if (isInitialized) {
-      toast.success("Nouvelle transaction créée", {
-        description: `La transaction ${transaction.id} a été ajoutée avec succès`,
-      });
+  const loadDashboardData = async () => {
+    try {
+      setIsLoading(true);
+      const transactions = await TransactionService.getAllTransactions();
+      
+      setAllTransactions(transactions);
+      
+      // Calculate stats
+      const newStats = {
+        totalTransactions: transactions.length,
+        pendingTransactions: transactions.filter(tx => tx.status === TransactionStatus.PENDING).length,
+        completedTransactions: transactions.filter(tx => tx.status === TransactionStatus.COMPLETED).length,
+        cancelledTransactions: transactions.filter(tx => tx.status === TransactionStatus.CANCELLED).length,
+        totalAmount: transactions.reduce((acc, tx) => acc + tx.amount, 0),
+        totalCommissions: transactions.reduce((acc, tx) => acc + tx.commissionAmount, 0)
+      };
+      
+      setStats(newStats);
+      
+      // Get recent transactions (last 3)
+      const recent = transactions
+        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+        .slice(0, 3);
+      setRecentTransactions(recent);
+      
+    } catch (error) {
+      console.error("Erreur lors du chargement du tableau de bord:", error);
+      toast.error("Erreur lors du chargement des données");
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // Gestion des mises à jour de statistiques
-  const handleStatsUpdated = (updatedStats: ReturnType<typeof TransactionManager.getStats>) => {
-    setStats({
-      totalTransactions: updatedStats.transactionTotal,
-      pendingTransactions: updatedStats.transactionTotal - 
-                          (updatedStats.transactionCompletee + 
-                           updatedStats.transactionValidee + 
-                           updatedStats.transactionAnnulee),
-      completedTransactions: updatedStats.transactionCompletee,
-      cancelledTransactions: updatedStats.transactionAnnulee,
-      totalAmount: updatedStats.montantTotal,
-      totalCommissions: updatedStats.commissionTotale
-    });
-
-    // Mise à jour immédiate des transactions récentes également
-    updateRecentTransactions();
-  };
-
-  // Mise à jour des transactions récentes uniquement
-  const updateRecentTransactions = () => {
-    const storedTransactions = localStorage.getItem('transactions');
-    if (storedTransactions) {
-      try {
-        const allTx = JSON.parse(storedTransactions).map((tx: any) => ({
-          ...tx,
-          createdAt: new Date(tx.createdAt),
-          updatedAt: new Date(tx.updatedAt),
-          validatedAt: tx.validatedAt ? new Date(tx.validatedAt) : undefined
-        }));
-        
-        setAllTransactions(allTx);
-        
-        const recent = allTx
-          .sort((a: Transaction, b: Transaction) => 
-            b.createdAt.getTime() - a.createdAt.getTime()
-          )
-          .slice(0, 3);
-        
-        setRecentTransactions(recent);
-      } catch (error) {
-        console.error("Erreur lors du chargement des transactions récentes:", error);
-        setRecentTransactions([]);
-        setAllTransactions([]);
-      }
-    } else {
-      setRecentTransactions([]);
-      setAllTransactions([]);
-    }
-  };
-
-  // Fonction pour mettre à jour les statistiques et transactions récentes
-  const updateDashboard = () => {
-    // Vérifier que les transactions existent
-    const storedTransactions = localStorage.getItem('transactions');
-    if (storedTransactions) {
-      try {
-        // Forcer le recalcul complet des statistiques
-        const parsedTransactions = JSON.parse(storedTransactions).map((tx: any) => ({
-          ...tx,
-          createdAt: new Date(tx.createdAt),
-          updatedAt: new Date(tx.updatedAt),
-          validatedAt: tx.validatedAt ? new Date(tx.validatedAt) : undefined
-        }));
-        
-        // Recalculer les statistiques à partir de toutes les transactions
-        TransactionManager.calculateStatsFromTransactions(parsedTransactions);
-        
-        // Obtenir les statistiques mises à jour
-        const transactionStats = TransactionManager.getStats();
-        setStats({
-          totalTransactions: transactionStats.transactionTotal,
-          pendingTransactions: transactionStats.transactionTotal - 
-                            (transactionStats.transactionCompletee + 
-                             transactionStats.transactionValidee + 
-                             transactionStats.transactionAnnulee),
-          completedTransactions: transactionStats.transactionCompletee,
-          cancelledTransactions: transactionStats.transactionAnnulee,
-          totalAmount: transactionStats.montantTotal,
-          totalCommissions: transactionStats.commissionTotale
-        });
-        
-        // Mettre à jour les transactions complètes
-        setAllTransactions(parsedTransactions);
-      } catch (error) {
-        console.error("Erreur lors de la mise à jour du tableau de bord:", error);
-      }
-    }
-
-    // Mettre à jour les transactions récentes dans tous les cas
-    updateRecentTransactions();
-  };
-
-  // Nouvelle navigation après clic sur une statistique
   const handleSummaryClick = (type: keyof DashboardStats) => {
     switch (type) {
       case "totalTransactions":
@@ -173,7 +89,7 @@ const Dashboard = () => {
   };
 
   const getDirectionLabel = (direction: string) => {
-    return direction === "kinshasa_to_dubai" ? "Dubaï → Kinshasa" : "Kinshasa → Dubaï";
+    return direction === "kinshasa_to_dubai" ? "Kinshasa → Dubaï" : "Dubaï → Kinshasa";
   };
 
   return (
@@ -195,6 +111,7 @@ const Dashboard = () => {
         {isLoading ? (
           <div className="flex items-center justify-center p-8">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#F97316]"></div>
+            <span className="ml-2 text-[#43A047]">Chargement des données...</span>
           </div>
         ) : (
           <DashboardSummary 

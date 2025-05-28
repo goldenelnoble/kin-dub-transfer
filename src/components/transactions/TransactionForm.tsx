@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,10 +15,12 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "@/components/ui/sonner";
 import { ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { TransactionManager } from "./utils/transactionUtils";
+import { TransactionService } from "@/services/TransactionService";
 
 export function TransactionForm() {
   const navigate = useNavigate();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
   const [direction, setDirection] = useState<TransactionDirection>(TransactionDirection.KINSHASA_TO_DUBAI);
   const [amount, setAmount] = useState<string>("");
   const [currency, setCurrency] = useState<Currency>(Currency.USD);
@@ -49,8 +50,10 @@ export function TransactionForm() {
     setCommissionPercentage(DEFAULT_COMMISSION_PERCENTAGES[newDirection].toString());
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (isSubmitting) return;
     
     // Valider les champs requis
     if (!amount || parseFloat(amount) <= 0) {
@@ -73,62 +76,63 @@ export function TransactionForm() {
       return;
     }
     
-    // Créer la transaction
-    const transactionId = "TXN" + Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
-    const now = new Date();
+    setIsSubmitting(true);
     
-    const transaction = {
-      id: transactionId,
-      direction,
-      amount: amountValue,
-      receivingAmount: amountValue,
-      currency,
-      commissionPercentage: commissionValue,
-      commissionAmount,
-      paymentMethod,
-      mobileMoneyNetwork: mobileMoneyNetwork || undefined,
-      status: TransactionStatus.PENDING,
-      sender: {
-        name: senderName,
-        phone: senderPhone,
-        idNumber: senderIdNumber,
-        idType: senderIdType
-      },
-      recipient: {
-        name: recipientName,
-        phone: recipientPhone
-      },
-      notes: notes || undefined,
-      createdBy: "Operator User",
-      createdAt: now,
-      updatedAt: now
-    };
-    
-    // Utiliser le TransactionManager pour créer et sauvegarder la transaction
-    // Cette fonction va déclencher les événements nécessaires pour mettre à jour
-    // tous les composants abonnés
-    const createdTransaction = TransactionManager.createTransaction(transaction);
-    TransactionManager.saveTransaction(createdTransaction);
-    
-    toast.success("Transaction créée avec succès", {
-      description: `Identifiant: ${transactionId}`,
-      action: {
-        label: "Voir les transactions",
-        onClick: () => navigate("/transactions")
-      }
-    });
-    
-    // Réinitialiser le formulaire
-    setAmount("");
-    setSenderName("");
-    setSenderPhone("");
-    setSenderIdNumber("");
-    setRecipientName("");
-    setRecipientPhone("");
-    setNotes("");
-    
-    // Rediriger vers la liste des transactions
-    navigate("/transactions");
+    try {
+      // Créer la transaction via Supabase
+      const transaction = {
+        direction,
+        amount: amountValue,
+        receivingAmount: amountValue,
+        currency,
+        commissionPercentage: commissionValue,
+        commissionAmount,
+        paymentMethod,
+        mobileMoneyNetwork: mobileMoneyNetwork || undefined,
+        status: TransactionStatus.PENDING,
+        sender: {
+          name: senderName,
+          phone: senderPhone,
+          idNumber: senderIdNumber,
+          idType: senderIdType
+        },
+        recipient: {
+          name: recipientName,
+          phone: recipientPhone
+        },
+        notes: notes || undefined,
+        createdBy: "Operator User"
+      };
+      
+      const createdTransaction = await TransactionService.createTransaction(transaction);
+      
+      toast.success("Transaction créée avec succès", {
+        description: `Identifiant: ${createdTransaction.id}`,
+        action: {
+          label: "Voir les transactions",
+          onClick: () => navigate("/transactions")
+        }
+      });
+      
+      // Réinitialiser le formulaire
+      setAmount("");
+      setSenderName("");
+      setSenderPhone("");
+      setSenderIdNumber("");
+      setRecipientName("");
+      setRecipientPhone("");
+      setNotes("");
+      
+      // Rediriger vers la liste des transactions
+      navigate("/transactions");
+    } catch (error) {
+      console.error("Erreur lors de la création de la transaction:", error);
+      toast.error("Erreur lors de la création de la transaction", {
+        description: "Veuillez réessayer ou contacter le support technique"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -359,8 +363,12 @@ export function TransactionForm() {
           </div>
           
           <div className="flex justify-end">
-            <Button type="submit" className="bg-app-blue-500 hover:bg-app-blue-600">
-              Créer la transaction
+            <Button 
+              type="submit" 
+              className="bg-app-blue-500 hover:bg-app-blue-600"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Création en cours..." : "Créer la transaction"}
             </Button>
           </div>
         </form>

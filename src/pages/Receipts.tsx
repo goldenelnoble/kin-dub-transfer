@@ -4,12 +4,24 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, ArrowDown, ArrowUp, FileText } from "lucide-react";
+import { Search, ArrowDown, ArrowUp, FileText, Trash2 } from "lucide-react";
 import { TransactionReceipt } from "@/components/receipts/TransactionReceipt";
-import { Transaction } from "@/types";
+import { Transaction, UserRole } from "@/types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/components/ui/sonner";
+import { useAuth } from "@/context/AuthContext";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const Receipts = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -17,14 +29,17 @@ const Receipts = () => {
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [activeTab, setActiveTab] = useState("list");
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   // Récupérer toutes les transactions depuis le localStorage
-  const transactions = JSON.parse(localStorage.getItem('transactions') || '[]').map((tx: any) => ({
-    ...tx,
-    createdAt: new Date(tx.createdAt),
-    updatedAt: new Date(tx.updatedAt),
-    validatedAt: tx.validatedAt ? new Date(tx.validatedAt) : undefined
-  }));
+  const [transactions, setTransactions] = useState(() => {
+    return JSON.parse(localStorage.getItem('transactions') || '[]').map((tx: any) => ({
+      ...tx,
+      createdAt: new Date(tx.createdAt),
+      updatedAt: new Date(tx.updatedAt),
+      validatedAt: tx.validatedAt ? new Date(tx.validatedAt) : undefined
+    }));
+  });
 
   // Filtrer les transactions en fonction de la recherche
   const filteredTransactions = transactions.filter((tx: Transaction) => {
@@ -49,6 +64,33 @@ const Receipts = () => {
     setSelectedTransaction(transaction);
     setActiveTab("receipt");
     toast.success("Reçu généré avec succès");
+  };
+
+  const handleDeleteTransaction = (transactionId: string) => {
+    if (!user || user.role !== UserRole.ADMIN) {
+      toast.error("Seul un administrateur peut supprimer des reçus.");
+      return;
+    }
+
+    // Supprimer la transaction du localStorage
+    const updatedTransactions = transactions.filter(tx => tx.id !== transactionId);
+    localStorage.setItem('transactions', JSON.stringify(updatedTransactions.map(tx => ({
+      ...tx,
+      createdAt: tx.createdAt.toISOString(),
+      updatedAt: tx.updatedAt.toISOString(),
+      validatedAt: tx.validatedAt?.toISOString()
+    }))));
+    
+    // Mettre à jour l'état local
+    setTransactions(updatedTransactions);
+    
+    // Si la transaction supprimée était sélectionnée, revenir à la liste
+    if (selectedTransaction && selectedTransaction.id === transactionId) {
+      setSelectedTransaction(null);
+      setActiveTab("list");
+    }
+    
+    toast.success("Reçu supprimé avec succès");
   };
 
   const formatDate = (date: Date) => {
@@ -78,6 +120,8 @@ const Receipts = () => {
     // Use the current origin for verification instead of hardcoded domain
     return `${window.location.origin}/verify?data=${encodedData}`;
   };
+
+  const isAdmin = user?.role === UserRole.ADMIN;
 
   return (
     <AppLayout>
@@ -152,6 +196,38 @@ const Receipts = () => {
                             >
                               <FileText className="h-4 w-4" />
                             </Button>
+                            {isAdmin && (
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    title="Supprimer le reçu"
+                                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Supprimer le reçu</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Êtes-vous sûr de vouloir supprimer définitivement ce reçu ? 
+                                      Cette action ne peut pas être annulée.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => handleDeleteTransaction(tx.id)}
+                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    >
+                                      Supprimer
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            )}
                           </div>
                         </td>
                       </tr>

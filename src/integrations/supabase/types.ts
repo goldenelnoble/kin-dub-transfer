@@ -203,14 +203,14 @@ export type Database = {
             foreignKeyName: "transactions_recipient_id_fkey"
             columns: ["recipient_id"]
             isOneToOne: false
-            referencedRelation: "profiles"
+            referencedRelation: "recipients"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "transactions_sender_id_fkey"
             columns: ["sender_id"]
             isOneToOne: false
-            referencedRelation: "profiles"
+            referencedRelation: "senders"
             referencedColumns: ["id"]
           },
         ]

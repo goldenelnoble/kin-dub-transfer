@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/components/ui/sonner";
 import { useAuth } from "@/context/AuthContext";
+import { TransactionService } from "@/services/TransactionService";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,18 +29,28 @@ const Receipts = () => {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [activeTab, setActiveTab] = useState("list");
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  // Récupérer toutes les transactions depuis le localStorage
-  const [transactions, setTransactions] = useState(() => {
-    return JSON.parse(localStorage.getItem('transactions') || '[]').map((tx: any) => ({
-      ...tx,
-      createdAt: new Date(tx.createdAt),
-      updatedAt: new Date(tx.updatedAt),
-      validatedAt: tx.validatedAt ? new Date(tx.validatedAt) : undefined
-    }));
-  });
+  // Charger les transactions depuis la base de données
+  const loadTransactions = async () => {
+    try {
+      setIsLoading(true);
+      const fetchedTransactions = await TransactionService.getAllTransactions();
+      setTransactions(fetchedTransactions);
+    } catch (error) {
+      console.error('Error loading transactions:', error);
+      toast.error("Erreur lors du chargement des transactions");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadTransactions();
+  }, []);
 
   // Filtrer les transactions en fonction de la recherche
   const filteredTransactions = transactions.filter((tx: Transaction) => {
@@ -66,31 +77,31 @@ const Receipts = () => {
     toast.success("Reçu généré avec succès");
   };
 
-  const handleDeleteTransaction = (transactionId: string) => {
+  const handleDeleteTransaction = async (transactionId: string) => {
     if (!user || user.role !== UserRole.ADMIN) {
       toast.error("Seul un administrateur peut supprimer des reçus.");
       return;
     }
 
-    // Supprimer la transaction du localStorage
-    const updatedTransactions = transactions.filter(tx => tx.id !== transactionId);
-    localStorage.setItem('transactions', JSON.stringify(updatedTransactions.map(tx => ({
-      ...tx,
-      createdAt: tx.createdAt.toISOString(),
-      updatedAt: tx.updatedAt.toISOString(),
-      validatedAt: tx.validatedAt?.toISOString()
-    }))));
-    
-    // Mettre à jour l'état local
-    setTransactions(updatedTransactions);
-    
-    // Si la transaction supprimée était sélectionnée, revenir à la liste
-    if (selectedTransaction && selectedTransaction.id === transactionId) {
-      setSelectedTransaction(null);
-      setActiveTab("list");
+    try {
+      await TransactionService.deleteTransaction(transactionId);
+      
+      // Mettre à jour l'état local
+      setTransactions(prevTransactions => 
+        prevTransactions.filter(tx => tx.id !== transactionId)
+      );
+      
+      // Si la transaction supprimée était sélectionnée, revenir à la liste
+      if (selectedTransaction && selectedTransaction.id === transactionId) {
+        setSelectedTransaction(null);
+        setActiveTab("list");
+      }
+      
+      toast.success("Reçu supprimé avec succès");
+    } catch (error) {
+      console.error('Error deleting transaction:', error);
+      toast.error("Erreur lors de la suppression du reçu");
     }
-    
-    toast.success("Reçu supprimé avec succès");
   };
 
   const formatDate = (date: Date) => {
@@ -122,6 +133,26 @@ const Receipts = () => {
   };
 
   const isAdmin = user?.role === UserRole.ADMIN;
+
+  if (isLoading) {
+    return (
+      <AppLayout>
+        <div className="space-y-6">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Reçus</h1>
+            <p className="text-muted-foreground">
+              Générez et imprimez des reçus pour toutes vos transactions
+            </p>
+          </div>
+          <Card>
+            <CardContent className="p-6 text-center">
+              <p>Chargement des transactions...</p>
+            </CardContent>
+          </Card>
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>

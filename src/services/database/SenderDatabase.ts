@@ -5,7 +5,7 @@ export class SenderDatabase {
   static async createSender(senderData: any) {
     console.log('Creating sender in database...');
     
-    const { data: senderData: dbSender, error: senderError } = await supabase
+    const { data: dbSender, error: senderError } = await supabase
       .from('senders')
       .insert({
         name: senderData.name,

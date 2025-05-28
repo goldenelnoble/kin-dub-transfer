@@ -6,7 +6,7 @@ export class TransactionDatabase {
   static async createTransactionRecord(transactionData: any, senderId: string, recipientId: string) {
     console.log('Creating transaction record in database...');
     
-    const { data: transactionData: dbTransaction, error: transactionError } = await supabase
+    const { data: dbTransaction, error: transactionError } = await supabase
       .from('transactions')
       .insert({
         amount: transactionData.amount,

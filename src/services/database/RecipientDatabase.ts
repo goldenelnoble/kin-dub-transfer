@@ -5,7 +5,7 @@ export class RecipientDatabase {
   static async createRecipient(recipientData: any) {
     console.log('Creating recipient in database...');
     
-    const { data: recipientData: dbRecipient, error: recipientError } = await supabase
+    const { data: dbRecipient, error: recipientError } = await supabase
       .from('recipients')
       .insert({
         name: recipientData.name,

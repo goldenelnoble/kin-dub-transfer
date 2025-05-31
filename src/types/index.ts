@@ -1,21 +1,7 @@
 
-// User roles
-export enum UserRole {
-  ADMIN = "admin",
-  SUPERVISOR = "supervisor",
-  OPERATOR = "operator",
-  AUDITOR = "auditor"
-}
-
-// User interface
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: UserRole;
-  createdAt: Date;
-  lastLogin?: Date;
-}
+// Re-export UserRole from AuthContext to maintain compatibility
+export { UserRole } from "@/context/AuthContext";
+export type { User } from "@/context/AuthContext";
 
 // Transaction direction
 export enum TransactionDirection {

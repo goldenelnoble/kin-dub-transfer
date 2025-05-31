@@ -1,10 +1,9 @@
 
 import { Link, useLocation } from "react-router-dom";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth, UserRole } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { UserRole } from "@/types";
-import { ArrowLeft, ArrowRight, BarChart, Settings, User, Users, History, Shield, FileText } from "lucide-react";
+import { ArrowLeft, ArrowRight, BarChart, Settings, LogOut, Users, History, Shield, FileText } from "lucide-react";
 import { useState } from "react";
 
 export function Sidebar() {
@@ -27,21 +26,18 @@ export function Sidebar() {
       icon: <ArrowRight className="h-5 w-5" />,
       visible: true
     },
-    // Reçus (nouveau)
     {
       name: "Reçus",
       path: "/receipts",
       icon: <FileText className="h-5 w-5" />,
       visible: true
     },
-    // Rapports
     {
       name: "Rapports",
       path: "/reports",
       icon: <ArrowRight className="h-5 w-5" />,
       visible: hasPermission("canViewReports")
     },
-    // Journal d'Audit
     {
       name: "Journal d'audit",
       path: "/audit-log",
@@ -60,7 +56,6 @@ export function Sidebar() {
       icon: <Settings className="h-5 w-5" />,
       visible: hasPermission("canConfigureSystem")
     },
-    // Ajout lien vers l'administration système
     {
       name: "Administration",
       path: "/admin-settings",
@@ -68,6 +63,10 @@ export function Sidebar() {
       visible: hasPermission("canConfigureSystem")
     }
   ];
+
+  const handleLogout = async () => {
+    await logout();
+  };
 
   return (
     <div className={cn(
@@ -77,7 +76,7 @@ export function Sidebar() {
       <div className="p-4 flex items-center justify-between border-b border-sidebar-border">
         {!collapsed && (
           <div className="flex items-center space-x-2">
-            <ArrowRight className="h-6 w-6 text-app-blue-500" />
+            <ArrowRight className="h-6 w-6 text-[#F97316]" />
             <span className="font-bold text-xl text-sidebar-foreground">TransferApp</span>
           </div>
         )}
@@ -120,7 +119,7 @@ export function Sidebar() {
           collapsed ? "flex-col space-y-2" : "space-x-2"
         )}>
           <div className="flex-shrink-0">
-            <div className="h-8 w-8 rounded-full bg-app-blue-500 flex items-center justify-center text-white">
+            <div className="h-8 w-8 rounded-full bg-[#F97316] flex items-center justify-center text-white">
               {user.name.charAt(0)}
             </div>
           </div>
@@ -130,18 +129,21 @@ export function Sidebar() {
                 {user.name}
               </div>
               <div className="text-xs text-sidebar-foreground/70 truncate">
-                {UserRole[user.role]}
+                {user.role === UserRole.ADMIN && "Administrateur"}
+                {user.role === UserRole.SUPERVISOR && "Superviseur"} 
+                {user.role === UserRole.OPERATOR && "Opérateur"}
+                {user.role === UserRole.AUDITOR && "Auditeur"}
               </div>
             </div>
           )}
           <Button 
             variant="ghost" 
             size="icon" 
-            onClick={logout}
+            onClick={handleLogout}
             title="Déconnexion"
             className={cn(collapsed && "mt-2")}
           >
-            <User className="h-4 w-4" />
+            <LogOut className="h-4 w-4" />
           </Button>
         </div>
       </div>

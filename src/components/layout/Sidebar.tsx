@@ -69,7 +69,7 @@ export function Sidebar() {
         {!collapsed && (
           <div className="flex items-center space-x-2">
             <ArrowRight className="h-6 w-6 text-[#F97316]" />
-            <span className="font-bold text-xl text-sidebar-foreground">TransferApp</span>
+            <span className="font-bold text-xl text-sidebar-foreground">Golden El Nobles</span>
           </div>
         )}
         <Button 

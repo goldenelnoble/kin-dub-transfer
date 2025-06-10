@@ -200,6 +200,20 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_transactions_recipient"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "recipients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_transactions_sender"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "senders"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "transactions_recipient_id_fkey"
             columns: ["recipient_id"]
             isOneToOne: false

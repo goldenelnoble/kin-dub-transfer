@@ -8,7 +8,7 @@ import {
 } from "react";
 import { User as SupabaseUser, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/components/ui/sonner";
+import { toast } from "@/components/ui/use-toast";
 
 export enum UserRole {
   ADMIN = "admin",
@@ -133,7 +133,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (error) {
         console.error('Error fetching user profile:', error);
-        toast.error("Erreur lors du chargement du profil utilisateur");
+        toast({
+          title: "Erreur",
+          description: "Erreur lors du chargement du profil utilisateur",
+          variant: "destructive"
+        });
         setUser(null);
         return;
       }
@@ -175,16 +179,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (error) {
         console.error('Login error:', error);
-        toast.error(error.message || "Erreur lors de la connexion");
+        toast({
+          title: "Erreur de connexion",
+          description: error.message || "Erreur lors de la connexion",
+          variant: "destructive"
+        });
         setIsLoading(false);
         return false;
       }
 
-      toast.success("Connexion réussie!");
+      toast({
+        title: "Connexion réussie",
+        description: "Vous êtes maintenant connecté",
+      });
       return true;
     } catch (error) {
       console.error('Login error:', error);
-      toast.error("Erreur lors de la connexion");
+      toast({
+        title: "Erreur",
+        description: "Erreur lors de la connexion",
+        variant: "destructive"
+      });
       setIsLoading(false);
       return false;
     }
@@ -194,13 +209,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     
     try {
-      const redirectUrl = `${window.location.origin}/`;
-      
       const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: redirectUrl,
           data: {
             name: name
           }
@@ -209,17 +221,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (error) {
         console.error('Registration error:', error);
-        toast.error(error.message || "Erreur lors de l'inscription");
+        toast({
+          title: "Erreur d'inscription",
+          description: error.message || "Erreur lors de l'inscription",
+          variant: "destructive"
+        });
         setIsLoading(false);
         return false;
       }
 
-      toast.success("Inscription réussie! Vérifiez votre email pour confirmer votre compte.");
+      toast({
+        title: "Inscription réussie",
+        description: "Vérifiez votre email pour confirmer votre compte",
+      });
       setIsLoading(false);
       return true;
     } catch (error) {
       console.error('Registration error:', error);
-      toast.error("Erreur lors de l'inscription");
+      toast({
+        title: "Erreur",
+        description: "Erreur lors de l'inscription",
+        variant: "destructive"
+      });
       setIsLoading(false);
       return false;
     }
@@ -230,16 +253,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { error } = await supabase.auth.signOut();
       if (error) {
         console.error('Logout error:', error);
-        toast.error("Erreur lors de la déconnexion");
+        toast({
+          title: "Erreur",
+          description: "Erreur lors de la déconnexion",
+          variant: "destructive"
+        });
         return;
       }
       
       setUser(null);
       setSession(null);
-      toast.info("Vous avez été déconnecté");
+      toast({
+        title: "Déconnexion",
+        description: "Vous avez été déconnecté",
+      });
     } catch (error) {
       console.error('Logout error:', error);
-      toast.error("Erreur lors de la déconnexion");
+      toast({
+        title: "Erreur",
+        description: "Erreur lors de la déconnexion",
+        variant: "destructive"
+      });
     }
   };
 
@@ -263,22 +297,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (error) {
         console.error('Error updating user:', error);
-        toast.error("Erreur lors de la mise à jour de l'utilisateur");
+        toast({
+          title: "Erreur",
+          description: "Erreur lors de la mise à jour de l'utilisateur",
+          variant: "destructive"
+        });
         return false;
       }
 
-      toast.success("Utilisateur mis à jour avec succès");
+      toast({
+        title: "Succès",
+        description: "Utilisateur mis à jour avec succès",
+      });
       return true;
     } catch (error) {
       console.error('Error updating user:', error);
-      toast.error("Erreur lors de la mise à jour de l'utilisateur");
+      toast({
+        title: "Erreur",
+        description: "Erreur lors de la mise à jour de l'utilisateur",
+        variant: "destructive"
+      });
       return false;
     }
   };
   
   const createUser = async (userData: Omit<User, 'id' | 'createdAt'> & { password: string }): Promise<boolean> => {
     try {
-      // Create user in Supabase Auth
+      // Create user in Supabase Auth using admin function
       const { data: authData, error: authError } = await supabase.auth.admin.createUser({
         email: userData.email,
         password: userData.password,
@@ -287,7 +332,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (authError || !authData.user) {
         console.error('Error creating auth user:', authError);
-        toast.error("Erreur lors de la création de l'utilisateur");
+        toast({
+          title: "Erreur",
+          description: "Erreur lors de la création de l'utilisateur",
+          variant: "destructive"
+        });
         return false;
       }
 
@@ -303,15 +352,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (profileError) {
         console.error('Error updating user profile:', profileError);
-        toast.error("Erreur lors de la configuration du profil utilisateur");
+        toast({
+          title: "Erreur",
+          description: "Erreur lors de la configuration du profil utilisateur",
+          variant: "destructive"
+        });
         return false;
       }
 
-      toast.success("Utilisateur créé avec succès");
+      toast({
+        title: "Succès",
+        description: "Utilisateur créé avec succès",
+      });
       return true;
     } catch (error) {
       console.error('Error creating user:', error);
-      toast.error("Erreur lors de la création de l'utilisateur");
+      toast({
+        title: "Erreur",
+        description: "Erreur lors de la création de l'utilisateur",
+        variant: "destructive"
+      });
       return false;
     }
   };
@@ -322,15 +382,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (error) {
         console.error('Error deleting user:', error);
-        toast.error("Erreur lors de la suppression de l'utilisateur");
+        toast({
+          title: "Erreur",
+          description: "Erreur lors de la suppression de l'utilisateur",
+          variant: "destructive"
+        });
         return false;
       }
 
-      toast.success("Utilisateur supprimé avec succès");
+      toast({
+        title: "Succès",
+        description: "Utilisateur supprimé avec succès",
+      });
       return true;
     } catch (error) {
       console.error('Error deleting user:', error);
-      toast.error("Erreur lors de la suppression de l'utilisateur");
+      toast({
+        title: "Erreur",
+        description: "Erreur lors de la suppression de l'utilisateur",
+        variant: "destructive"
+      });
       return false;
     }
   };

@@ -6,7 +6,7 @@ import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { createAdminUser, displayAdminCredentials } from "@/utils/adminSetup";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 
 const Login = () => {
   const { user, isLoading } = useAuth();
@@ -25,24 +25,19 @@ const Login = () => {
       
       if (credentials) {
         const credentialsInfo = displayAdminCredentials(credentials);
-        toast({
-          title: credentialsInfo.title,
+        toast.success(credentialsInfo.title, {
           description: credentialsInfo.message,
           duration: 10000,
         });
       } else {
-        toast({
-          title: "Erreur",
-          description: "Échec de la création de l'utilisateur admin. Vérifiez la console pour plus de détails.",
-          variant: "destructive"
+        toast.error("Erreur", {
+          description: "Échec de la création de l'utilisateur admin. Vérifiez la console pour plus de détails."
         });
       }
     } catch (error) {
       console.error('Error creating admin:', error);
-      toast({
-        title: "Erreur",
-        description: "Une erreur est survenue lors de la création de l'admin.",
-        variant: "destructive"
+      toast.error("Erreur", {
+        description: "Une erreur est survenue lors de la création de l'admin."
       });
     } finally {
       setIsCreatingAdmin(false);

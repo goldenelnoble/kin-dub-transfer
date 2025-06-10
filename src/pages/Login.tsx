@@ -3,14 +3,51 @@ import { LoginForm } from "@/components/auth/LoginForm";
 import { useAuth } from "@/context/AuthContext";
 import { Navigate } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import { createAdminUser, displayAdminCredentials } from "@/utils/adminSetup";
+import { toast } from "@/components/ui/use-toast";
 
 const Login = () => {
   const { user, isLoading } = useAuth();
+  const [isCreatingAdmin, setIsCreatingAdmin] = useState(false);
 
   // If user is already logged in, redirect to dashboard
   if (user && !isLoading) {
     return <Navigate to="/dashboard" replace />;
   }
+
+  const handleCreateAdmin = async () => {
+    setIsCreatingAdmin(true);
+    
+    try {
+      const credentials = await createAdminUser();
+      
+      if (credentials) {
+        const credentialsInfo = displayAdminCredentials(credentials);
+        toast({
+          title: credentialsInfo.title,
+          description: credentialsInfo.message,
+          duration: 10000,
+        });
+      } else {
+        toast({
+          title: "Erreur",
+          description: "Échec de la création de l'utilisateur admin. Vérifiez la console pour plus de détails.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Error creating admin:', error);
+      toast({
+        title: "Erreur",
+        description: "Une erreur est survenue lors de la création de l'admin.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsCreatingAdmin(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-[#FEF7CD] p-4">
@@ -22,7 +59,20 @@ const Login = () => {
         <h2 className="text-2xl font-semibold mb-2 text-[#43A047]">Gestion de Transferts d'Argent</h2>
         <p className="text-[#F97316]">Kinshasa ↔ Dubaï</p>
       </div>
+      
       <LoginForm />
+      
+      <div className="mt-6 w-full max-w-md">
+        <Button 
+          onClick={handleCreateAdmin}
+          disabled={isCreatingAdmin}
+          variant="outline"
+          className="w-full"
+        >
+          {isCreatingAdmin ? "Création en cours..." : "Créer un utilisateur Admin"}
+        </Button>
+      </div>
+      
       <p className="mt-8 text-sm text-[#F97316]">
         © 2023 Golden El Nobles Cargo. Tous droits réservés.
       </p>
@@ -31,4 +81,3 @@ const Login = () => {
 };
 
 export default Login;
-

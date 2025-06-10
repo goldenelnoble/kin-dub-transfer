@@ -1,0 +1,82 @@
+
+import { supabase } from "@/integrations/supabase/client";
+
+export interface AdminCredentials {
+  email: string;
+  password: string;
+  name: string;
+}
+
+export const createAdminUser = async (): Promise<AdminCredentials | null> => {
+  try {
+    // Default admin credentials
+    const adminCredentials: AdminCredentials = {
+      email: "admin@goldennoblescargoai.com",
+      password: "Admin123!",
+      name: "Administrateur Principal"
+    };
+
+    console.log('Creating admin user with email:', adminCredentials.email);
+
+    // First, create the user in Supabase Auth
+    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      email: adminCredentials.email,
+      password: adminCredentials.password,
+      user_metadata: { 
+        name: adminCredentials.name 
+      },
+      email_confirm: true // Skip email confirmation for admin
+    });
+
+    if (authError) {
+      console.error('Error creating admin user in auth:', authError);
+      return null;
+    }
+
+    if (!authData.user) {
+      console.error('No user data returned from auth creation');
+      return null;
+    }
+
+    console.log('Admin user created in auth system with ID:', authData.user.id);
+
+    // Wait a moment for the trigger to create the profile
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // Now promote the user to admin using our SQL function
+    const { data: promoteData, error: promoteError } = await supabase.rpc(
+      'promote_user_to_admin', 
+      { user_email: adminCredentials.email }
+    );
+
+    if (promoteError) {
+      console.error('Error promoting user to admin:', promoteError);
+      return null;
+    }
+
+    if (!promoteData) {
+      console.error('Failed to promote user to admin - user not found');
+      return null;
+    }
+
+    console.log('User successfully promoted to admin');
+    return adminCredentials;
+
+  } catch (error) {
+    console.error('Error in createAdminUser:', error);
+    return null;
+  }
+};
+
+export const displayAdminCredentials = (credentials: AdminCredentials) => {
+  console.log('\n=== ADMIN USER CREATED SUCCESSFULLY ===');
+  console.log('Email:', credentials.email);
+  console.log('Password:', credentials.password);
+  console.log('Name:', credentials.name);
+  console.log('========================================\n');
+  
+  return {
+    title: "Utilisateur Admin Créé",
+    message: `Un compte administrateur a été créé avec succès.\n\nEmail: ${credentials.email}\nMot de passe: ${credentials.password}\n\nVous pouvez maintenant vous connecter avec ces identifiants.`
+  };
+};

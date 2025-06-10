@@ -1,17 +1,13 @@
 
 import { Link, useLocation } from "react-router-dom";
-import { useAuth, UserRole } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { ArrowLeft, ArrowRight, BarChart, Settings, LogOut, Users, History, Shield, FileText } from "lucide-react";
+import { ArrowLeft, ArrowRight, BarChart, Settings, Users, History, Shield, FileText } from "lucide-react";
 import { useState } from "react";
 
 export function Sidebar() {
-  const { user, logout, hasPermission } = useAuth();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
-
-  if (!user) return null;
 
   const navigationItems = [
     {
@@ -36,37 +32,33 @@ export function Sidebar() {
       name: "Rapports",
       path: "/reports",
       icon: <ArrowRight className="h-5 w-5" />,
-      visible: hasPermission("canViewReports")
+      visible: true
     },
     {
       name: "Journal d'audit",
       path: "/audit-log",
       icon: <History className="h-5 w-5" />,
-      visible: hasPermission("canViewAuditLog")
+      visible: true
     },
     {
       name: "Utilisateurs",
       path: "/users",
       icon: <Users className="h-5 w-5" />,
-      visible: hasPermission("canCreateUsers") || hasPermission("canEditUsers")
+      visible: true
     },
     {
       name: "Paramètres",
       path: "/settings",
       icon: <Settings className="h-5 w-5" />,
-      visible: hasPermission("canConfigureSystem")
+      visible: true
     },
     {
       name: "Administration",
       path: "/admin-settings",
       icon: <Shield className="h-5 w-5" />,
-      visible: hasPermission("canConfigureSystem")
+      visible: true
     }
   ];
-
-  const handleLogout = async () => {
-    await logout();
-  };
 
   return (
     <div className={cn(
@@ -120,31 +112,19 @@ export function Sidebar() {
         )}>
           <div className="flex-shrink-0">
             <div className="h-8 w-8 rounded-full bg-[#F97316] flex items-center justify-center text-white">
-              {user.name.charAt(0)}
+              A
             </div>
           </div>
           {!collapsed && (
             <div className="flex-1 min-w-0">
               <div className="text-sm font-medium text-sidebar-foreground truncate">
-                {user.name}
+                Administrateur
               </div>
               <div className="text-xs text-sidebar-foreground/70 truncate">
-                {user.role === UserRole.ADMIN && "Administrateur"}
-                {user.role === UserRole.SUPERVISOR && "Superviseur"} 
-                {user.role === UserRole.OPERATOR && "Opérateur"}
-                {user.role === UserRole.AUDITOR && "Auditeur"}
+                Accès complet
               </div>
             </div>
           )}
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={handleLogout}
-            title="Déconnexion"
-            className={cn(collapsed && "mt-2")}
-          >
-            <LogOut className="h-4 w-4" />
-          </Button>
         </div>
       </div>
     </div>

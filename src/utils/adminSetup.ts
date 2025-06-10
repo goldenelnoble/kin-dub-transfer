@@ -18,7 +18,7 @@ export const createAdminUser = async (): Promise<AdminCredentials | null> => {
 
     console.log('Creating admin user with email:', adminCredentials.email);
 
-    // First, check if the user already exists
+    // First, check if the user already exists in user_profiles
     const { data: existingUsers, error: checkError } = await supabase
       .from('user_profiles')
       .select('id, role')
@@ -34,22 +34,23 @@ export const createAdminUser = async (): Promise<AdminCredentials | null> => {
       return adminCredentials;
     }
 
-    // Create the user in Supabase Auth
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+    // Create the user using normal signup (this works with anon key)
+    const { data: authData, error: authError } = await supabase.auth.signUp({
       email: adminCredentials.email,
       password: adminCredentials.password,
-      user_metadata: { 
-        name: adminCredentials.name 
-      },
-      email_confirm: true // Skip email confirmation for admin
+      options: {
+        data: { 
+          name: adminCredentials.name 
+        }
+      }
     });
 
     if (authError) {
-      console.error('Error creating admin user in auth:', authError);
+      console.error('Error creating admin user:', authError);
       
-      // Check if user already exists in auth
-      if (authError.message?.includes('already registered')) {
-        console.log('User already exists in auth system, attempting to promote...');
+      // Check if user already exists
+      if (authError.message?.includes('already registered') || authError.message?.includes('already been registered')) {
+        console.log('User already exists, attempting to promote...');
         
         // Try to promote existing user
         const { data: promoteData, error: promoteError } = await supabase.rpc(
@@ -72,14 +73,14 @@ export const createAdminUser = async (): Promise<AdminCredentials | null> => {
     }
 
     if (!authData.user) {
-      console.error('No user data returned from auth creation');
+      console.error('No user data returned from signup');
       return null;
     }
 
-    console.log('Admin user created in auth system with ID:', authData.user.id);
+    console.log('Admin user created with ID:', authData.user.id);
 
     // Wait a moment for the trigger to create the profile
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise(resolve => setTimeout(resolve, 3000));
 
     // Now promote the user to admin using our SQL function
     const { data: promoteData, error: promoteError } = await supabase.rpc(

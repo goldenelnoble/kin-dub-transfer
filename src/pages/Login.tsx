@@ -2,7 +2,6 @@
 import { LoginForm } from "@/components/auth/LoginForm";
 import { useAuth } from "@/context/AuthContext";
 import { Navigate } from "react-router-dom";
-import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { createAdminUser, displayAdminCredentials } from "@/utils/adminSetup";
@@ -21,6 +20,7 @@ const Login = () => {
     setIsCreatingAdmin(true);
     
     try {
+      console.log('Starting admin creation process...');
       const credentials = await createAdminUser();
       
       if (credentials) {
@@ -29,15 +29,17 @@ const Login = () => {
           description: credentialsInfo.message,
           duration: 10000,
         });
+        console.log('Admin user creation completed successfully');
       } else {
+        console.error('Admin creation failed - no credentials returned');
         toast.error("Erreur", {
           description: "Échec de la création de l'utilisateur admin. Vérifiez la console pour plus de détails."
         });
       }
     } catch (error) {
-      console.error('Error creating admin:', error);
+      console.error('Error in handleCreateAdmin:', error);
       toast.error("Erreur", {
-        description: "Une erreur est survenue lors de la création de l'admin."
+        description: "Une erreur est survenue lors de la création de l'admin. Vérifiez la console pour plus de détails."
       });
     } finally {
       setIsCreatingAdmin(false);
@@ -66,6 +68,12 @@ const Login = () => {
         >
           {isCreatingAdmin ? "Création en cours..." : "Créer un utilisateur Admin"}
         </Button>
+        
+        {isCreatingAdmin && (
+          <p className="text-sm text-gray-600 mt-2 text-center">
+            Cela peut prendre quelques secondes...
+          </p>
+        )}
       </div>
       
       <p className="mt-8 text-sm text-[#F97316]">

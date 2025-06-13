@@ -1,4 +1,3 @@
-
 import React, { useRef } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,18 +9,27 @@ import { QRCodeSVG } from 'qrcode.react';
 
 interface TransactionReceiptProps {
   transaction: Transaction;
-  verificationUrl: string;
+  verificationUrl?: string;
 }
 
 export const TransactionReceipt: React.FC<TransactionReceiptProps> = ({ transaction, verificationUrl }) => {
   const receiptRef = useRef<HTMLDivElement>(null);
   
+  // Générer l'URL de vérification si elle n'est pas fournie
+  const getVerificationUrl = () => {
+    if (verificationUrl) return verificationUrl;
+    
+    return `${window.location.origin}/verify?code=${transaction.id}`;
+  };
+
   const printReceipt = () => {
     const printWindow = window.open('', '', 'width=400,height=600');
     if (!printWindow) {
       toast.error("Impossible d'ouvrir la fenêtre d'impression");
       return;
     }
+
+    const finalVerificationUrl = getVerificationUrl();
 
     printWindow.document.write(`
       <!DOCTYPE html>
@@ -95,7 +103,7 @@ export const TransactionReceipt: React.FC<TransactionReceiptProps> = ({ transact
           
           <div class="section">
             <div class="line"><span>Date:</span><span>${formatDate(transaction.createdAt)}</span></div>
-            <div class="line"><span>ID Trans:</span><span>${transaction.id.substring(0, 12)}...</span></div>
+            <div class="line"><span>ID Trans:</span><span>${transaction.id}</span></div>
             <div class="line"><span>Direction:</span><span>${transaction.direction === 'kinshasa_to_dubai' ? 'KIN→DXB' : 'DXB→KIN'}</span></div>
           </div>
           
@@ -131,13 +139,15 @@ export const TransactionReceipt: React.FC<TransactionReceiptProps> = ({ transact
           </div>
           
           <div class="qr-container">
-            <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(verificationUrl)}" width="80" height="80" alt="QR Code" />
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(finalVerificationUrl)}" width="80" height="80" alt="QR Code" />
+            <div style="font-size: 9px; margin-top: 5px;">Scannez pour vérifier</div>
           </div>
           
           <div class="footer">
             <div>Merci de votre confiance</div>
             <div>Gardez ce reçu précieusement</div>
             <div>Service Client: +243 XXX XXX XXX</div>
+            <div style="margin-top: 5px; font-weight: bold;">Code: ${transaction.id}</div>
           </div>
         </div>
       </body>
@@ -182,7 +192,7 @@ export const TransactionReceipt: React.FC<TransactionReceiptProps> = ({ transact
           let y = 35;
           doc.text(`Date: ${formatDate(transaction.createdAt)}`, 5, y);
           y += 5;
-          doc.text(`ID: ${transaction.id.substring(0, 16)}...`, 5, y);
+          doc.text(`ID: ${transaction.id}`, 5, y);
           y += 5;
           doc.text(`Direction: ${transaction.direction === 'kinshasa_to_dubai' ? 'KIN→DXB' : 'DXB→KIN'}`, 5, y);
           y += 8;
@@ -232,15 +242,18 @@ export const TransactionReceipt: React.FC<TransactionReceiptProps> = ({ transact
           doc.text(`Statut: ${transaction.status.toUpperCase()}`, 5, y);
           y += 10;
           
-          // Footer
+          // Footer avec code de transaction
           doc.line(5, y, 75, y);
           y += 5;
           doc.setFontSize(7);
           doc.text("Merci de votre confiance", 40, y, { align: "center" });
           y += 4;
           doc.text("Gardez ce reçu précieusement", 40, y, { align: "center" });
+          y += 4;
+          doc.setFont("courier", "bold");
+          doc.text(`Code: ${transaction.id}`, 40, y, { align: "center" });
           
-          doc.save(`Reçu-${transaction.id.substring(0, 8)}.pdf`);
+          doc.save(`Reçu-${transaction.id}.pdf`);
           
           toast.dismiss();
           toast.success("PDF téléchargé avec succès");
@@ -252,6 +265,8 @@ export const TransactionReceipt: React.FC<TransactionReceiptProps> = ({ transact
       }
     }, 100);
   };
+
+  const finalVerificationUrl = getVerificationUrl();
 
   return (
     <Card className="overflow-hidden max-w-sm mx-auto">
@@ -272,7 +287,7 @@ export const TransactionReceipt: React.FC<TransactionReceiptProps> = ({ transact
             </div>
             <div className="flex justify-between">
               <span>ID Trans:</span>
-              <span>{transaction.id.substring(0, 12)}...</span>
+              <span className="font-bold">{transaction.id}</span>
             </div>
             <div className="flex justify-between">
               <span>Direction:</span>
@@ -345,14 +360,18 @@ export const TransactionReceipt: React.FC<TransactionReceiptProps> = ({ transact
             </div>
           </div>
 
-          {/* QR Code */}
-          <div className="flex justify-center my-3">
+          {/* QR Code avec instructions */}
+          <div className="flex flex-col items-center my-3 space-y-2">
             <QRCodeSVG 
-              value={verificationUrl}
+              value={finalVerificationUrl}
               size={60}
               level="H"
               includeMargin={true}
             />
+            <div className="text-center text-xs">
+              <div>Scannez pour vérifier</div>
+              <div className="font-bold">ou utilisez le code: {transaction.id}</div>
+            </div>
           </div>
 
           {/* Footer */}
@@ -360,6 +379,7 @@ export const TransactionReceipt: React.FC<TransactionReceiptProps> = ({ transact
             <div className="text-xs">Merci de votre confiance</div>
             <div className="text-xs">Gardez ce reçu précieusement</div>
             <div className="text-xs">Service Client: +243 XXX XXX XXX</div>
+            <div className="text-xs font-bold">Vérification: {window.location.origin}/verify</div>
           </div>
 
           {/* Actions */}

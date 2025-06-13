@@ -19,6 +19,7 @@ import NotFound from "./pages/NotFound";
 import AdminSettings from "./pages/AdminSettings";
 import Login from "./pages/Login";
 import SecurityDashboard from "./pages/SecurityDashboard";
+import Verify from "./pages/Verify";
 
 const queryClient = new QueryClient();
 
@@ -58,6 +59,7 @@ function App() {
             <Route path="/users" element={<Users />} />
             <Route path="/admin-settings" element={<AdminSettings />} />
             <Route path="/security" element={<SecurityDashboard />} />
+            <Route path="/verify" element={<Verify />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

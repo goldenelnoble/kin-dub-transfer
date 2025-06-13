@@ -13,7 +13,8 @@ import {
   FileText,
   CreditCard,
   TrendingUp,
-  Menu
+  Menu,
+  Calculator
 } from "lucide-react";
 import { useState } from "react";
 
@@ -77,6 +78,13 @@ export function Sidebar() {
       icon: <Shield className="h-5 w-5" />,
       visible: true,
       color: "text-red-600"
+    },
+    {
+      name: "Comptabilité",
+      path: "/accounting",
+      icon: <Calculator className="h-5 w-5" />,
+      visible: true,
+      color: "text-emerald-600"
     }
   ];
 

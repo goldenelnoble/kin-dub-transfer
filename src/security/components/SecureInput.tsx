@@ -79,7 +79,10 @@ export function SecureInput({
       
       {showSecurityIndicator && isSanitized && (
         <div className="absolute -right-6 top-1/2 transform -translate-y-1/2">
-          <Shield className="h-4 w-4 text-yellow-500" title="Entrée sanitisée pour la sécurité" />
+          <Shield 
+            className="h-4 w-4 text-yellow-500" 
+            aria-label="Entrée sanitisée pour la sécurité"
+          />
         </div>
       )}
       

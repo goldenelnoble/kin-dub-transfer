@@ -1,4 +1,3 @@
-
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -17,6 +16,7 @@ import {
   Calculator
 } from "lucide-react";
 import { useState } from "react";
+import { ImpersonationBanner } from "@/components/auth/ImpersonationBanner";
 
 export function Sidebar() {
   const location = useLocation();
@@ -118,6 +118,9 @@ export function Sidebar() {
           {collapsed ? <Menu className="h-4 w-4" /> : <ArrowLeft className="h-4 w-4" />}
         </Button>
       </div>
+
+      {/* Impersonation Banner */}
+      {!collapsed && <ImpersonationBanner />}
 
       {/* Navigation */}
       <div className="flex-1 py-6 overflow-y-auto">

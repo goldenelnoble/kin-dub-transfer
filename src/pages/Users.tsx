@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth, UserRole } from "@/context/AuthContext";
@@ -19,6 +18,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
+import { ImpersonationButton } from "@/components/auth/ImpersonationButton";
 
 // Form validation schema
 const userFormSchema = z.object({
@@ -350,39 +350,44 @@ const Users = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {users.map(user => (
-                <TableRow key={user.id}>
+              {users.map(userItem => (
+                <TableRow key={userItem.id}>
                   <TableCell className="font-medium">
                     <div className="flex items-center space-x-2">
                       <div className="bg-primary/10 h-8 w-8 rounded-full flex items-center justify-center text-primary">
                         <UserIcon className="h-4 w-4" />
                       </div>
-                      <span>{user.name}</span>
+                      <span>{userItem.name}</span>
                     </div>
                   </TableCell>
-                  <TableCell>{roleDisplay[user.role]}</TableCell>
+                  <TableCell>{roleDisplay[userItem.role]}</TableCell>
                   <TableCell>
                     <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                      user.isActive 
+                      userItem.isActive 
                         ? 'bg-green-100 text-green-800' 
                         : 'bg-red-100 text-red-800'
                     }`}>
-                      {user.isActive ? 'Actif' : 'Inactif'}
+                      {userItem.isActive ? 'Actif' : 'Inactif'}
                     </span>
                   </TableCell>
-                  <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
+                  <TableCell>{new Date(userItem.createdAt).toLocaleDateString()}</TableCell>
                   <TableCell>
-                    {user.lastLogin 
-                      ? new Date(user.lastLogin).toLocaleDateString() 
+                    {userItem.lastLogin 
+                      ? new Date(userItem.lastLogin).toLocaleDateString() 
                       : "Jamais connecté"}
                   </TableCell>
                   {hasPermission("canEditUsers") && (
                     <TableCell className="text-right">
                       <div className="flex justify-end space-x-2">
+                        {/* Bouton d'impersonation - seulement pour les non-admins */}
+                        {userItem.role !== UserRole.ADMIN && (
+                          <ImpersonationButton user={userItem} />
+                        )}
+                        
                         <Button 
                           variant="ghost" 
                           size="icon"
-                          onClick={() => handleEditUser(user)}
+                          onClick={() => handleEditUser(userItem)}
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -398,13 +403,13 @@ const Users = () => {
                               <AlertDialogHeader>
                                 <AlertDialogTitle>Supprimer l'utilisateur</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Êtes-vous sûr de vouloir supprimer l'utilisateur {user.name}?
+                                  Êtes-vous sûr de vouloir supprimer l'utilisateur {userItem.name}?
                                   Cette action est irréversible.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Annuler</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDeleteUser(user.id)}>
+                                <AlertDialogAction onClick={() => handleDeleteUser(userItem.id)}>
                                   Supprimer
                                 </AlertDialogAction>
                               </AlertDialogFooter>

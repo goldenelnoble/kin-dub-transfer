@@ -6,13 +6,17 @@ import { toast } from "@/components/ui/sonner";
 import { TransactionStats } from "./TransactionStats";
 import { TransactionFilters } from "./TransactionFilters";
 import { TransactionTable } from "./TransactionTable";
+import { TransactionPagination } from "./TransactionPagination";
 import { filterTransactions } from "./utils/transactionUtils";
 import { useAuth } from "@/context/AuthContext";
 import { TransactionService } from "@/services/TransactionService";
 
+const ITEMS_PER_PAGE = 10;
+
 export function TransactionList() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [directionFilter, setDirectionFilter] = useState("all");
@@ -50,6 +54,11 @@ export function TransactionList() {
       }
     };
   }, []);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter, directionFilter, currencyFilter, paymentMethodFilter, dateFilter]);
 
   const loadTransactions = async () => {
     try {
@@ -156,6 +165,12 @@ export function TransactionList() {
     dateFilter
   );
 
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredTransactions.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const paginatedTransactions = filteredTransactions.slice(startIndex, endIndex);
+
   if (loading) {
     return (
       <Card>
@@ -172,7 +187,8 @@ export function TransactionList() {
       <CardHeader>
         <CardTitle>Toutes les Transactions</CardTitle>
         <CardDescription>
-          Liste complète des transactions avec filtres - {transactions.length} transaction(s) au total
+          Liste complète des transactions avec filtres - {filteredTransactions.length} transaction(s) trouvée(s)
+          {filteredTransactions.length !== transactions.length && ` sur ${transactions.length} au total`}
         </CardDescription>
         <TransactionStats 
           transactions={filteredTransactions}
@@ -180,7 +196,7 @@ export function TransactionList() {
         />
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
+        <div className="space-y-6">
           <TransactionFilters 
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
@@ -195,12 +211,23 @@ export function TransactionList() {
             dateFilter={dateFilter}
             onDateFilterChange={setDateFilter}
           />
+          
+          <div className="text-sm text-muted-foreground">
+            Affichage de {startIndex + 1} à {Math.min(endIndex, filteredTransactions.length)} sur {filteredTransactions.length} résultat(s)
+          </div>
+          
           <TransactionTable 
-            transactions={filteredTransactions}
+            transactions={paginatedTransactions}
             onUpdateStatus={handleUpdateStatus}
             canEdit={!!user && user.role === UserRole.ADMIN}
             onEdit={handleEditTransaction}
             onDelete={handleDeleteTransaction}
+          />
+          
+          <TransactionPagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
           />
         </div>
       </CardContent>

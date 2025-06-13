@@ -38,15 +38,15 @@ export const TransactionTable = ({
   const getStatusBadge = (status: TransactionStatus) => {
     switch (status) {
       case TransactionStatus.PENDING:
-        return <Badge variant="outline" className="bg-[#FEF3CF] text-[#F7C33F] hover:bg-[#FEF3CF]">En attente</Badge>;
+        return <Badge variant="outline" className="bg-[#FEF3CF] text-[#F7C33F] hover:bg-[#FEF3CF] whitespace-nowrap">En attente</Badge>;
       case TransactionStatus.VALIDATED:
-        return <Badge variant="outline" className="bg-[#F2C94C]/20 text-[#F7C33F] hover:bg-[#FEF7CD]">Validée</Badge>;
+        return <Badge variant="outline" className="bg-[#F2C94C]/20 text-[#F7C33F] hover:bg-[#FEF7CD] whitespace-nowrap">Validée</Badge>;
       case TransactionStatus.COMPLETED:
-        return <Badge variant="outline" className="bg-[#43A047]/20 text-[#43A047] hover:bg-[#C6EFD3]">Complétée</Badge>;
+        return <Badge variant="outline" className="bg-[#43A047]/20 text-[#43A047] hover:bg-[#C6EFD3] whitespace-nowrap">Complétée</Badge>;
       case TransactionStatus.CANCELLED:
-        return <Badge variant="outline" className="bg-[#FEC6A1] text-[#F97316] hover:bg-[#FEC6A1]">Annulée</Badge>;
+        return <Badge variant="outline" className="bg-[#FEC6A1] text-[#F97316] hover:bg-[#FEC6A1] whitespace-nowrap">Annulée</Badge>;
       default:
-        return <Badge variant="outline">Inconnu</Badge>;
+        return <Badge variant="outline" className="whitespace-nowrap">Inconnu</Badge>;
     }
   };
 
@@ -89,163 +89,175 @@ export const TransactionTable = ({
   };
 
   return (
-    <div className="rounded-md border">
-      <Table>
-        <TableCaption>Liste de toutes les transactions</TableCaption>
-        <TableHeader>
-          <TableRow>
-            <TableHead>ID</TableHead>
-            <TableHead>Direction</TableHead>
-            <TableHead>Montant</TableHead>
-            <TableHead>Expéditeur</TableHead>
-            <TableHead>Bénéficiaire</TableHead>
-            <TableHead>Date</TableHead>
-            <TableHead>Statut</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {transactions.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={8} className="text-center py-8">
-                Aucune transaction trouvée
-              </TableCell>
+    <div className="rounded-md border overflow-hidden">
+      <div className="overflow-x-auto">
+        <Table>
+          <TableCaption className="text-left p-4">
+            {transactions.length === 0 
+              ? "Aucune transaction trouvée avec les filtres actuels" 
+              : `${transactions.length} transaction(s) affichée(s)`
+            }
+          </TableCaption>
+          <TableHeader>
+            <TableRow className="bg-muted/50">
+              <TableHead className="font-semibold">ID</TableHead>
+              <TableHead className="font-semibold">Direction</TableHead>
+              <TableHead className="font-semibold">Montant</TableHead>
+              <TableHead className="font-semibold">Expéditeur</TableHead>
+              <TableHead className="font-semibold">Bénéficiaire</TableHead>
+              <TableHead className="font-semibold">Date</TableHead>
+              <TableHead className="font-semibold">Statut</TableHead>
+              <TableHead className="text-right font-semibold">Actions</TableHead>
             </TableRow>
-          ) : (
-            transactions.map(transaction => (
-              <TableRow 
-                key={transaction.id} 
-                className="cursor-pointer hover:bg-muted/50"
-                onClick={() => goToTransactionDetails(transaction.id)}
-              >
-                <TableCell className="font-medium">{transaction.id}</TableCell>
-                <TableCell>{getDirectionLabel(transaction.direction)}</TableCell>
-                <TableCell>
-                  <div>
-                    {CURRENCY_SYMBOLS[transaction.currency]}{transaction.amount.toLocaleString()}
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    Commission: {CURRENCY_SYMBOLS[transaction.currency]}{transaction.commissionAmount.toLocaleString()}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div>{transaction.sender.name}</div>
-                  <div className="text-sm text-muted-foreground">{transaction.sender.phone}</div>
-                </TableCell>
-                <TableCell>
-                  <div>{transaction.recipient.name}</div>
-                  <div className="text-sm text-muted-foreground">{transaction.recipient.phone}</div>
-                </TableCell>
-                <TableCell>
-                  {new Date(transaction.createdAt).toLocaleDateString('fr-FR')}
-                  <div className="text-sm text-muted-foreground">
-                    {new Date(transaction.createdAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                  </div>
-                </TableCell>
-                <TableCell>{getStatusBadge(transaction.status)}</TableCell>
-                <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                  <div className="flex justify-end space-x-2">
-                    <Button 
-                      size="icon" 
-                      variant="ghost" 
-                      title="Détails"
-                      className="text-[#F97316] hover:bg-[#FEF7CD]"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        goToTransactionDetails(transaction.id);
-                      }}
-                    >
-                      <Info className="h-4 w-4" />
-                    </Button>
-                    
-                    {/* Actions basées sur le statut */}
-                    {transaction.status === TransactionStatus.PENDING && (
-                      <>
-                        <Button 
-                          size="icon" 
-                          variant="ghost" 
-                          className="text-[#43A047] hover:bg-[#C6EFD3]" 
-                          title="Valider"
-                          onClick={(e) => handleValidate(e, transaction.id)}
-                        >
-                          <Check className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          size="icon" 
-                          variant="ghost" 
-                          className="text-[#F97316] hover:bg-[#FEF7CD]" 
-                          title="Annuler"
-                          onClick={(e) => handleCancel(e, transaction.id)}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </>
-                    )}
-                    
-                    {transaction.status === TransactionStatus.VALIDATED && (
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="text-[#F2C94C] hover:bg-[#FEF7CD]"
-                        title="Compléter"
-                        onClick={(e) => handleComplete(e, transaction.id)}
-                      >
-                        <CheckCircle className="h-4 w-4" />
-                      </Button>
-                    )}
-
-                    {/* Actions administrateur */}
-                    {canEdit && (
-                      <>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          title="Modifier"
-                          className="text-[#43A047] hover:bg-[#C6EFD3]"
-                          onClick={(e) => handleEdit(e, transaction.id)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              title="Supprimer"
-                              className="text-[#F97316] hover:bg-[#FFE5E0]"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Supprimer la transaction</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Êtes-vous sûr de vouloir supprimer définitivement cette transaction ? 
-                                Cette action ne peut pas être annulée.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Annuler</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => handleDelete(transaction.id)}
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                              >
-                                Supprimer
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </>
-                    )}
+          </TableHeader>
+          <TableBody>
+            {transactions.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={8} className="text-center py-12">
+                  <div className="flex flex-col items-center space-y-2">
+                    <div className="text-muted-foreground">Aucune transaction trouvée</div>
+                    <div className="text-sm text-muted-foreground">Essayez de modifier vos filtres de recherche</div>
                   </div>
                 </TableCell>
               </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
+            ) : (
+              transactions.map(transaction => (
+                <TableRow 
+                  key={transaction.id} 
+                  className="cursor-pointer hover:bg-muted/30 transition-colors"
+                  onClick={() => goToTransactionDetails(transaction.id)}
+                >
+                  <TableCell className="font-mono text-sm font-medium">{transaction.id}</TableCell>
+                  <TableCell className="whitespace-nowrap">{getDirectionLabel(transaction.direction)}</TableCell>
+                  <TableCell>
+                    <div className="font-medium">
+                      {CURRENCY_SYMBOLS[transaction.currency]}{transaction.amount.toLocaleString()}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Commission: {CURRENCY_SYMBOLS[transaction.currency]}{transaction.commissionAmount.toLocaleString()}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="font-medium">{transaction.sender.name}</div>
+                    <div className="text-sm text-muted-foreground">{transaction.sender.phone}</div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="font-medium">{transaction.recipient.name}</div>
+                    <div className="text-sm text-muted-foreground">{transaction.recipient.phone}</div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="font-medium">
+                      {new Date(transaction.createdAt).toLocaleDateString('fr-FR')}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {new Date(transaction.createdAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                  </TableCell>
+                  <TableCell>{getStatusBadge(transaction.status)}</TableCell>
+                  <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex justify-end space-x-1">
+                      <Button 
+                        size="icon" 
+                        variant="ghost" 
+                        title="Détails"
+                        className="h-8 w-8 text-[#F97316] hover:bg-[#FEF7CD]"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          goToTransactionDetails(transaction.id);
+                        }}
+                      >
+                        <Info className="h-4 w-4" />
+                      </Button>
+                      
+                      {/* Actions basées sur le statut */}
+                      {transaction.status === TransactionStatus.PENDING && (
+                        <>
+                          <Button 
+                            size="icon" 
+                            variant="ghost" 
+                            className="h-8 w-8 text-[#43A047] hover:bg-[#C6EFD3]" 
+                            title="Valider"
+                            onClick={(e) => handleValidate(e, transaction.id)}
+                          >
+                            <Check className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            size="icon" 
+                            variant="ghost" 
+                            className="h-8 w-8 text-[#F97316] hover:bg-[#FEF7CD]" 
+                            title="Annuler"
+                            onClick={(e) => handleCancel(e, transaction.id)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
+                      
+                      {transaction.status === TransactionStatus.VALIDATED && (
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8 text-[#F2C94C] hover:bg-[#FEF7CD]"
+                          title="Compléter"
+                          onClick={(e) => handleComplete(e, transaction.id)}
+                        >
+                          <CheckCircle className="h-4 w-4" />
+                        </Button>
+                      )}
+
+                      {/* Actions administrateur */}
+                      {canEdit && (
+                        <>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            title="Modifier"
+                            className="h-8 w-8 text-[#43A047] hover:bg-[#C6EFD3]"
+                            onClick={(e) => handleEdit(e, transaction.id)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                title="Supprimer"
+                                className="h-8 w-8 text-[#F97316] hover:bg-[#FFE5E0]"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Supprimer la transaction</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Êtes-vous sûr de vouloir supprimer définitivement cette transaction ? 
+                                  Cette action ne peut pas être annulée.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDelete(transaction.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Supprimer
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 };

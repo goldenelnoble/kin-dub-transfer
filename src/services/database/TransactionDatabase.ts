@@ -1,10 +1,40 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { DatabaseTransaction } from "../TransactionService";
 
 export class TransactionDatabase {
+  // Générer un ID de transaction court (6 caractères)
+  private static generateShortTransactionId(): string {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let result = '';
+    for (let i = 0; i < 6; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+  }
+
   static async createTransactionRecord(transactionData: any, senderId: string, recipientId: string) {
     console.log('Creating transaction record in database...');
+    
+    // Générer un ID court unique
+    let shortId = this.generateShortTransactionId();
+    let attempts = 0;
+    const maxAttempts = 10;
+    
+    // Vérifier l'unicité de l'ID
+    while (attempts < maxAttempts) {
+      const { data: existing } = await supabase
+        .from('transactions')
+        .select('txn_id')
+        .eq('txn_id', shortId)
+        .single();
+      
+      if (!existing) {
+        break; // ID unique trouvé
+      }
+      
+      shortId = this.generateShortTransactionId();
+      attempts++;
+    }
     
     const { data: dbTransaction, error: transactionError } = await supabase
       .from('transactions')
@@ -24,7 +54,7 @@ export class TransactionDatabase {
         recipient_id: recipientId,
         fees: transactionData.commissionAmount,
         total: transactionData.amount + transactionData.commissionAmount,
-        txn_id: `TXN${Date.now()}`
+        txn_id: shortId
       })
       .select()
       .single();
@@ -60,7 +90,7 @@ export class TransactionDatabase {
     const { data: transaction, error: transactionError } = await supabase
       .from('transactions')
       .select('*')
-      .eq('id', id)
+      .eq('txn_id', id)
       .single();
 
     if (transactionError) {
@@ -80,7 +110,7 @@ export class TransactionDatabase {
         ...updates,
         updated_at: new Date().toISOString()
       })
-      .eq('id', id)
+      .eq('txn_id', id)
       .select()
       .single();
 
@@ -98,7 +128,7 @@ export class TransactionDatabase {
     const { error } = await supabase
       .from('transactions')
       .delete()
-      .eq('id', id);
+      .eq('txn_id', id);
 
     if (error) {
       console.error(`Error deleting transaction ${id}:`, error);

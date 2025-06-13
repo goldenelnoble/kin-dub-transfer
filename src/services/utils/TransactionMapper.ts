@@ -4,7 +4,7 @@ import { Transaction, TransactionStatus, TransactionDirection, PaymentMethod, Cu
 export class TransactionMapper {
   static mapDatabaseTransactionToTransaction(dbTransaction: any): Transaction {
     return {
-      id: dbTransaction.id,
+      id: dbTransaction.txn_id || dbTransaction.id, // Utiliser txn_id comme ID principal
       direction: dbTransaction.direction || TransactionDirection.KINSHASA_TO_DUBAI,
       amount: Number(dbTransaction.amount) || 0,
       receivingAmount: Number(dbTransaction.receiving_amount) || Number(dbTransaction.amount) || 0,

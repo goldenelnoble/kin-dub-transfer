@@ -1,3 +1,4 @@
+
 import { Transaction, TransactionStatus, UserRole } from "@/types";
 
 export const filterTransactions = (
@@ -44,6 +45,33 @@ export const filterTransactions = (
            matchesPaymentMethod && matchesDate;
   });
 };
+
+/**
+ * Générateur d'ID de transaction court (6 caractères)
+ */
+export class TransactionIdGenerator {
+  private static generateShortId(): string {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let result = '';
+    for (let i = 0; i < 6; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+  }
+
+  static generateUniqueId(existingIds: string[] = []): string {
+    let newId = this.generateShortId();
+    let attempts = 0;
+    const maxAttempts = 100;
+    
+    while (existingIds.includes(newId) && attempts < maxAttempts) {
+      newId = this.generateShortId();
+      attempts++;
+    }
+    
+    return newId;
+  }
+}
 
 /**
  * Gestionnaire de transactions avec validation par superviseur/administrateur
@@ -106,9 +134,16 @@ export class TransactionManager {
   }
 
   /**
-   * Créer une transaction en attente
+   * Créer une transaction en attente avec un ID court
    */
   static createTransaction(transaction: Transaction): Transaction {
+    // Générer un ID court de 6 caractères si pas déjà défini
+    if (!transaction.id || transaction.id.length !== 6) {
+      const existingTransactions = this.getAllTransactions();
+      const existingIds = existingTransactions.map(tx => tx.id);
+      transaction.id = TransactionIdGenerator.generateUniqueId(existingIds);
+    }
+
     // Assurons-nous que la transaction est en statut "pending" (en attente)
     transaction.status = TransactionStatus.PENDING;
     
@@ -145,9 +180,6 @@ export class TransactionManager {
     return [];
   }
 
-  /**
-   * Mettre à jour les statistiques avec une seule transaction
-   */
   private static updateStatsWithTransaction(transaction: Transaction) {
     this.stats.transactionTotal++;
     
@@ -169,9 +201,6 @@ export class TransactionManager {
     return this.getStats();
   }
 
-  /**
-   * Sauvegarder une transaction dans le localStorage
-   */
   static saveTransaction(transaction: Transaction) {
     // Récupérer les transactions existantes
     const existingTransactions = this.getAllTransactions();
@@ -200,9 +229,6 @@ export class TransactionManager {
     return transaction;
   }
 
-  /**
-   * Valider ou annuler une transaction
-   */
   static validateTransaction(
     transactions: Transaction[],
     transactionId: string, 
@@ -326,9 +352,6 @@ export class TransactionManager {
     };
   }
 
-  /**
-   * Réinitialiser les statistiques (utile pour les tests)
-   */
   static resetStats() {
     this.stats = {
       transactionTotal: 0,
@@ -343,9 +366,6 @@ export class TransactionManager {
     this.emit('stats:updated', this.getStats());
   }
 
-  /**
-   * Calculer les statistiques à partir des transactions
-   */
   static calculateStatsFromTransactions(transactions: Transaction[]) {
     this.resetStats();
     

@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth, UserRole } from "@/context/AuthContext";
@@ -114,7 +113,7 @@ const Users = () => {
 
       const usersData: User[] = (profiles || []).map(profile => {
         // Find the corresponding auth user to get the email
-        const authUser = authUsers.users.find(au => au.id === profile.id);
+        const authUser = authUsers?.users?.find(au => au.id === profile.id);
         
         return {
           id: profile.id,

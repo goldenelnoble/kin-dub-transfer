@@ -21,6 +21,7 @@ import Login from "./pages/Login";
 import SecurityDashboard from "./pages/SecurityDashboard";
 import OperatorCompliance from "./pages/OperatorCompliance";
 import Verify from "./pages/Verify";
+import Accounting from "./pages/Accounting";
 
 const queryClient = new QueryClient();
 
@@ -62,6 +63,7 @@ function App() {
             <Route path="/security" element={<SecurityDashboard />} />
             <Route path="/operator-compliance" element={<OperatorCompliance />} />
             <Route path="/verify" element={<Verify />} />
+            <Route path="/accounting" element={<Accounting />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth, UserRole } from "@/context/AuthContext";
@@ -34,12 +35,13 @@ const userFormSchema = z.object({
 type UserFormValues = z.infer<typeof userFormSchema>;
 
 const Users = () => {
-  const { user, hasPermission, updateUser, createUser, deleteUser } = useAuth();
+  const { user, hasPermission, updateUser, createUser, deleteUser, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [users, setUsers] = useState<User[]>([]);
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasAccess, setHasAccess] = useState(false);
 
   // Initialize the form
   const form = useForm<UserFormValues>({
@@ -53,19 +55,39 @@ const Users = () => {
     },
   });
 
-  // Check authorization on mount
+  // Check authorization on mount - mais ne pas rediriger automatiquement
   useEffect(() => {
-    if (!hasPermission("canCreateUsers") && !hasPermission("canEditUsers")) {
+    console.log('[Users] Checking permissions...', {
+      user: user?.name,
+      role: user?.role,
+      canCreateUsers: hasPermission("canCreateUsers"),
+      canEditUsers: hasPermission("canEditUsers"),
+      isAdmin: isAdmin()
+    });
+
+    // Vérifier si l'utilisateur est admin ou a des permissions spécifiques
+    const userHasAccess = isAdmin() || hasPermission("canCreateUsers") || hasPermission("canEditUsers") || hasPermission("canViewUsers");
+    
+    if (!userHasAccess) {
+      console.log('[Users] Access denied, redirecting to dashboard');
       toast.error("Vous n'avez pas accès à cette page");
       navigate("/dashboard");
-    } else {
-      loadUsers();
+      return;
     }
-  }, [hasPermission, navigate]);
+
+    setHasAccess(true);
+    loadUsers();
+  }, [user, hasPermission, isAdmin, navigate]);
 
   const loadUsers = async () => {
+    if (!hasAccess && !isAdmin() && !hasPermission("canCreateUsers") && !hasPermission("canEditUsers")) {
+      return;
+    }
+
     try {
       setIsLoading(true);
+      console.log('[Users] Loading users from database...');
+      
       const { data: profiles, error } = await supabase
         .from('user_profiles')
         .select('*')
@@ -77,16 +99,19 @@ const Users = () => {
         return;
       }
 
+      console.log('[Users] Loaded profiles:', profiles);
+
       const usersData: User[] = (profiles || []).map(profile => ({
         id: profile.id,
-        name: profile.name,
-        email: '', // Email will be fetched separately if needed
+        name: profile.name || 'Utilisateur sans nom',
+        email: profile.email || '',
         role: profile.role as UserRole,
         createdAt: new Date(profile.created_at),
         lastLogin: profile.last_login ? new Date(profile.last_login) : undefined,
-        isActive: profile.is_active
+        isActive: profile.is_active ?? true
       }));
 
+      console.log('[Users] Processed users data:', usersData);
       setUsers(usersData);
     } catch (error) {
       console.error('Error loading users:', error);
@@ -163,10 +188,15 @@ const Users = () => {
   // Role display mapping
   const roleDisplay = {
     [UserRole.ADMIN]: "Administrateur",
-    [UserRole.SUPERVISOR]: "Superviseur",
+    [UserRole.SUPERVISOR]: "Superviseur", 
     [UserRole.OPERATOR]: "Opérateur",
     [UserRole.AUDITOR]: "Auditeur",
   };
+
+  // Si pas d'accès, ne rien afficher (la redirection est en cours)
+  if (!hasAccess) {
+    return null;
+  }
 
   if (isLoading) {
     return (
@@ -332,97 +362,105 @@ const Users = () => {
         <CardHeader>
           <CardTitle>Liste des Utilisateurs</CardTitle>
           <CardDescription>
-            {users.length} utilisateurs au total
+            {users.length} utilisateur{users.length > 1 ? 's' : ''} au total
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nom</TableHead>
-                <TableHead>Rôle</TableHead>
-                <TableHead>Statut</TableHead>
-                <TableHead>Date de création</TableHead>
-                <TableHead>Dernière connexion</TableHead>
-                {hasPermission("canEditUsers") && (
-                  <TableHead className="text-right">Actions</TableHead>
-                )}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {users.map(userItem => (
-                <TableRow key={userItem.id}>
-                  <TableCell className="font-medium">
-                    <div className="flex items-center space-x-2">
-                      <div className="bg-primary/10 h-8 w-8 rounded-full flex items-center justify-center text-primary">
-                        <UserIcon className="h-4 w-4" />
-                      </div>
-                      <span>{userItem.name}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>{roleDisplay[userItem.role]}</TableCell>
-                  <TableCell>
-                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                      userItem.isActive 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-red-100 text-red-800'
-                    }`}>
-                      {userItem.isActive ? 'Actif' : 'Inactif'}
-                    </span>
-                  </TableCell>
-                  <TableCell>{new Date(userItem.createdAt).toLocaleDateString()}</TableCell>
-                  <TableCell>
-                    {userItem.lastLogin 
-                      ? new Date(userItem.lastLogin).toLocaleDateString() 
-                      : "Jamais connecté"}
-                  </TableCell>
+          {users.length === 0 ? (
+            <div className="text-center py-8">
+              <UserIcon className="mx-auto h-12 w-12 text-gray-400" />
+              <h3 className="mt-2 text-sm font-medium text-gray-900">Aucun utilisateur</h3>
+              <p className="mt-1 text-sm text-gray-500">Commencez par ajouter un nouvel utilisateur.</p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nom</TableHead>
+                  <TableHead>Rôle</TableHead>
+                  <TableHead>Statut</TableHead>
+                  <TableHead>Date de création</TableHead>
+                  <TableHead>Dernière connexion</TableHead>
                   {hasPermission("canEditUsers") && (
-                    <TableCell className="text-right">
-                      <div className="flex justify-end space-x-2">
-                        {/* Bouton d'impersonation - seulement pour les non-admins */}
-                        {userItem.role !== UserRole.ADMIN && (
-                          <ImpersonationButton user={userItem} />
-                        )}
-                        
-                        <Button 
-                          variant="ghost" 
-                          size="icon"
-                          onClick={() => handleEditUser(userItem)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        
-                        {hasPermission("canDeleteUsers") && (
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="icon">
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Supprimer l'utilisateur</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Êtes-vous sûr de vouloir supprimer l'utilisateur {userItem.name}?
-                                  Cette action est irréversible.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Annuler</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDeleteUser(userItem.id)}>
-                                  Supprimer
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        )}
-                      </div>
-                    </TableCell>
+                    <TableHead className="text-right">Actions</TableHead>
                   )}
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {users.map(userItem => (
+                  <TableRow key={userItem.id}>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center space-x-2">
+                        <div className="bg-primary/10 h-8 w-8 rounded-full flex items-center justify-center text-primary">
+                          <UserIcon className="h-4 w-4" />
+                        </div>
+                        <span>{userItem.name}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>{roleDisplay[userItem.role]}</TableCell>
+                    <TableCell>
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                        userItem.isActive 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {userItem.isActive ? 'Actif' : 'Inactif'}
+                      </span>
+                    </TableCell>
+                    <TableCell>{new Date(userItem.createdAt).toLocaleDateString()}</TableCell>
+                    <TableCell>
+                      {userItem.lastLogin 
+                        ? new Date(userItem.lastLogin).toLocaleDateString() 
+                        : "Jamais connecté"}
+                    </TableCell>
+                    {hasPermission("canEditUsers") && (
+                      <TableCell className="text-right">
+                        <div className="flex justify-end space-x-2">
+                          {/* Bouton d'impersonation - seulement pour les non-admins */}
+                          {userItem.role !== UserRole.ADMIN && (
+                            <ImpersonationButton user={userItem} />
+                          )}
+                          
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            onClick={() => handleEditUser(userItem)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          
+                          {hasPermission("canDeleteUsers") && (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Supprimer l'utilisateur</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Êtes-vous sûr de vouloir supprimer l'utilisateur {userItem.name}?
+                                    Cette action est irréversible.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDeleteUser(userItem.id)}>
+                                    Supprimer
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          )}
+                        </div>
+                      </TableCell>
+                    )}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </AppLayout>

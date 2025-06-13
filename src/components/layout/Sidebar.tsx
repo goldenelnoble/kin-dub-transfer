@@ -1,3 +1,4 @@
+
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -17,10 +18,12 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { ImpersonationBanner } from "@/components/auth/ImpersonationBanner";
+import { useAuth } from "@/context/AuthContext";
 
 export function Sidebar() {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
+  const { hasPermission, isAdmin } = useAuth();
 
   const navigationItems = [
     {
@@ -62,7 +65,7 @@ export function Sidebar() {
       name: "Utilisateurs",
       path: "/users",
       icon: <Users className="h-5 w-5" />,
-      visible: true,
+      visible: isAdmin() || hasPermission("canCreateUsers") || hasPermission("canEditUsers") || hasPermission("canViewUsers"),
       color: "text-pink-600"
     },
     {
@@ -76,7 +79,7 @@ export function Sidebar() {
       name: "Administration",
       path: "/admin-settings",
       icon: <Shield className="h-5 w-5" />,
-      visible: true,
+      visible: isAdmin(),
       color: "text-red-600"
     },
     {

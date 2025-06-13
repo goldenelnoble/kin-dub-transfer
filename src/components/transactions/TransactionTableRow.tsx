@@ -22,41 +22,56 @@ export function TransactionTableRow({
   onDelete,
   onGoToDetails
 }: TransactionTableRowProps) {
+  if (!transaction) {
+    console.error('TransactionTableRow: transaction is null or undefined');
+    return null;
+  }
+
   const getDirectionLabel = (direction: TransactionDirection) => {
     return direction === TransactionDirection.KINSHASA_TO_DUBAI
       ? "Kinshasa → Dubaï"
       : "Dubaï → Kinshasa";
   };
 
+  const handleRowClick = () => {
+    if (transaction?.id) {
+      onGoToDetails(transaction.id);
+    }
+  };
+
   return (
     <TableRow 
       className="cursor-pointer hover:bg-muted/30 transition-colors"
-      onClick={() => onGoToDetails(transaction.id)}
+      onClick={handleRowClick}
     >
-      <TableCell className="font-mono text-sm font-medium">{transaction.id}</TableCell>
-      <TableCell className="whitespace-nowrap">{getDirectionLabel(transaction.direction)}</TableCell>
+      <TableCell className="font-mono text-sm font-medium">
+        {transaction.id || 'N/A'}
+      </TableCell>
+      <TableCell className="whitespace-nowrap">
+        {getDirectionLabel(transaction.direction)}
+      </TableCell>
       <TableCell>
         <div className="font-medium">
-          {CURRENCY_SYMBOLS[transaction.currency]}{transaction.amount.toLocaleString()}
+          {CURRENCY_SYMBOLS[transaction.currency] || '$'}{transaction.amount?.toLocaleString() || '0'}
         </div>
         <div className="text-xs text-muted-foreground">
-          Commission: {CURRENCY_SYMBOLS[transaction.currency]}{transaction.commissionAmount.toLocaleString()}
+          Commission: {CURRENCY_SYMBOLS[transaction.currency] || '$'}{transaction.commissionAmount?.toLocaleString() || '0'}
         </div>
       </TableCell>
       <TableCell>
-        <div className="font-medium">{transaction.sender.name}</div>
-        <div className="text-sm text-muted-foreground">{transaction.sender.phone}</div>
+        <div className="font-medium">{transaction.sender?.name || 'N/A'}</div>
+        <div className="text-sm text-muted-foreground">{transaction.sender?.phone || 'N/A'}</div>
       </TableCell>
       <TableCell>
-        <div className="font-medium">{transaction.recipient.name}</div>
-        <div className="text-sm text-muted-foreground">{transaction.recipient.phone}</div>
+        <div className="font-medium">{transaction.recipient?.name || 'N/A'}</div>
+        <div className="text-sm text-muted-foreground">{transaction.recipient?.phone || 'N/A'}</div>
       </TableCell>
       <TableCell>
         <div className="font-medium">
-          {new Date(transaction.createdAt).toLocaleDateString('fr-FR')}
+          {transaction.createdAt ? new Date(transaction.createdAt).toLocaleDateString('fr-FR') : 'N/A'}
         </div>
         <div className="text-sm text-muted-foreground">
-          {new Date(transaction.createdAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+          {transaction.createdAt ? new Date(transaction.createdAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
         </div>
       </TableCell>
       <TableCell>

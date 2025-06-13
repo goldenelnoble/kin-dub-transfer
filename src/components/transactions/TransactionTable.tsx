@@ -26,6 +26,17 @@ export const TransactionTable = ({
     navigate(`/transactions/${id}`);
   };
 
+  if (!Array.isArray(transactions)) {
+    console.error('TransactionTable: transactions prop is not an array', transactions);
+    return (
+      <div className="rounded-md border overflow-hidden">
+        <div className="p-4 text-center">
+          <div className="text-red-500">Erreur: Données de transactions invalides</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="rounded-md border overflow-hidden">
       <div className="overflow-x-auto">
@@ -48,17 +59,24 @@ export const TransactionTable = ({
                 </td>
               </tr>
             ) : (
-              transactions.map(transaction => (
-                <TransactionTableRow
-                  key={transaction.id}
-                  transaction={transaction}
-                  canEdit={canEdit}
-                  onUpdateStatus={onUpdateStatus}
-                  onEdit={onEdit}
-                  onDelete={onDelete}
-                  onGoToDetails={goToTransactionDetails}
-                />
-              ))
+              transactions.map(transaction => {
+                if (!transaction || !transaction.id) {
+                  console.error('TransactionTable: Invalid transaction object', transaction);
+                  return null;
+                }
+                
+                return (
+                  <TransactionTableRow
+                    key={transaction.id}
+                    transaction={transaction}
+                    canEdit={canEdit}
+                    onUpdateStatus={onUpdateStatus}
+                    onEdit={onEdit}
+                    onDelete={onDelete}
+                    onGoToDetails={goToTransactionDetails}
+                  />
+                );
+              })
             )}
           </TableBody>
         </Table>

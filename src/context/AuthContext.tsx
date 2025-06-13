@@ -34,6 +34,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   isLoading: boolean;
   hasPermission: (permission: string) => boolean;
+  isAdmin: () => boolean;
   updateUser: (userId: string, userData: Partial<User>) => Promise<boolean>;
   createUser: (userData: Omit<User, 'id' | 'createdAt'> & { password: string }) => Promise<boolean>;
   deleteUser: (userId: string) => Promise<boolean>;
@@ -281,6 +282,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const rolePermissions = ROLE_PERMISSIONS[user.role];
     return rolePermissions[permission as keyof typeof rolePermissions] === true;
   };
+
+  const isAdmin = (): boolean => {
+    return user?.role === UserRole.ADMIN;
+  };
   
   const updateUser = async (userId: string, userData: Partial<User>): Promise<boolean> => {
     try {
@@ -414,6 +419,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logout, 
       isLoading, 
       hasPermission,
+      isAdmin,
       updateUser,
       createUser,
       deleteUser

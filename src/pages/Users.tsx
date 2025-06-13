@@ -88,28 +88,44 @@ const Users = () => {
       setIsLoading(true);
       console.log('[Users] Loading users from database...');
       
-      const { data: profiles, error } = await supabase
+      // First get user profiles
+      const { data: profiles, error: profilesError } = await supabase
         .from('user_profiles')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Error loading users:', error);
+      if (profilesError) {
+        console.error('Error loading user profiles:', profilesError);
         toast.error("Erreur lors du chargement des utilisateurs");
         return;
       }
 
-      console.log('[Users] Loaded profiles:', profiles);
+      // Then get auth users to get email addresses
+      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
 
-      const usersData: User[] = (profiles || []).map(profile => ({
-        id: profile.id,
-        name: profile.name || 'Utilisateur sans nom',
-        email: profile.email || '',
-        role: profile.role as UserRole,
-        createdAt: new Date(profile.created_at),
-        lastLogin: profile.last_login ? new Date(profile.last_login) : undefined,
-        isActive: profile.is_active ?? true
-      }));
+      if (authError) {
+        console.error('Error loading auth users:', authError);
+        toast.error("Erreur lors du chargement des emails des utilisateurs");
+        return;
+      }
+
+      console.log('[Users] Loaded profiles:', profiles);
+      console.log('[Users] Loaded auth users:', authUsers);
+
+      const usersData: User[] = (profiles || []).map(profile => {
+        // Find the corresponding auth user to get the email
+        const authUser = authUsers.users.find(au => au.id === profile.id);
+        
+        return {
+          id: profile.id,
+          name: profile.name || 'Utilisateur sans nom',
+          email: authUser?.email || '',
+          role: profile.role as UserRole,
+          createdAt: new Date(profile.created_at),
+          lastLogin: profile.last_login ? new Date(profile.last_login) : undefined,
+          isActive: profile.is_active ?? true
+        };
+      });
 
       console.log('[Users] Processed users data:', usersData);
       setUsers(usersData);

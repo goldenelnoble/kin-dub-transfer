@@ -50,6 +50,129 @@ export type Database = {
           },
         ]
       }
+      boxes: {
+        Row: {
+          created_at: string
+          emplacement_actuel: string | null
+          id: string
+          nom: string
+          qr_code_principal: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          emplacement_actuel?: string | null
+          id?: string
+          nom: string
+          qr_code_principal?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          emplacement_actuel?: string | null
+          id?: string
+          nom?: string
+          qr_code_principal?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      clients: {
+        Row: {
+          adresse: string | null
+          created_at: string
+          email: string | null
+          id: string
+          nom: string
+          telephone: string | null
+          updated_at: string
+        }
+        Insert: {
+          adresse?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          nom: string
+          telephone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          adresse?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          nom?: string
+          telephone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      colis_marchandises: {
+        Row: {
+          colis_id: string | null
+          created_at: string
+          id: string
+          marchandise_id: string | null
+          quantite: number
+        }
+        Insert: {
+          colis_id?: string | null
+          created_at?: string
+          id?: string
+          marchandise_id?: string | null
+          quantite?: number
+        }
+        Update: {
+          colis_id?: string | null
+          created_at?: string
+          id?: string
+          marchandise_id?: string | null
+          quantite?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "colis_marchandises_colis_id_fkey"
+            columns: ["colis_id"]
+            isOneToOne: false
+            referencedRelation: "parcels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "colis_marchandises_marchandise_id_fkey"
+            columns: ["marchandise_id"]
+            isOneToOne: false
+            referencedRelation: "marchandises"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marchandises: {
+        Row: {
+          created_at: string
+          dimensions: Json | null
+          id: string
+          nom: string
+          poids: number | null
+          reference: string | null
+        }
+        Insert: {
+          created_at?: string
+          dimensions?: Json | null
+          id?: string
+          nom: string
+          poids?: number | null
+          reference?: string | null
+        }
+        Update: {
+          created_at?: string
+          dimensions?: Json | null
+          id?: string
+          nom?: string
+          poids?: number | null
+          reference?: string | null
+        }
+        Relationships: []
+      }
       parcel_tracking: {
         Row: {
           coordinates: Json | null
@@ -97,6 +220,8 @@ export type Database = {
       parcels: {
         Row: {
           actual_delivery: string | null
+          box_id: string | null
+          client_id: string | null
           created_at: string
           created_by: string | null
           declared_value: number | null
@@ -104,8 +229,10 @@ export type Database = {
           dimensions: Json | null
           estimated_delivery: string | null
           id: string
+          marchandises: Json | null
           notes: string | null
           priority: string | null
+          qr_code_url: string | null
           recipient_address: string
           recipient_name: string
           recipient_phone: string
@@ -120,6 +247,8 @@ export type Database = {
         }
         Insert: {
           actual_delivery?: string | null
+          box_id?: string | null
+          client_id?: string | null
           created_at?: string
           created_by?: string | null
           declared_value?: number | null
@@ -127,8 +256,10 @@ export type Database = {
           dimensions?: Json | null
           estimated_delivery?: string | null
           id?: string
+          marchandises?: Json | null
           notes?: string | null
           priority?: string | null
+          qr_code_url?: string | null
           recipient_address: string
           recipient_name: string
           recipient_phone: string
@@ -143,6 +274,8 @@ export type Database = {
         }
         Update: {
           actual_delivery?: string | null
+          box_id?: string | null
+          client_id?: string | null
           created_at?: string
           created_by?: string | null
           declared_value?: number | null
@@ -150,8 +283,10 @@ export type Database = {
           dimensions?: Json | null
           estimated_delivery?: string | null
           id?: string
+          marchandises?: Json | null
           notes?: string | null
           priority?: string | null
+          qr_code_url?: string | null
           recipient_address?: string
           recipient_name?: string
           recipient_phone?: string
@@ -164,7 +299,22 @@ export type Database = {
           updated_at?: string
           weight?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_parcels_box"
+            columns: ["box_id"]
+            isOneToOne: false
+            referencedRelation: "boxes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parcels_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {

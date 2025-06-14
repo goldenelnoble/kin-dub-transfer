@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,10 +11,25 @@ import { Package, User, MapPin, Weight, DollarSign } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 
+interface Client {
+  id: string;
+  nom: string;
+}
+
+interface Marchandise {
+  id: string;
+  nom: string;
+  reference: string | null;
+}
+
 export function ParcelForm() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [marchandises, setMarchandises] = useState<Marchandise[]>([]);
   const [formData, setFormData] = useState({
+    // Client
+    client_id: "",
     // Sender info
     sender_name: "",
     sender_phone: "",
@@ -31,8 +46,43 @@ export function ParcelForm() {
     shipping_cost: "",
     priority: "standard",
     estimated_delivery: "",
-    notes: ""
+    notes: "",
+    // Marchandises
+    selected_marchandises: [] as string[]
   });
+
+  useEffect(() => {
+    fetchClients();
+    fetchMarchandises();
+  }, []);
+
+  const fetchClients = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('clients')
+        .select('id, nom')
+        .order('nom');
+      
+      if (error) throw error;
+      setClients(data || []);
+    } catch (error) {
+      console.error('Error fetching clients:', error);
+    }
+  };
+
+  const fetchMarchandises = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('marchandises')
+        .select('id, nom, reference')
+        .order('nom');
+      
+      if (error) throw error;
+      setMarchandises(data || []);
+    } catch (error) {
+      console.error('Error fetching marchandises:', error);
+    }
+  };
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -60,6 +110,7 @@ export function ParcelForm() {
 
       const parcelData = {
         tracking_number: trackingData,
+        client_id: formData.client_id || null,
         sender_name: formData.sender_name,
         sender_phone: formData.sender_phone,
         sender_address: formData.sender_address,
@@ -74,6 +125,7 @@ export function ParcelForm() {
         priority: formData.priority,
         estimated_delivery: formData.estimated_delivery || null,
         notes: formData.notes,
+        marchandises: formData.selected_marchandises,
         created_by: "admin" // TODO: Get from auth context
       };
 
@@ -105,6 +157,35 @@ export function ParcelForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Client Selection */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <User className="h-5 w-5 text-[#F97316]" />
+            <span>Sélection du client</span>
+          </CardTitle>
+          <CardDescription>Choisir le client pour ce colis (optionnel)</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            <Label htmlFor="client_id">Client</Label>
+            <Select value={formData.client_id} onValueChange={(value) => handleInputChange('client_id', value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Sélectionner un client" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Aucun client sélectionné</SelectItem>
+                {clients.map((client) => (
+                  <SelectItem key={client.id} value={client.id}>
+                    {client.nom}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Sender Information */}
       <Card>
         <CardHeader>

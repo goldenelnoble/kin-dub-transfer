@@ -1,84 +1,72 @@
 
-import React, { useEffect } from "react";
-import { Routes, Route } from "react-router-dom";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
-import { ImpersonationProvider } from "@/hooks/useImpersonation";
-import { SecurityProvider } from "@/security/hooks/useSecurityContext";
-import { SecurityMiddleware } from "@/security/SecurityMiddleware";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Transactions from "./pages/Transactions";
-import TransactionDetail from "./pages/TransactionDetail";
 import NewTransaction from "./pages/NewTransaction";
+import TransactionDetail from "./pages/TransactionDetail";
+import Receipts from "./pages/Receipts";
+import Reports from "./pages/Reports";
+import Users from "./pages/Users";
+import Login from "./pages/Login";
+import Verify from "./pages/Verify";
+import Accounting from "./pages/Accounting";
+import AdminSettings from "./pages/AdminSettings";
+import SecurityDashboard from "./pages/SecurityDashboard";
+import OperatorCompliance from "./pages/OperatorCompliance";
+import AuditLog from "./pages/AuditLog";
 import Parcels from "./pages/Parcels";
 import NewParcel from "./pages/NewParcel";
 import ParcelTracking from "./pages/ParcelTracking";
-import Receipts from "./pages/Receipts";
-import Reports from "./pages/Reports";
-import AuditLog from "./pages/AuditLog";
-import Users from "./pages/Users";
+import Clients from "./pages/Clients";
+import NewClient from "./pages/NewClient";
+import Marchandises from "./pages/Marchandises";
+import NewMarchandise from "./pages/NewMarchandise";
 import NotFound from "./pages/NotFound";
-import AdminSettings from "./pages/AdminSettings";
-import Login from "./pages/Login";
-import SecurityDashboard from "./pages/SecurityDashboard";
-import OperatorCompliance from "./pages/OperatorCompliance";
-import Verify from "./pages/Verify";
-import Accounting from "./pages/Accounting";
 
 const queryClient = new QueryClient();
 
-function App() {
-  useEffect(() => {
-    // Initialisation du système de sécurité
-    console.log('[SECURITY] Application starting with security enabled');
-    
-    // Démarrage du job de nettoyage du rate limiter
-    SecurityMiddleware.startCleanupJob();
-    
-    // Configuration des en-têtes de sécurité globaux
-    if (typeof document !== 'undefined') {
-      // Configuration CSP via meta tag si nécessaire
-      const cspMeta = document.createElement('meta');
-      cspMeta.httpEquiv = 'Content-Security-Policy';
-      cspMeta.content = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://ffbhsuiwzugxsualzdyz.supabase.co";
-      document.head.appendChild(cspMeta);
-    }
-  }, []);
-
-  return (
-    <QueryClientProvider client={queryClient}>
-      <SecurityProvider>
-        <AuthProvider>
-          <ImpersonationProvider>
-            <Toaster />
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/transactions" element={<Transactions />} />
-              <Route path="/transactions/:id" element={<TransactionDetail />} />
-              <Route path="/transactions/new" element={<NewTransaction />} />
-              <Route path="/parcels" element={<Parcels />} />
-              <Route path="/parcels/new" element={<NewParcel />} />
-              <Route path="/track" element={<ParcelTracking />} />
-              <Route path="/receipts" element={<Receipts />} />
-              <Route path="/reports" element={<Reports />} />
-              <Route path="/audit-log" element={<AuditLog />} />
-              <Route path="/users" element={<Users />} />
-              <Route path="/admin-settings" element={<AdminSettings />} />
-              <Route path="/security" element={<SecurityDashboard />} />
-              <Route path="/operator-compliance" element={<OperatorCompliance />} />
-              <Route path="/verify" element={<Verify />} />
-              <Route path="/accounting" element={<Accounting />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </ImpersonationProvider>
-        </AuthProvider>
-      </SecurityProvider>
-    </QueryClientProvider>
-  );
-}
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/transactions" element={<Transactions />} />
+            <Route path="/transactions/new" element={<NewTransaction />} />
+            <Route path="/transactions/:id" element={<TransactionDetail />} />
+            <Route path="/receipts" element={<Receipts />} />
+            <Route path="/reports" element={<Reports />} />
+            <Route path="/users" element={<Users />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/verify" element={<Verify />} />
+            <Route path="/accounting" element={<Accounting />} />
+            <Route path="/admin/settings" element={<AdminSettings />} />
+            <Route path="/security" element={<SecurityDashboard />} />
+            <Route path="/compliance" element={<OperatorCompliance />} />
+            <Route path="/audit" element={<AuditLog />} />
+            <Route path="/parcels" element={<Parcels />} />
+            <Route path="/parcels/new" element={<NewParcel />} />
+            <Route path="/track" element={<ParcelTracking />} />
+            <Route path="/clients" element={<Clients />} />
+            <Route path="/clients/new" element={<NewClient />} />
+            <Route path="/marchandises" element={<Marchandises />} />
+            <Route path="/marchandises/new" element={<NewMarchandise />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </AuthProvider>
+  </QueryClientProvider>
+);
 
 export default App;

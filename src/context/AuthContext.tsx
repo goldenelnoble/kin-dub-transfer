@@ -125,6 +125,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchUserProfile = async (supabaseUser: SupabaseUser) => {
     try {
+      console.log('Fetching user profile for user:', supabaseUser.id);
+      
       const { data: profile, error } = await supabase
         .from('user_profiles')
         .select('*')
@@ -133,13 +135,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (error) {
         console.error('Error fetching user profile:', error);
-        toast({
-          title: "Erreur",
-          description: "Erreur lors du chargement du profil utilisateur",
-          variant: "destructive"
-        });
-        setUser(null);
-        return;
+        
+        // If profile doesn't exist, try to create it
+        if (error.code === 'PGRST116') {
+          console.log('Profile does not exist, creating one...');
+          const { error: createError } = await supabase
+            .from('user_profiles')
+            .insert({
+              id: supabaseUser.id,
+              name: supabaseUser.user_metadata?.name || supabaseUser.email || 'Utilisateur',
+              role: 'operator',
+              is_active: true
+            });
+
+          if (createError) {
+            console.error('Error creating user profile:', createError);
+            toast({
+              title: "Erreur",
+              description: "Erreur lors de la création du profil utilisateur",
+              variant: "destructive"
+            });
+            setUser(null);
+            return;
+          }
+
+          // Refetch the profile
+          const { data: newProfile, error: refetchError } = await supabase
+            .from('user_profiles')
+            .select('*')
+            .eq('id', supabaseUser.id)
+            .single();
+
+          if (refetchError) {
+            console.error('Error refetching user profile:', refetchError);
+            setUser(null);
+            return;
+          }
+
+          profile = newProfile;
+        } else {
+          toast({
+            title: "Erreur",
+            description: "Erreur lors du chargement du profil utilisateur",
+            variant: "destructive"
+          });
+          setUser(null);
+          return;
+        }
       }
 
       const user: User = {
@@ -152,6 +194,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isActive: profile.is_active
       };
 
+      console.log('User profile loaded:', user);
       setUser(user);
       
       // Update last login
@@ -172,22 +215,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      console.log('Attempting login for:', email);
+      
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
         console.error('Login error:', error);
+        let errorMessage = "Erreur lors de la connexion";
+        
+        if (error.message.includes('Invalid login credentials')) {
+          errorMessage = "Email ou mot de passe incorrect";
+        } else if (error.message.includes('Email not confirmed')) {
+          errorMessage = "Veuillez confirmer votre email avant de vous connecter";
+        }
+        
         toast({
           title: "Erreur de connexion",
-          description: error.message || "Erreur lors de la connexion",
+          description: errorMessage,
           variant: "destructive"
         });
         setIsLoading(false);
         return false;
       }
 
+      console.log('Login successful for user:', data.user?.email);
       toast({
         title: "Connexion réussie",
         description: "Vous êtes maintenant connecté",

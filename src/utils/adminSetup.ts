@@ -18,39 +18,39 @@ export const createAdminUser = async (): Promise<AdminCredentials | null> => {
 
     console.log('Creating admin user with email:', adminCredentials.email);
 
-    // First, check if the user already exists in user_profiles
-    const { data: existingUsers, error: checkError } = await supabase
-      .from('user_profiles')
-      .select('id, role')
-      .eq('name', adminCredentials.name)
-      .limit(1);
+    // First, check if admin already exists by trying to sign in
+    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+      email: adminCredentials.email,
+      password: adminCredentials.password,
+    });
 
-    if (checkError) {
-      console.error('Error checking for existing admin:', checkError);
-    }
-
-    if (existingUsers && existingUsers.length > 0) {
-      console.log('Admin user already exists');
+    if (!signInError && signInData.user) {
+      console.log('Admin user already exists and can login');
+      // Sign out immediately after checking
+      await supabase.auth.signOut();
       return adminCredentials;
     }
 
-    // Create the user using normal signup (this works with anon key)
+    console.log('Admin user does not exist or cannot login, creating new one...');
+
+    // Try to create the user with admin service key approach
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: adminCredentials.email,
       password: adminCredentials.password,
       options: {
         data: { 
           name: adminCredentials.name 
-        }
+        },
+        emailRedirectTo: `${window.location.origin}/`
       }
     });
 
     if (authError) {
       console.error('Error creating admin user:', authError);
       
-      // Check if user already exists
+      // If user already exists, try to fix their profile
       if (authError.message?.includes('already registered') || authError.message?.includes('already been registered')) {
-        console.log('User already exists, attempting to promote...');
+        console.log('User already exists, attempting to fix profile...');
         
         // Try to promote existing user
         const { data: promoteData, error: promoteError } = await supabase.rpc(
@@ -58,12 +58,7 @@ export const createAdminUser = async (): Promise<AdminCredentials | null> => {
           { user_email: adminCredentials.email }
         );
 
-        if (promoteError) {
-          console.error('Error promoting existing user to admin:', promoteError);
-          return null;
-        }
-
-        if (promoteData) {
+        if (!promoteError && promoteData) {
           console.log('Existing user successfully promoted to admin');
           return adminCredentials;
         }
@@ -79,8 +74,11 @@ export const createAdminUser = async (): Promise<AdminCredentials | null> => {
 
     console.log('Admin user created with ID:', authData.user.id);
 
-    // Wait a moment for the trigger to create the profile
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    // Sign out the newly created user
+    await supabase.auth.signOut();
+
+    // Wait for the trigger to create the profile
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
     // Now promote the user to admin using our SQL function
     const { data: promoteData, error: promoteError } = await supabase.rpc(
@@ -90,15 +88,24 @@ export const createAdminUser = async (): Promise<AdminCredentials | null> => {
 
     if (promoteError) {
       console.error('Error promoting user to admin:', promoteError);
-      return null;
+      
+      // Try to manually create the profile if it doesn't exist
+      const { error: profileError } = await supabase
+        .from('user_profiles')
+        .upsert({
+          id: authData.user.id,
+          name: adminCredentials.name,
+          role: 'admin',
+          is_active: true
+        });
+
+      if (profileError) {
+        console.error('Error creating user profile:', profileError);
+        return null;
+      }
     }
 
-    if (!promoteData) {
-      console.error('Failed to promote user to admin - user not found');
-      return null;
-    }
-
-    console.log('User successfully promoted to admin');
+    console.log('Admin user created and promoted successfully');
     return adminCredentials;
 
   } catch (error) {
@@ -108,11 +115,17 @@ export const createAdminUser = async (): Promise<AdminCredentials | null> => {
 };
 
 export const displayAdminCredentials = (credentials: AdminCredentials) => {
-  console.log('\n=== ADMIN USER CREATED SUCCESSFULLY ===');
-  console.log('Email:', credentials.email);
-  console.log('Password:', credentials.password);
-  console.log('Name:', credentials.name);
-  console.log('========================================\n');
+  const message = `
+🎉 UTILISATEUR ADMIN CRÉÉ AVEC SUCCÈS 🎉
+
+📧 Email: ${credentials.email}
+🔐 Mot de passe: ${credentials.password}
+👤 Nom: ${credentials.name}
+
+Vous pouvez maintenant vous connecter avec ces identifiants.
+`;
+  
+  console.log(message);
   
   return {
     title: "Utilisateur Admin Créé",

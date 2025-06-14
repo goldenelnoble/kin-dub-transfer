@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -7,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from "react-router-dom";
+import { toast } from "@/components/ui/sonner";
 
 export function LoginForm() {
   const [email, setEmail] = useState("");
@@ -19,20 +19,29 @@ export function LoginForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('Form submitted:', { email, isLogin });
+    
     let success = false;
     if (isLogin) {
+      console.log('Attempting login...');
       success = await login(email, password);
+      console.log('Login result:', success);
     } else {
+      console.log('Attempting registration...');
       success = await register(email, password, name);
+      console.log('Registration result:', success);
     }
     
     if (success && isLogin) {
+      console.log('Login successful, navigating to dashboard...');
       navigate("/dashboard");
     }
     
     // For registration, user needs to verify email first
     if (success && !isLogin) {
+      console.log('Registration successful, switching to login tab...');
       setIsLogin(true); // Switch back to login tab
+      toast.success("Inscription réussie ! Vous pouvez maintenant vous connecter.");
     }
   };
 

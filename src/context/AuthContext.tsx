@@ -1,4 +1,3 @@
-
 import { 
   createContext, 
   useContext, 
@@ -128,7 +127,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       console.log('Fetching user profile for user:', supabaseUser.id);
       
-      let profile;
       const { data: profileData, error } = await supabase
         .from('user_profiles')
         .select('*')
@@ -138,43 +136,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error) {
         console.error('Error fetching user profile:', error);
         
-        // If profile doesn't exist, try to create it
+        // If profile doesn't exist, the trigger should have created it
+        // Wait a moment and try again
         if (error.code === 'PGRST116') {
-          console.log('Profile does not exist, creating one...');
-          const { error: createError } = await supabase
-            .from('user_profiles')
-            .insert({
-              id: supabaseUser.id,
-              name: supabaseUser.user_metadata?.name || supabaseUser.email || 'Utilisateur',
-              role: 'operator',
-              is_active: true
-            });
-
-          if (createError) {
-            console.error('Error creating user profile:', createError);
-            toast({
-              title: "Erreur",
-              description: "Erreur lors de la création du profil utilisateur",
-              variant: "destructive"
-            });
-            setUser(null);
-            return;
-          }
-
-          // Refetch the profile
-          const { data: newProfile, error: refetchError } = await supabase
+          console.log('Profile not found, waiting and retrying...');
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
+          const { data: retryProfile, error: retryError } = await supabase
             .from('user_profiles')
             .select('*')
             .eq('id', supabaseUser.id)
             .single();
 
-          if (refetchError) {
-            console.error('Error refetching user profile:', refetchError);
+          if (retryError) {
+            console.error('Error fetching user profile after retry:', retryError);
+            toast({
+              title: "Erreur",
+              description: "Erreur lors du chargement du profil utilisateur",
+              variant: "destructive"
+            });
             setUser(null);
+            setIsLoading(false);
             return;
           }
 
-          profile = newProfile;
+          profileData = retryProfile;
         } else {
           toast({
             title: "Erreur",
@@ -182,20 +168,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             variant: "destructive"
           });
           setUser(null);
+          setIsLoading(false);
           return;
         }
-      } else {
-        profile = profileData;
       }
 
       const user: User = {
-        id: profile.id,
-        name: profile.name,
+        id: profileData.id,
+        name: profileData.name,
         email: supabaseUser.email || '',
-        role: profile.role as UserRole,
-        createdAt: new Date(profile.created_at),
-        lastLogin: profile.last_login ? new Date(profile.last_login) : undefined,
-        isActive: profile.is_active
+        role: profileData.role as UserRole,
+        createdAt: new Date(profileData.created_at),
+        lastLogin: profileData.last_login ? new Date(profileData.last_login) : undefined,
+        isActive: profileData.is_active
       };
 
       console.log('User profile loaded:', user);
@@ -267,7 +252,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     
     try {
-      const { error } = await supabase.auth.signUp({
+      console.log('Attempting registration for:', email);
+      
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -279,26 +266,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (error) {
         console.error('Registration error:', error);
+        let errorMessage = "Erreur lors de l'inscription";
+        
+        if (error.message.includes('already registered')) {
+          errorMessage = "Cet email est déjà utilisé";
+        } else if (error.message.includes('Password should be at least')) {
+          errorMessage = "Le mot de passe doit contenir au moins 6 caractères";
+        }
+        
         toast({
           title: "Erreur d'inscription",
-          description: error.message || "Erreur lors de l'inscription",
+          description: errorMessage,
           variant: "destructive"
         });
         setIsLoading(false);
         return false;
       }
 
-      toast({
-        title: "Inscription réussie",
-        description: "Vérifiez votre email pour confirmer votre compte",
-      });
+      if (data.user) {
+        console.log('Registration successful for user:', data.user.email);
+        toast({
+          title: "Inscription réussie",
+          description: "Votre compte a été créé avec succès",
+        });
+      }
+      
       setIsLoading(false);
       return true;
     } catch (error) {
       console.error('Registration error:', error);
       toast({
         title: "Erreur",
-        description: "Erreur lors de l'inscription",
+        description: "Erreur inattendue lors de l'inscription",
         variant: "destructive"
       });
       setIsLoading(false);

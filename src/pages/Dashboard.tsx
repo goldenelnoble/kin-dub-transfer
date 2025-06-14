@@ -1,6 +1,7 @@
 import { AppLayout } from "@/components/layout/AppLayout";
 import { DashboardSummary } from "@/components/dashboard/DashboardSummary";
 import { ActivityChart } from "@/components/dashboard/ActivityChart";
+import { AdminUserManagement } from "@/components/dashboard/AdminUserManagement";
 import { Currency, DashboardStats, Transaction, TransactionStatus } from "@/types";
 import { ArrowRight, RefreshCw, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,7 +15,7 @@ import { useAuth } from "@/context/AuthContext";
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { logout, user } = useAuth();
+  const { logout, user, isAdmin } = useAuth();
   const [stats, setStats] = useState<DashboardStats>({
     totalTransactions: 0,
     pendingTransactions: 0,
@@ -178,6 +179,10 @@ const Dashboard = () => {
             currency={Currency.USD}
             onStatClick={handleSummaryClick}
           />
+        )}
+
+        {isAdmin() && (
+          <AdminUserManagement />
         )}
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

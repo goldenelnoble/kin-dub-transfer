@@ -18,50 +18,36 @@ export const createAdminUser = async (): Promise<AdminCredentials | null> => {
 
     console.log('Creating admin user with email:', adminCredentials.email);
 
-    // First, check if admin already exists by trying to sign in
-    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-      email: adminCredentials.email,
-      password: adminCredentials.password,
-    });
-
-    if (!signInError && signInData.user) {
-      console.log('Admin user already exists and can login');
-      // Sign out immediately after checking
-      await supabase.auth.signOut();
-      return adminCredentials;
-    }
-
-    console.log('Admin user does not exist or cannot login, creating new one...');
-
-    // Try to create the user with admin service key approach
+    // Try to create the user directly
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: adminCredentials.email,
       password: adminCredentials.password,
       options: {
         data: { 
           name: adminCredentials.name 
-        },
-        emailRedirectTo: `${window.location.origin}/`
+        }
       }
     });
 
     if (authError) {
-      console.error('Error creating admin user:', authError);
+      console.error('Auth error:', authError);
       
-      // If user already exists, try to fix their profile
+      // If user already exists, try to promote them
       if (authError.message?.includes('already registered') || authError.message?.includes('already been registered')) {
-        console.log('User already exists, attempting to fix profile...');
+        console.log('User already exists, promoting to admin...');
         
-        // Try to promote existing user
         const { data: promoteData, error: promoteError } = await supabase.rpc(
           'promote_user_to_admin', 
           { user_email: adminCredentials.email }
         );
 
-        if (!promoteError && promoteData) {
-          console.log('Existing user successfully promoted to admin');
-          return adminCredentials;
+        if (promoteError) {
+          console.error('Error promoting user:', promoteError);
+          return null;
         }
+
+        console.log('User promoted to admin successfully');
+        return adminCredentials;
       }
       
       return null;
@@ -74,35 +60,18 @@ export const createAdminUser = async (): Promise<AdminCredentials | null> => {
 
     console.log('Admin user created with ID:', authData.user.id);
 
-    // Sign out the newly created user
-    await supabase.auth.signOut();
+    // Wait a moment for the profile to be created by the trigger
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
-    // Wait for the trigger to create the profile
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    // Now promote the user to admin using our SQL function
-    const { data: promoteData, error: promoteError } = await supabase.rpc(
+    // Promote the user to admin
+    const { error: promoteError } = await supabase.rpc(
       'promote_user_to_admin', 
       { user_email: adminCredentials.email }
     );
 
     if (promoteError) {
       console.error('Error promoting user to admin:', promoteError);
-      
-      // Try to manually create the profile if it doesn't exist
-      const { error: profileError } = await supabase
-        .from('user_profiles')
-        .upsert({
-          id: authData.user.id,
-          name: adminCredentials.name,
-          role: 'admin',
-          is_active: true
-        });
-
-      if (profileError) {
-        console.error('Error creating user profile:', profileError);
-        return null;
-      }
+      return null;
     }
 
     console.log('Admin user created and promoted successfully');

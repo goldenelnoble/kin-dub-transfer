@@ -17,6 +17,7 @@ const Login = () => {
   }
 
   const handleCreateAdmin = async () => {
+    console.log('Admin creation button clicked');
     setIsCreatingAdmin(true);
     
     try {
@@ -24,25 +25,30 @@ const Login = () => {
       const credentials = await createAdminUser();
       
       if (credentials) {
+        console.log('Admin creation successful:', credentials);
         const credentialsInfo = displayAdminCredentials(credentials);
         toast.success(credentialsInfo.title, {
           description: credentialsInfo.message,
-          duration: 10000,
+          duration: 15000,
         });
-        console.log('Admin user creation completed successfully');
+        
+        // Also show an alert for better visibility
+        alert(`Admin créé avec succès!\n\nEmail: ${credentials.email}\nMot de passe: ${credentials.password}\n\nVous pouvez maintenant vous connecter.`);
+        
       } else {
         console.error('Admin creation failed - no credentials returned');
-        toast.error("Erreur", {
-          description: "Échec de la création de l'utilisateur admin. Vérifiez la console pour plus de détails."
+        toast.error("Erreur lors de la création de l'admin", {
+          description: "Vérifiez la console pour plus de détails et réessayez."
         });
       }
     } catch (error) {
       console.error('Error in handleCreateAdmin:', error);
-      toast.error("Erreur", {
-        description: "Une erreur est survenue lors de la création de l'admin. Vérifiez la console pour plus de détails."
+      toast.error("Erreur inattendue", {
+        description: "Une erreur est survenue. Vérifiez la console pour plus de détails."
       });
     } finally {
       setIsCreatingAdmin(false);
+      console.log('Admin creation process completed');
     }
   };
 
@@ -70,9 +76,11 @@ const Login = () => {
         </Button>
         
         {isCreatingAdmin && (
-          <p className="text-sm text-gray-600 mt-2 text-center">
-            Cela peut prendre quelques secondes...
-          </p>
+          <div className="mt-2 text-sm text-gray-600 text-center">
+            <div className="animate-pulse">
+              Création de l'utilisateur admin en cours...
+            </div>
+          </div>
         )}
       </div>
       

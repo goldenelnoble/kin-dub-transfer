@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
 import { SecurityProvider } from "@/security/hooks/useSecurityContext";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Transactions from "./pages/Transactions";
@@ -34,41 +35,174 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <SecurityProvider>
+    <BrowserRouter>
       <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
+        <SecurityProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
             <Routes>
               <Route path="/" element={<Index />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/transactions" element={<Transactions />} />
-              <Route path="/transactions/new" element={<NewTransaction />} />
-              <Route path="/transactions/:id" element={<TransactionDetail />} />
-              <Route path="/receipts" element={<Receipts />} />
-              <Route path="/reports" element={<Reports />} />
-              <Route path="/users" element={<Users />} />
               <Route path="/login" element={<Login />} />
               <Route path="/verify" element={<Verify />} />
-              <Route path="/accounting" element={<Accounting />} />
-              <Route path="/admin/settings" element={<AdminSettings />} />
-              <Route path="/security" element={<SecurityDashboard />} />
-              <Route path="/compliance" element={<OperatorCompliance />} />
-              <Route path="/audit" element={<AuditLog />} />
-              <Route path="/parcels" element={<Parcels />} />
-              <Route path="/parcels/new" element={<NewParcel />} />
-              <Route path="/track" element={<ParcelTracking />} />
-              <Route path="/clients" element={<Clients />} />
-              <Route path="/clients/new" element={<NewClient />} />
-              <Route path="/marchandises" element={<Marchandises />} />
-              <Route path="/marchandises/new" element={<NewMarchandise />} />
+              <Route 
+                path="/dashboard" 
+                element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/transactions" 
+                element={
+                  <ProtectedRoute>
+                    <Transactions />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/transactions/new" 
+                element={
+                  <ProtectedRoute>
+                    <NewTransaction />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/transactions/:id" 
+                element={
+                  <ProtectedRoute>
+                    <TransactionDetail />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/receipts" 
+                element={
+                  <ProtectedRoute>
+                    <Receipts />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/reports" 
+                element={
+                  <ProtectedRoute>
+                    <Reports />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/users" 
+                element={
+                  <ProtectedRoute>
+                    <Users />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/accounting" 
+                element={
+                  <ProtectedRoute>
+                    <Accounting />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/settings" 
+                element={
+                  <ProtectedRoute requiredPermission="canConfigureSystem">
+                    <AdminSettings />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/security" 
+                element={
+                  <ProtectedRoute>
+                    <SecurityDashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/compliance" 
+                element={
+                  <ProtectedRoute>
+                    <OperatorCompliance />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/audit" 
+                element={
+                  <ProtectedRoute>
+                    <AuditLog />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/parcels" 
+                element={
+                  <ProtectedRoute>
+                    <Parcels />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/parcels/new" 
+                element={
+                  <ProtectedRoute>
+                    <NewParcel />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/track" 
+                element={
+                  <ProtectedRoute>
+                    <ParcelTracking />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/clients" 
+                element={
+                  <ProtectedRoute>
+                    <Clients />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/clients/new" 
+                element={
+                  <ProtectedRoute>
+                    <NewClient />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/marchandises" 
+                element={
+                  <ProtectedRoute>
+                    <Marchandises />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/marchandises/new" 
+                element={
+                  <ProtectedRoute>
+                    <NewMarchandise />
+                  </ProtectedRoute>
+                } 
+              />
               <Route path="*" element={<NotFound />} />
             </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
+          </TooltipProvider>
+        </SecurityProvider>
       </AuthProvider>
-    </SecurityProvider>
+    </BrowserRouter>
   </QueryClientProvider>
 );
 

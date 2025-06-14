@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth, UserRole } from "@/context/AuthContext";
@@ -9,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/components/ui/sonner";
-import { UserPlus, Edit, Trash2, User as UserIcon } from "lucide-react";
+import { UserPlus, Edit, Trash2, User as UserIcon, Key, Copy } from "lucide-react";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -24,7 +25,7 @@ import { ImpersonationButton } from "@/components/auth/ImpersonationButton";
 const userFormSchema = z.object({
   name: z.string().min(2, { message: "Le nom doit comporter au moins 2 caractères" }),
   email: z.string().email({ message: "Format d'email invalide" }),
-  password: z.string().min(6, { message: "Le mot de passe doit comporter au moins 6 caractères" }).optional(),
+  password: z.string().min(8, { message: "Le mot de passe doit comporter au moins 8 caractères" }).optional(),
   role: z.enum(["admin", "supervisor", "operator", "auditor"], { 
     required_error: "Veuillez sélectionner un rôle" 
   }),
@@ -41,6 +42,7 @@ const Users = () => {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hasAccess, setHasAccess] = useState(false);
+  const [generatedPassword, setGeneratedPassword] = useState<string>("");
 
   // Initialize the form
   const form = useForm<UserFormValues>({
@@ -54,7 +56,7 @@ const Users = () => {
     },
   });
 
-  // Check authorization on mount - mais ne pas rediriger automatiquement
+  // Check authorization on mount
   useEffect(() => {
     console.log('[Users] Checking permissions...', {
       user: user?.name,
@@ -64,7 +66,6 @@ const Users = () => {
       isAdmin: isAdmin()
     });
 
-    // Vérifier si l'utilisateur est admin ou a des permissions spécifiques
     const userHasAccess = isAdmin() || hasPermission("canCreateUsers") || hasPermission("canEditUsers") || hasPermission("canViewUsers");
     
     if (!userHasAccess) {
@@ -87,7 +88,6 @@ const Users = () => {
       setIsLoading(true);
       console.log('[Users] Loading users from database...');
       
-      // First get user profiles
       const { data: profiles, error: profilesError } = await supabase
         .from('user_profiles')
         .select('*')
@@ -99,7 +99,6 @@ const Users = () => {
         return;
       }
 
-      // Then get auth users to get email addresses
       const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
 
       if (authError) {
@@ -112,7 +111,6 @@ const Users = () => {
       console.log('[Users] Loaded auth users:', authUsers);
 
       const usersData: User[] = (profiles || []).map(profile => {
-        // Find the corresponding auth user to get the email - explicitly type as potentially undefined
         const authUser: any = authUsers?.users?.find((au: any) => au.id === profile.id) || null;
         
         return {
@@ -136,6 +134,28 @@ const Users = () => {
     }
   };
 
+  // Generate secure password
+  const generateSecurePassword = () => {
+    const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()';
+    let password = '';
+    for (let i = 0; i < 12; i++) {
+      password += charset.charAt(Math.floor(Math.random() * charset.length));
+    }
+    return password;
+  };
+
+  const handleGeneratePassword = () => {
+    const newPassword = generateSecurePassword();
+    setGeneratedPassword(newPassword);
+    form.setValue("password", newPassword);
+    toast.success("Mot de passe généré avec succès!");
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success("Copié dans le presse-papiers!");
+  };
+
   const onSubmit = async (data: UserFormValues) => {
     try {
       if (editingUser) {
@@ -147,20 +167,34 @@ const Users = () => {
         });
         
         if (success) {
-          await loadUsers(); // Refresh the list
+          await loadUsers();
         }
       } else {
         // Add new user
+        if (!data.password) {
+          toast.error("Le mot de passe est requis pour créer un nouvel utilisateur");
+          return;
+        }
+
         const success = await createUser({
           name: data.name,
           email: data.email,
           role: data.role as UserRole,
           isActive: data.isActive,
-          password: data.password || ''
+          password: data.password
         });
         
         if (success) {
-          await loadUsers(); // Refresh the list
+          // Show the credentials to the admin
+          toast.success("Utilisateur créé avec succès!", {
+            description: `Email: ${data.email}\nMot de passe: ${data.password}`,
+            duration: 10000
+          });
+          
+          // Also show an alert for better visibility
+          alert(`Utilisateur créé avec succès!\n\nEmail: ${data.email}\nMot de passe: ${data.password}\n\nVeuillez noter ces informations car elles ne seront plus affichées.`);
+          
+          await loadUsers();
         }
       }
       
@@ -168,6 +202,7 @@ const Users = () => {
       form.reset();
       setIsAddUserOpen(false);
       setEditingUser(null);
+      setGeneratedPassword("");
     } catch (error) {
       console.error('Error saving user:', error);
       toast.error("Erreur lors de la sauvegarde de l'utilisateur");
@@ -179,7 +214,7 @@ const Users = () => {
     try {
       const success = await deleteUser(userId);
       if (success) {
-        await loadUsers(); // Refresh the list
+        await loadUsers();
       }
     } catch (error) {
       console.error('Error deleting user:', error);
@@ -194,8 +229,8 @@ const Users = () => {
     form.setValue("email", user.email);
     form.setValue("role", user.role);
     form.setValue("isActive", user.isActive);
-    // Don't set password for existing users
     form.setValue("password", "");
+    setGeneratedPassword("");
     setIsAddUserOpen(true);
   };
 
@@ -207,7 +242,6 @@ const Users = () => {
     [UserRole.AUDITOR]: "Auditeur",
   };
 
-  // Si pas d'accès, ne rien afficher (la redirection est en cours)
   if (!hasAccess) {
     return null;
   }
@@ -226,45 +260,55 @@ const Users = () => {
   return (
     <AppLayout>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Gestion des Utilisateurs</h1>
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Gestion des Utilisateurs</h1>
+          <p className="text-gray-600 mt-1">Créez et gérez les comptes utilisateurs avec leurs identifiants</p>
+        </div>
         
         {hasPermission("canCreateUsers") && (
           <Sheet open={isAddUserOpen} onOpenChange={setIsAddUserOpen}>
             <SheetTrigger asChild>
-              <Button onClick={() => {
-                setEditingUser(null);
-                form.reset({
-                  name: "",
-                  email: "",
-                  password: "",
-                  role: "operator",
-                  isActive: true,
-                });
-              }}>
+              <Button 
+                className="bg-gradient-to-r from-[#F97316] to-[#F2C94C] hover:from-[#E8601A] hover:to-[#E6C043] text-white shadow-lg"
+                onClick={() => {
+                  setEditingUser(null);
+                  form.reset({
+                    name: "",
+                    email: "",
+                    password: "",
+                    role: "operator",
+                    isActive: true,
+                  });
+                  setGeneratedPassword("");
+                }}
+              >
                 <UserPlus className="h-4 w-4 mr-2" />
                 Nouvel Utilisateur
               </Button>
             </SheetTrigger>
-            <SheetContent>
+            <SheetContent className="w-[500px] sm:max-w-[500px]">
               <SheetHeader>
-                <SheetTitle>{editingUser ? "Modifier l'utilisateur" : "Ajouter un nouvel utilisateur"}</SheetTitle>
+                <SheetTitle className="flex items-center space-x-2">
+                  <UserIcon className="h-5 w-5" />
+                  <span>{editingUser ? "Modifier l'utilisateur" : "Créer un nouvel utilisateur"}</span>
+                </SheetTitle>
                 <SheetDescription>
                   {editingUser 
                     ? "Modifiez les détails de l'utilisateur ci-dessous" 
-                    : "Complétez le formulaire pour ajouter un nouvel utilisateur"}
+                    : "Créez un nouveau compte utilisateur avec un identifiant et mot de passe sécurisés"}
                 </SheetDescription>
               </SheetHeader>
               
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mt-4">
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mt-6">
                   <FormField
                     control={form.control}
                     name="name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Nom</FormLabel>
+                        <FormLabel>Nom complet</FormLabel>
                         <FormControl>
-                          <Input placeholder="Nom complet" {...field} />
+                          <Input placeholder="Nom complet de l'utilisateur" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -276,15 +320,18 @@ const Users = () => {
                     name="email"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Email</FormLabel>
+                        <FormLabel>Email (Identifiant de connexion)</FormLabel>
                         <FormControl>
                           <Input 
-                            placeholder="email@example.com" 
+                            placeholder="email@exemple.com" 
                             {...field} 
                             disabled={!!editingUser}
                           />
                         </FormControl>
                         <FormMessage />
+                        {editingUser && (
+                          <p className="text-xs text-gray-500">L'email ne peut pas être modifié après la création</p>
+                        )}
                       </FormItem>
                     )}
                   />
@@ -296,10 +343,43 @@ const Users = () => {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Mot de passe</FormLabel>
-                          <FormControl>
-                            <Input type="password" placeholder="******" {...field} />
-                          </FormControl>
+                          <div className="space-y-2">
+                            <div className="flex space-x-2">
+                              <FormControl>
+                                <Input 
+                                  type="password" 
+                                  placeholder="Mot de passe sécurisé (min. 8 caractères)" 
+                                  {...field} 
+                                />
+                              </FormControl>
+                              <Button 
+                                type="button" 
+                                variant="outline" 
+                                size="icon"
+                                onClick={handleGeneratePassword}
+                                title="Générer un mot de passe sécurisé"
+                              >
+                                <Key className="h-4 w-4" />
+                              </Button>
+                            </div>
+                            {generatedPassword && (
+                              <div className="flex items-center space-x-2 p-2 bg-green-50 border border-green-200 rounded">
+                                <span className="text-sm text-green-700 font-mono">{generatedPassword}</span>
+                                <Button 
+                                  type="button" 
+                                  variant="ghost" 
+                                  size="sm"
+                                  onClick={() => copyToClipboard(generatedPassword)}
+                                >
+                                  <Copy className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            )}
+                          </div>
                           <FormMessage />
+                          <p className="text-xs text-gray-500">
+                            Un mot de passe fort est automatiquement généré. Vous pouvez le personnaliser si nécessaire.
+                          </p>
                         </FormItem>
                       )}
                     />
@@ -310,7 +390,7 @@ const Users = () => {
                     name="role"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Rôle</FormLabel>
+                        <FormLabel>Rôle et permissions</FormLabel>
                         <Select 
                           onValueChange={field.onChange} 
                           value={field.value}
@@ -321,10 +401,30 @@ const Users = () => {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="admin">Administrateur</SelectItem>
-                            <SelectItem value="supervisor">Superviseur</SelectItem>
-                            <SelectItem value="operator">Opérateur</SelectItem>
-                            <SelectItem value="auditor">Auditeur</SelectItem>
+                            <SelectItem value="admin">
+                              <div className="flex flex-col">
+                                <span className="font-medium">Administrateur</span>
+                                <span className="text-xs text-gray-500">Accès complet au système</span>
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="supervisor">
+                              <div className="flex flex-col">
+                                <span className="font-medium">Superviseur</span>
+                                <span className="text-xs text-gray-500">Gestion des transactions et rapports</span>
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="operator">
+                              <div className="flex flex-col">
+                                <span className="font-medium">Opérateur</span>
+                                <span className="text-xs text-gray-500">Création de transactions uniquement</span>
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="auditor">
+                              <div className="flex flex-col">
+                                <span className="font-medium">Auditeur</span>
+                                <span className="text-xs text-gray-500">Consultation des rapports et audits</span>
+                              </div>
+                            </SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -336,9 +436,9 @@ const Users = () => {
                     control={form.control}
                     name="isActive"
                     render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 shadow-sm">
                         <div className="space-y-0.5">
-                          <FormLabel>Compte actif</FormLabel>
+                          <FormLabel className="text-base">Compte actif</FormLabel>
                           <div className="text-sm text-muted-foreground">
                             L'utilisateur peut se connecter et utiliser l'application
                           </div>
@@ -353,16 +453,24 @@ const Users = () => {
                     )}
                   />
                   
-                  <div className="flex justify-end space-x-2 pt-4">
-                    <Button variant="outline" onClick={() => {
-                      setIsAddUserOpen(false);
-                      setEditingUser(null);
-                      form.reset();
-                    }}>
+                  <div className="flex justify-end space-x-3 pt-6 border-t">
+                    <Button 
+                      type="button"
+                      variant="outline" 
+                      onClick={() => {
+                        setIsAddUserOpen(false);
+                        setEditingUser(null);
+                        form.reset();
+                        setGeneratedPassword("");
+                      }}
+                    >
                       Annuler
                     </Button>
-                    <Button type="submit">
-                      {editingUser ? "Mettre à jour" : "Ajouter"}
+                    <Button 
+                      type="submit"
+                      className="bg-gradient-to-r from-[#F97316] to-[#F2C94C] hover:from-[#E8601A] hover:to-[#E6C043] text-white"
+                    >
+                      {editingUser ? "Mettre à jour" : "Créer l'utilisateur"}
                     </Button>
                   </div>
                 </form>
@@ -372,46 +480,77 @@ const Users = () => {
         )}
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Liste des Utilisateurs</CardTitle>
-          <CardDescription>
-            {users.length} utilisateur{users.length > 1 ? 's' : ''} au total
-          </CardDescription>
+      <Card className="shadow-lg">
+        <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-xl text-gray-900">Liste des Utilisateurs</CardTitle>
+              <CardDescription className="text-gray-600">
+                {users.length} utilisateur{users.length > 1 ? 's' : ''} au total
+              </CardDescription>
+            </div>
+            <div className="flex items-center space-x-2 text-sm text-gray-500">
+              <UserIcon className="h-4 w-4" />
+              <span>Gestion des identifiants</span>
+            </div>
+          </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {users.length === 0 ? (
-            <div className="text-center py-8">
-              <UserIcon className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900">Aucun utilisateur</h3>
-              <p className="mt-1 text-sm text-gray-500">Commencez par ajouter un nouvel utilisateur.</p>
+            <div className="text-center py-12">
+              <UserIcon className="mx-auto h-16 w-16 text-gray-300" />
+              <h3 className="mt-4 text-lg font-medium text-gray-900">Aucun utilisateur</h3>
+              <p className="mt-2 text-gray-500">Commencez par créer un nouvel utilisateur avec ses identifiants.</p>
             </div>
           ) : (
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>Nom</TableHead>
-                  <TableHead>Rôle</TableHead>
-                  <TableHead>Statut</TableHead>
-                  <TableHead>Date de création</TableHead>
-                  <TableHead>Dernière connexion</TableHead>
+                <TableRow className="bg-gray-50">
+                  <TableHead className="text-gray-700 font-semibold">Utilisateur</TableHead>
+                  <TableHead className="text-gray-700 font-semibold">Identifiant (Email)</TableHead>
+                  <TableHead className="text-gray-700 font-semibold">Rôle</TableHead>
+                  <TableHead className="text-gray-700 font-semibold">Statut</TableHead>
+                  <TableHead className="text-gray-700 font-semibold">Créé le</TableHead>
+                  <TableHead className="text-gray-700 font-semibold">Dernière connexion</TableHead>
                   {hasPermission("canEditUsers") && (
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead className="text-right text-gray-700 font-semibold">Actions</TableHead>
                   )}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {users.map(userItem => (
-                  <TableRow key={userItem.id}>
+                  <TableRow key={userItem.id} className="hover:bg-gray-50">
                     <TableCell className="font-medium">
-                      <div className="flex items-center space-x-2">
-                        <div className="bg-primary/10 h-8 w-8 rounded-full flex items-center justify-center text-primary">
-                          <UserIcon className="h-4 w-4" />
+                      <div className="flex items-center space-x-3">
+                        <div className="bg-gradient-to-r from-[#F97316] to-[#F2C94C] h-10 w-10 rounded-full flex items-center justify-center text-white font-bold">
+                          {userItem.name.charAt(0).toUpperCase()}
                         </div>
-                        <span>{userItem.name}</span>
+                        <span className="text-gray-900">{userItem.name}</span>
                       </div>
                     </TableCell>
-                    <TableCell>{roleDisplay[userItem.role]}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center space-x-2">
+                        <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">{userItem.email}</span>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => copyToClipboard(userItem.email)}
+                          className="h-6 w-6 p-0"
+                        >
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                        userItem.role === 'admin' ? 'bg-red-100 text-red-800' :
+                        userItem.role === 'supervisor' ? 'bg-blue-100 text-blue-800' :
+                        userItem.role === 'operator' ? 'bg-green-100 text-green-800' :
+                        'bg-purple-100 text-purple-800'
+                      }`}>
+                        {roleDisplay[userItem.role]}
+                      </span>
+                    </TableCell>
                     <TableCell>
                       <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                         userItem.isActive 
@@ -421,16 +560,17 @@ const Users = () => {
                         {userItem.isActive ? 'Actif' : 'Inactif'}
                       </span>
                     </TableCell>
-                    <TableCell>{new Date(userItem.createdAt).toLocaleDateString()}</TableCell>
-                    <TableCell>
+                    <TableCell className="text-gray-600">
+                      {new Date(userItem.createdAt).toLocaleDateString('fr-FR')}
+                    </TableCell>
+                    <TableCell className="text-gray-600">
                       {userItem.lastLogin 
-                        ? new Date(userItem.lastLogin).toLocaleDateString() 
+                        ? new Date(userItem.lastLogin).toLocaleDateString('fr-FR') 
                         : "Jamais connecté"}
                     </TableCell>
                     {hasPermission("canEditUsers") && (
                       <TableCell className="text-right">
                         <div className="flex justify-end space-x-2">
-                          {/* Bouton d'impersonation - seulement pour les non-admins */}
                           {userItem.role !== UserRole.ADMIN && (
                             <ImpersonationButton user={userItem} />
                           )}
@@ -439,6 +579,7 @@ const Users = () => {
                             variant="ghost" 
                             size="icon"
                             onClick={() => handleEditUser(userItem)}
+                            className="hover:bg-orange-50 hover:text-orange-600"
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
@@ -446,22 +587,26 @@ const Users = () => {
                           {hasPermission("canDeleteUsers") && (
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon">
-                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                <Button variant="ghost" size="icon" className="hover:bg-red-50 hover:text-red-600">
+                                  <Trash2 className="h-4 w-4" />
                                 </Button>
                               </AlertDialogTrigger>
                               <AlertDialogContent>
                                 <AlertDialogHeader>
                                   <AlertDialogTitle>Supprimer l'utilisateur</AlertDialogTitle>
                                   <AlertDialogDescription>
-                                    Êtes-vous sûr de vouloir supprimer l'utilisateur {userItem.name}?
+                                    Êtes-vous sûr de vouloir supprimer l'utilisateur <strong>{userItem.name}</strong>?
+                                    Cette action supprimera définitivement son compte et ses identifiants.
                                     Cette action est irréversible.
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                   <AlertDialogCancel>Annuler</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => handleDeleteUser(userItem.id)}>
-                                    Supprimer
+                                  <AlertDialogAction 
+                                    onClick={() => handleDeleteUser(userItem.id)}
+                                    className="bg-red-600 hover:bg-red-700"
+                                  >
+                                    Supprimer définitivement
                                   </AlertDialogAction>
                                 </AlertDialogFooter>
                               </AlertDialogContent>

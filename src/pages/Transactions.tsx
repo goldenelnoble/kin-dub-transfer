@@ -2,6 +2,7 @@
 import { AppLayout } from "@/components/layout/AppLayout";
 import { TransactionList } from "@/components/transactions/TransactionList";
 import { CreateTransactionButton } from "@/components/transactions/CreateTransactionButton";
+import { HomeButton } from "@/components/ui/home-button";
 import { useEffect } from "react";
 import { TransactionManager } from "@/components/transactions/utils/transactionUtils";
 import { Plus, Zap, Filter } from "lucide-react";
@@ -54,6 +55,7 @@ const Transactions = () => {
             
             {/* Bouton d'action principal */}
             <div className="flex flex-col sm:flex-row gap-3">
+              <HomeButton />
               <CreateTransactionButton />
             </div>
           </div>

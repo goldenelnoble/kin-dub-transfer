@@ -2,6 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { RefreshCw, LogOut } from "lucide-react";
 import { CreateTransactionButton } from "@/components/transactions/CreateTransactionButton";
+import { HomeButton } from "@/components/ui/home-button";
 
 interface DashboardHeaderProps {
   onRefresh: () => void;
@@ -22,6 +23,7 @@ export function DashboardHeader({ onRefresh, onLogout, isRefreshing }: Dashboard
         </div>
       </div>
       <div className="flex gap-2">
+        <HomeButton variant="ghost" />
         <Button 
           onClick={onRefresh} 
           variant="outline"

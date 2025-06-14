@@ -1,6 +1,7 @@
 
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
+import { HomeButton } from "@/components/ui/home-button";
 import { FileSpreadsheet } from "lucide-react";
 import * as React from "react";
 import { parseISO, isSameMonth, isSameWeek, isSameDay } from "date-fns";
@@ -76,7 +77,10 @@ export default function Reports() {
   return (
     <AppLayout>
       <div className="space-y-6">
-        <ReportsHeader />
+        <div className="flex items-center justify-between">
+          <ReportsHeader />
+          <HomeButton />
+        </div>
 
         <ReportsFilters
           reportType={reportType}

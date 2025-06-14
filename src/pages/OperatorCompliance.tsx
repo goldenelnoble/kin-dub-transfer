@@ -1,6 +1,7 @@
 
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { HomeButton } from "@/components/ui/home-button";
 import { Shield, Settings } from "lucide-react";
 import OperatorComplianceDashboard from "@/security/components/OperatorComplianceDashboard";
 import OperatorSecuritySettings from "@/security/components/OperatorSecuritySettings";
@@ -9,14 +10,17 @@ const OperatorCompliance = () => {
   return (
     <AppLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center space-x-2">
-            <Shield className="h-8 w-8 text-[#43A047]" />
-            <span>Conformité Opérateurs</span>
-          </h1>
-          <p className="text-muted-foreground">
-            Gestion des contraintes de sécurité pour les opérateurs de Dubaï et Kinshasa
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight flex items-center space-x-2">
+              <Shield className="h-8 w-8 text-[#43A047]" />
+              <span>Conformité Opérateurs</span>
+            </h1>
+            <p className="text-muted-foreground">
+              Gestion des contraintes de sécurité pour les opérateurs de Dubaï et Kinshasa
+            </p>
+          </div>
+          <HomeButton />
         </div>
 
         <Tabs defaultValue="dashboard" className="w-full">

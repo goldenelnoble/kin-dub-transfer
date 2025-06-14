@@ -2,6 +2,7 @@
 import { AppLayout } from "@/components/layout/AppLayout";
 import { AccountingDashboard } from "@/components/accounting/AccountingDashboard";
 import { AccountingTabs } from "@/components/accounting/AccountingTabs";
+import { HomeButton } from "@/components/ui/home-button";
 import { Calculator, TrendingUp, FileText, BarChart3 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 
@@ -41,6 +42,10 @@ const Accounting = () => {
                   <span>Rapports détaillés</span>
                 </div>
               </div>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row gap-3">
+              <HomeButton />
             </div>
           </div>
         </div>

@@ -1,9 +1,8 @@
-
 import { AppLayout } from "@/components/layout/AppLayout";
 import { DashboardSummary } from "@/components/dashboard/DashboardSummary";
 import { ActivityChart } from "@/components/dashboard/ActivityChart";
 import { Currency, DashboardStats, Transaction, TransactionStatus } from "@/types";
-import { ArrowRight, RefreshCw } from "lucide-react";
+import { ArrowRight, RefreshCw, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { CreateTransactionButton } from "@/components/transactions/CreateTransactionButton";
@@ -11,9 +10,11 @@ import { useState, useEffect } from "react";
 import { toast } from "@/components/ui/sonner";
 import { TransactionService } from "@/services/TransactionService";
 import { SystemResetService } from "@/services/SystemResetService";
+import { useAuth } from "@/context/AuthContext";
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { logout, user } = useAuth();
   const [stats, setStats] = useState<DashboardStats>({
     totalTransactions: 0,
     pendingTransactions: 0,
@@ -117,6 +118,17 @@ const Dashboard = () => {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      await logout();
+      toast.success("Déconnexion réussie");
+      navigate("/login");
+    } catch (error) {
+      console.error("Erreur lors de la déconnexion:", error);
+      toast.error("Erreur lors de la déconnexion");
+    }
+  };
+
   const getDirectionLabel = (direction: string) => {
     return direction === "kinshasa_to_dubai" ? "Kinshasa → Dubaï" : "Dubaï → Kinshasa";
   };
@@ -144,6 +156,14 @@ const Dashboard = () => {
               Actualiser
             </Button>
             <CreateTransactionButton />
+            <Button 
+              onClick={handleLogout}
+              variant="outline"
+              className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Déconnexion
+            </Button>
           </div>
         </div>
 

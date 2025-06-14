@@ -12,12 +12,20 @@ interface DashboardHeaderProps {
 
 export function DashboardHeader({ onRefresh, onLogout, isRefreshing }: DashboardHeaderProps) {
   return (
-    <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+    <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0 px-8 mb-8">
       <div className="flex items-center gap-4">
-        <img src="/lovable-uploads/b41d0d5e-3f93-4cc4-8fee-1f2457623fad.png" alt="Golden El Nobles Cargo" className="h-12" />
+        <div className="w-16 h-16 bg-white/90 backdrop-blur-sm rounded-xl flex items-center justify-center shadow-lg border border-golden-200/50">
+          <img 
+            src="/lovable-uploads/3699c74f-5ee4-4571-93ea-3850eeb8546e.png" 
+            alt="Golden El Nobles Cargo Logo" 
+            className="w-12 h-12 object-contain"
+          />
+        </div>
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-[#F97316]">Tableau de bord</h1>
-          <p className="text-[#43A047]">
+          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-golden-600 to-golden-500 bg-clip-text text-transparent font-playfair">
+            Tableau de bord
+          </h1>
+          <p className="text-emerald-600 font-inter">
             Vue d'ensemble des transactions et statistiques - Synchronisé en temps réel
           </p>
         </div>
@@ -28,6 +36,7 @@ export function DashboardHeader({ onRefresh, onLogout, isRefreshing }: Dashboard
           onClick={onRefresh} 
           variant="outline"
           disabled={isRefreshing}
+          className="border-golden-200 hover:bg-golden-50"
         >
           <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
           Actualiser

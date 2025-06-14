@@ -2,7 +2,7 @@
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, ArrowLeftRight, BarChart3, Sparkles, Globe, Shield, Clock } from "lucide-react";
+import { TrendingUp, ArrowLeftRight, BarChart3, Globe, Shield, Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const Index = () => {
@@ -65,8 +65,12 @@ const Index = () => {
           
           <div className="relative z-10 text-center py-20 px-6">
             <div className="mb-8">
-              <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-golden-500 to-golden-600 shadow-2xl mb-6 animate-glow">
-                <Sparkles className="h-10 w-10 text-white" />
+              <div className="inline-flex items-center justify-center w-32 h-32 rounded-3xl bg-white/90 backdrop-blur-sm shadow-2xl mb-6 border border-golden-200/50 hover:scale-105 transition-transform duration-300">
+                <img 
+                  src="/lovable-uploads/3699c74f-5ee4-4571-93ea-3850eeb8546e.png" 
+                  alt="Golden El Nobles Cargo Logo" 
+                  className="w-24 h-24 object-contain"
+                />
               </div>
             </div>
             
@@ -108,8 +112,12 @@ const Index = () => {
               <div className="absolute inset-0 bg-gradient-to-r from-golden-500/5 via-transparent to-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
               
               <CardHeader className="text-center py-12 relative z-10">
-                <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-golden-500 to-golden-600 flex items-center justify-center mx-auto mb-8 shadow-2xl group-hover:scale-110 transition-transform duration-300 animate-glow">
-                  <BarChart3 className="h-12 w-12 text-white" />
+                <div className="w-24 h-24 rounded-2xl bg-white/90 backdrop-blur-sm flex items-center justify-center mx-auto mb-8 shadow-2xl group-hover:scale-110 transition-transform duration-300 border border-golden-200/50">
+                  <img 
+                    src="/lovable-uploads/3699c74f-5ee4-4571-93ea-3850eeb8546e.png" 
+                    alt="Golden El Nobles Cargo Logo" 
+                    className="w-16 h-16 object-contain"
+                  />
                 </div>
                 
                 <CardTitle className="text-3xl md:text-4xl font-playfair font-bold text-noble-800 mb-4">

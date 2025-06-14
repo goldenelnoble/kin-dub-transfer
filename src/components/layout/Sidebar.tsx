@@ -17,8 +17,7 @@ import {
   History,
   ChevronDown,
   ChevronRight,
-  Sparkles,
-  Package
+  Sparkles
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -76,17 +75,21 @@ export function Sidebar() {
       <div className="absolute top-0 right-0 w-32 h-32 bg-golden-400/10 rounded-full blur-2xl"></div>
       <div className="absolute bottom-0 left-0 w-40 h-40 bg-emerald-400/10 rounded-full blur-2xl"></div>
       
-      {/* Header */}
+      {/* Header avec logo officiel */}
       <div className="relative z-10 flex items-center justify-center px-6 py-8 border-b border-white/10">
-        <div className="flex items-center space-x-3">
+        <div className="flex flex-col items-center space-y-3">
           <div className="relative">
-            <div className="w-12 h-12 bg-gradient-to-br from-golden-500 to-golden-600 rounded-xl flex items-center justify-center shadow-xl animate-glow">
-              <Package className="h-7 w-7 text-white" />
+            <div className="w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center shadow-2xl border border-golden-500/20">
+              <img 
+                src="/lovable-uploads/3699c74f-5ee4-4571-93ea-3850eeb8546e.png" 
+                alt="Golden El Nobles Cargo Logo" 
+                className="w-12 h-12 object-contain"
+              />
             </div>
-            <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full animate-pulse"></div>
+            <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full animate-pulse border-2 border-noble-800"></div>
           </div>
-          <div className="flex flex-col">
-            <span className="text-xl font-playfair font-bold bg-gradient-to-r from-golden-400 to-golden-300 bg-clip-text text-transparent">
+          <div className="flex flex-col items-center text-center">
+            <span className="text-lg font-playfair font-bold bg-gradient-to-r from-golden-400 to-golden-300 bg-clip-text text-transparent">
               Golden El Nobles
             </span>
             <span className="text-xs text-white/70 font-inter tracking-wide">

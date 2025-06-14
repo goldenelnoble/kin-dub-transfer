@@ -71,8 +71,12 @@ const Dashboard = () => {
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-6 lg:space-y-0">
               <div className="space-y-4">
                 <div className="flex items-center space-x-4">
-                  <div className="w-16 h-16 bg-gradient-to-br from-golden-500 to-golden-600 rounded-2xl flex items-center justify-center shadow-xl animate-glow">
-                    <Package className="h-8 w-8 text-white" />
+                  <div className="w-20 h-20 bg-white/90 backdrop-blur-sm rounded-2xl flex items-center justify-center shadow-2xl border border-golden-200/50 hover:scale-105 transition-transform duration-300">
+                    <img 
+                      src="/lovable-uploads/3699c74f-5ee4-4571-93ea-3850eeb8546e.png" 
+                      alt="Golden El Nobles Cargo Logo" 
+                      className="w-16 h-16 object-contain"
+                    />
                   </div>
                   <div>
                     <h1 className="text-4xl font-playfair font-bold bg-gradient-to-r from-golden-600 to-golden-500 bg-clip-text text-transparent">

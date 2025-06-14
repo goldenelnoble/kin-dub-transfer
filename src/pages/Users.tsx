@@ -113,9 +113,7 @@ const Users = () => {
 
       const usersData: User[] = (profiles || []).map(profile => {
         // Find the corresponding auth user to get the email
-        const authUser = authUsers && authUsers.users ? 
-          authUsers.users.find(au => au.id === profile.id) : 
-          undefined;
+        const authUser = authUsers?.users?.find(au => au.id === profile.id);
         
         return {
           id: profile.id,

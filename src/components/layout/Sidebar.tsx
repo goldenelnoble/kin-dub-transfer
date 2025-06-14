@@ -16,7 +16,9 @@ import {
   ClipboardCheck,
   History,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Sparkles,
+  Package
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -68,56 +70,68 @@ export function Sidebar() {
   };
 
   return (
-    <div className="flex flex-col w-64 bg-white/80 backdrop-blur-sm border-r border-gray-200/50 h-full shadow-sm">
-      <div className="flex items-center justify-center h-16 px-4 border-b border-gray-200/50">
-        <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center">
-            <BarChart3 className="h-5 w-5 text-white" />
+    <div className="flex flex-col w-72 bg-gradient-to-b from-noble-900 via-noble-800 to-noble-900 text-white h-full shadow-2xl relative overflow-hidden">
+      {/* Background effects */}
+      <div className="absolute inset-0 bg-gradient-to-br from-golden-500/5 via-transparent to-emerald-500/5"></div>
+      <div className="absolute top-0 right-0 w-32 h-32 bg-golden-400/10 rounded-full blur-2xl"></div>
+      <div className="absolute bottom-0 left-0 w-40 h-40 bg-emerald-400/10 rounded-full blur-2xl"></div>
+      
+      {/* Header */}
+      <div className="relative z-10 flex items-center justify-center px-6 py-8 border-b border-white/10">
+        <div className="flex items-center space-x-3">
+          <div className="relative">
+            <div className="w-12 h-12 bg-gradient-to-br from-golden-500 to-golden-600 rounded-xl flex items-center justify-center shadow-xl animate-glow">
+              <Package className="h-7 w-7 text-white" />
+            </div>
+            <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full animate-pulse"></div>
           </div>
           <div className="flex flex-col">
-            <span className="text-lg font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
-              LogiFlow
+            <span className="text-xl font-playfair font-bold bg-gradient-to-r from-golden-400 to-golden-300 bg-clip-text text-transparent">
+              Golden El Nobles
             </span>
-            <span className="text-xs text-gray-500">Transferts d'Argent</span>
+            <span className="text-xs text-white/70 font-inter tracking-wide">
+              Cargo Services L.L.C
+            </span>
           </div>
         </div>
       </div>
       
-      <ScrollArea className="flex-1 py-4">
-        <div className="px-3 space-y-1">
+      {/* Navigation */}
+      <ScrollArea className="flex-1 py-6 relative z-10">
+        <div className="px-4 space-y-2">
           {navigation.map((item) => {
             if (item.children) {
               const isExpanded = expandedSections.includes(item.name);
               const hasActiveChild = isSectionActive(item.children);
               
               return (
-                <div key={item.name}>
+                <div key={item.name} className="space-y-1">
                   <Button
                     variant="ghost"
                     className={cn(
-                      "w-full justify-start font-normal",
-                      hasActiveChild && "bg-green-50 text-green-600"
+                      "w-full justify-start font-inter font-medium text-white/80 hover:text-white hover:bg-white/10 transition-all duration-200 rounded-xl h-12",
+                      hasActiveChild && "bg-gradient-to-r from-golden-500/20 to-emerald-500/20 text-white border border-golden-500/30"
                     )}
                     onClick={() => toggleSection(item.name)}
                   >
                     <item.icon className="mr-3 h-5 w-5" />
                     <span className="flex-1 text-left">{item.name}</span>
                     {isExpanded ? (
-                      <ChevronDown className="h-4 w-4" />
+                      <ChevronDown className="h-4 w-4 transition-transform duration-200" />
                     ) : (
-                      <ChevronRight className="h-4 w-4" />
+                      <ChevronRight className="h-4 w-4 transition-transform duration-200" />
                     )}
                   </Button>
                   
                   {isExpanded && (
-                    <div className="ml-4 mt-1 space-y-1">
+                    <div className="ml-6 space-y-1 border-l border-white/20 pl-4">
                       {item.children.map((child) => (
                         <Button
                           key={child.href}
                           variant="ghost"
                           className={cn(
-                            "w-full justify-start font-normal text-sm",
-                            isActive(child.href) && "bg-green-50 text-green-600 border-r-2 border-green-600"
+                            "w-full justify-start font-inter text-sm text-white/70 hover:text-white hover:bg-white/10 transition-all duration-200 rounded-lg h-10",
+                            isActive(child.href) && "bg-gradient-to-r from-golden-500/30 to-emerald-500/30 text-white border-l-2 border-golden-500"
                           )}
                           onClick={() => navigate(child.href)}
                         >
@@ -136,8 +150,8 @@ export function Sidebar() {
                 key={item.href}
                 variant="ghost"
                 className={cn(
-                  "w-full justify-start font-normal",
-                  isActive(item.href) && "bg-green-50 text-green-600 border-r-2 border-green-600"
+                  "w-full justify-start font-inter font-medium text-white/80 hover:text-white hover:bg-white/10 transition-all duration-200 rounded-xl h-12",
+                  isActive(item.href) && "bg-gradient-to-r from-golden-500/20 to-emerald-500/20 text-white border border-golden-500/30"
                 )}
                 onClick={() => navigate(item.href)}
               >
@@ -149,17 +163,22 @@ export function Sidebar() {
         </div>
       </ScrollArea>
       
-      <Separator />
+      <Separator className="bg-white/20" />
       
-      <div className="p-4">
-        <div className="flex items-center space-x-2 p-2 rounded-lg bg-gradient-to-r from-green-500/10 to-emerald-600/10">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-r from-green-500 to-emerald-600 flex items-center justify-center">
-            <span className="text-white text-sm font-semibold">A</span>
+      {/* User Profile */}
+      <div className="p-6 relative z-10">
+        <div className="flex items-center space-x-3 p-4 rounded-xl bg-gradient-to-r from-white/10 to-white/5 border border-white/20 backdrop-blur-sm hover:from-white/15 hover:to-white/10 transition-all duration-300">
+          <div className="relative">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-golden-500 to-golden-600 flex items-center justify-center shadow-lg">
+              <span className="text-white text-sm font-bold font-inter">A</span>
+            </div>
+            <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-noble-800"></div>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-gray-900 truncate">Admin</p>
-            <p className="text-xs text-gray-500 truncate">Administrateur</p>
+            <p className="text-sm font-medium text-white font-inter truncate">Admin</p>
+            <p className="text-xs text-white/60 truncate font-inter">Administrateur Système</p>
           </div>
+          <Sparkles className="h-4 w-4 text-golden-400 animate-pulse" />
         </div>
       </div>
     </div>

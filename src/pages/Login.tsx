@@ -1,55 +1,20 @@
 
 import { LoginForm } from "@/components/auth/LoginForm";
 import { useAuth } from "@/context/AuthContext";
-import { Navigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
-import { createAdminUser, displayAdminCredentials } from "@/utils/adminSetup";
-import { toast } from "sonner";
 
 const Login = () => {
   const { user, isLoading } = useAuth();
-  const [isCreatingAdmin, setIsCreatingAdmin] = useState(false);
+  const navigate = useNavigate();
 
   // If user is already logged in, redirect to dashboard
   if (user && !isLoading) {
     return <Navigate to="/dashboard" replace />;
   }
 
-  const handleCreateAdmin = async () => {
-    console.log('Admin creation button clicked');
-    setIsCreatingAdmin(true);
-    
-    try {
-      console.log('Starting admin creation process...');
-      const credentials = await createAdminUser();
-      
-      if (credentials) {
-        console.log('Admin creation successful:', credentials);
-        const credentialsInfo = displayAdminCredentials(credentials);
-        toast.success(credentialsInfo.title, {
-          description: credentialsInfo.message,
-          duration: 15000,
-        });
-        
-        // Also show an alert for better visibility
-        alert(`Admin créé avec succès!\n\nEmail: ${credentials.email}\nMot de passe: ${credentials.password}\n\nVous pouvez maintenant vous connecter.`);
-        
-      } else {
-        console.error('Admin creation failed - no credentials returned');
-        toast.error("Erreur lors de la création de l'admin", {
-          description: "Vérifiez la console pour plus de détails et réessayez."
-        });
-      }
-    } catch (error) {
-      console.error('Error in handleCreateAdmin:', error);
-      toast.error("Erreur inattendue", {
-        description: "Une erreur est survenue. Vérifiez la console pour plus de détails."
-      });
-    } finally {
-      setIsCreatingAdmin(false);
-      console.log('Admin creation process completed');
-    }
+  const handleCreateUserRedirect = () => {
+    navigate("/users");
   };
 
   return (
@@ -125,29 +90,12 @@ const Login = () => {
           
           <div className="space-y-4">
             <Button 
-              onClick={handleCreateAdmin}
-              disabled={isCreatingAdmin}
+              onClick={handleCreateUserRedirect}
               variant="outline"
               className="w-full bg-white/50 border-orange-200 hover:bg-orange-50 text-orange-700 font-medium py-3 rounded-xl shadow-lg backdrop-blur-sm transition-all duration-200 hover:shadow-xl"
             >
-              {isCreatingAdmin ? (
-                <div className="flex items-center space-x-2">
-                  <div className="animate-spin w-4 h-4 border-2 border-orange-600 border-t-transparent rounded-full"></div>
-                  <span>Création en cours...</span>
-                </div>
-              ) : (
-                "Créer un utilisateur Admin"
-              )}
+              Aller à la gestion des utilisateurs
             </Button>
-            
-            {isCreatingAdmin && (
-              <div className="text-center">
-                <div className="inline-flex items-center space-x-2 text-sm text-orange-600 bg-orange-50 px-4 py-2 rounded-lg">
-                  <div className="animate-pulse w-2 h-2 bg-orange-400 rounded-full"></div>
-                  <span>Création de l'utilisateur admin en cours...</span>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>

@@ -1,4 +1,3 @@
-
 import { LoginForm } from "@/components/auth/LoginForm";
 import { useAuth } from "@/context/AuthContext";
 import { Navigate } from "react-router-dom";
@@ -75,12 +74,17 @@ const Login = () => {
               />
             </div>
             
-            {/* Titre principal modernisé */}
+            {/* Titre principal modernisé avec nom complet */}
             <div className="space-y-4">
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-orange-600 via-amber-600 to-yellow-600 bg-clip-text text-transparent leading-tight">
                 Golden El Nobles
                 <span className="block text-3xl md:text-4xl lg:text-5xl mt-2">Cargo</span>
               </h1>
+              
+              {/* Nom complet de l'entreprise */}
+              <div className="text-lg md:text-xl lg:text-2xl font-semibold text-gray-700 mb-4">
+                GOLDEN EL NOBLES CARGO SERVICES L.L.C
+              </div>
               
               <div className="space-y-2">
                 <h2 className="text-xl md:text-2xl lg:text-3xl font-semibold text-emerald-700">
@@ -150,7 +154,7 @@ const Login = () => {
       {/* Footer */}
       <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
         <p className="text-sm text-gray-500 text-center">
-          © 2023 Golden El Nobles Cargo. Tous droits réservés.
+          © 2023 Golden El Nobles Cargo Services L.L.C. Tous droits réservés.
         </p>
       </div>
     </div>

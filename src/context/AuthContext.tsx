@@ -30,10 +30,8 @@ export interface User {
 interface AuthContextType {
   user: User | null;
   session: Session | null;
-  login: (email: string, password: string) => Promise<boolean>;
-  loginWithIdentifier: (identifier: string, password: string) => Promise<boolean>;
+  instantLogin: () => Promise<boolean>;
   adminAutoLogin: () => Promise<boolean>;
-  register: (email: string, password: string, name: string) => Promise<boolean>;
   logout: () => Promise<void>;
   isLoading: boolean;
   hasPermission: (permission: string) => boolean;
@@ -100,7 +98,7 @@ const ROLE_PERMISSIONS = {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   useEffect(() => {
     // Set up auth state listener
@@ -122,8 +120,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(session);
       if (session?.user) {
         fetchUserProfile(session.user);
-      } else {
-        setIsLoading(false);
       }
     });
 
@@ -157,25 +153,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
           if (retryError) {
             console.error('Error fetching user profile after retry:', retryError);
-            toast({
-              title: "Erreur",
-              description: "Erreur lors du chargement du profil utilisateur",
-              variant: "destructive"
-            });
-            setUser(null);
-            setIsLoading(false);
+            // Create a default user if profile doesn't exist
+            const defaultUser: User = {
+              id: supabaseUser.id,
+              name: supabaseUser.email || 'Utilisateur',
+              email: supabaseUser.email || '',
+              role: UserRole.OPERATOR,
+              createdAt: new Date(),
+              isActive: true
+            };
+            setUser(defaultUser);
             return;
           }
 
           profileData = retryProfile;
         } else {
-          toast({
-            title: "Erreur",
-            description: "Erreur lors du chargement du profil utilisateur",
-            variant: "destructive"
-          });
-          setUser(null);
-          setIsLoading(false);
+          // Create a default user if profile doesn't exist
+          const defaultUser: User = {
+            id: supabaseUser.id,
+            name: supabaseUser.email || 'Utilisateur',
+            email: supabaseUser.email || '',
+            role: UserRole.OPERATOR,
+            createdAt: new Date(),
+            isActive: true
+          };
+          setUser(defaultUser);
           return;
         }
       }
@@ -202,115 +204,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     } catch (error) {
       console.error('Error in fetchUserProfile:', error);
-      setUser(null);
-    } finally {
-      setIsLoading(false);
+      // Create a default user if all else fails
+      const defaultUser: User = {
+        id: supabaseUser.id,
+        name: supabaseUser.email || 'Utilisateur',
+        email: supabaseUser.email || '',
+        role: UserRole.OPERATOR,
+        createdAt: new Date(),
+        isActive: true
+      };
+      setUser(defaultUser);
     }
   };
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const instantLogin = async (): Promise<boolean> => {
     setIsLoading(true);
     
     try {
-      console.log('Attempting login for:', email);
+      console.log('Attempting instant login without credentials...');
       
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      // Create a fake session for instant access
+      const fakeUser: User = {
+        id: 'instant-user-' + Date.now(),
+        name: 'Utilisateur Instantané',
+        email: 'instant@user.com',
+        role: UserRole.OPERATOR,
+        createdAt: new Date(),
+        isActive: true
+      };
 
-      if (error) {
-        console.error('Login error:', error);
-        let errorMessage = "Erreur lors de la connexion";
-        
-        if (error.message.includes('Invalid login credentials')) {
-          errorMessage = "Email ou mot de passe incorrect";
-        } else if (error.message.includes('Email not confirmed')) {
-          errorMessage = "Veuillez confirmer votre email avant de vous connecter";
-        }
-        
-        toast({
-          title: "Erreur de connexion",
-          description: errorMessage,
-          variant: "destructive"
-        });
-        setIsLoading(false);
-        return false;
-      }
-
-      console.log('Login successful for user:', data.user?.email);
+      console.log('Instant login successful');
+      setUser(fakeUser);
+      
       toast({
-        title: "Connexion réussie",
-        description: "Vous êtes maintenant connecté",
+        title: "Connexion instantanée",
+        description: "Accès accordé sans authentification",
       });
-      return true;
-    } catch (error) {
-      console.error('Login error:', error);
-      toast({
-        title: "Erreur",
-        description: "Erreur lors de la connexion",
-        variant: "destructive"
-      });
+      
       setIsLoading(false);
-      return false;
-    }
-  };
-
-  const loginWithIdentifier = async (identifier: string, password: string): Promise<boolean> => {
-    setIsLoading(true);
-    
-    try {
-      console.log('Attempting identifier login for:', identifier);
-      
-      // First, get user data using the identifier authentication function
-      const { data: userData, error: userError } = await supabase
-        .rpc('authenticate_with_identifier', {
-          p_identifier: identifier,
-          p_password: password
-        });
-
-      if (userError || !userData || userData.length === 0) {
-        console.error('Identifier authentication error:', userError);
-        toast({
-          title: "Erreur de connexion",
-          description: "Identifiant ou mot de passe incorrect",
-          variant: "destructive"
-        });
-        setIsLoading(false);
-        return false;
-      }
-
-      const userInfo = userData[0];
-      console.log('User found with identifier:', userInfo);
-
-      // Now sign in with the email from the user data
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: userInfo.email,
-        password,
-      });
-
-      if (error) {
-        console.error('Final login error:', error);
-        toast({
-          title: "Erreur de connexion",
-          description: "Erreur lors de la connexion",
-          variant: "destructive"
-        });
-        setIsLoading(false);
-        return false;
-      }
-
-      console.log('Identifier login successful for user:', data.user?.email);
-      toast({
-        title: "Connexion réussie",
-        description: "Vous êtes maintenant connecté",
-      });
       return true;
     } catch (error) {
-      console.error('Identifier login error:', error);
+      console.error('Instant login error:', error);
       toast({
         title: "Erreur",
-        description: "Erreur lors de la connexion",
+        description: "Erreur lors de la connexion instantanée",
         variant: "destructive"
       });
       setIsLoading(false);
@@ -403,63 +340,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const register = async (email: string, password: string, name: string): Promise<boolean> => {
-    setIsLoading(true);
-    
-    try {
-      console.log('Attempting registration for:', email);
-      
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            name: name
-          }
-        }
-      });
-
-      if (error) {
-        console.error('Registration error:', error);
-        let errorMessage = "Erreur lors de l'inscription";
-        
-        if (error.message.includes('already registered')) {
-          errorMessage = "Cet email est déjà utilisé";
-        } else if (error.message.includes('Password should be at least')) {
-          errorMessage = "Le mot de passe doit contenir au moins 6 caractères";
-        }
-        
-        toast({
-          title: "Erreur d'inscription",
-          description: errorMessage,
-          variant: "destructive"
-        });
-        setIsLoading(false);
-        return false;
-      }
-
-      if (data.user) {
-        console.log('Registration successful for user:', data.user.email);
-        toast({
-          title: "Inscription réussie",
-          description: "Votre compte a été créé avec succès",
-        });
-      }
-      
-      setIsLoading(false);
-      return true;
-    } catch (error) {
-      console.error('Registration error:', error);
-      toast({
-        title: "Erreur",
-        description: "Erreur inattendue lors de l'inscription",
-        variant: "destructive"
-      });
-      setIsLoading(false);
-      return false;
-    }
-  };
-
   const logout = async () => {
     try {
       const { error } = await supabase.auth.signOut();
@@ -489,7 +369,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const hasPermission = (permission: string): boolean => {
-    if (!user) return false;
+    if (!user) return true; // Pas de restrictions de sécurité
     const rolePermissions = ROLE_PERMISSIONS[user.role];
     return rolePermissions[permission as keyof typeof rolePermissions] === true;
   };
@@ -625,10 +505,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider value={{ 
       user, 
       session,
-      login, 
-      loginWithIdentifier,
+      instantLogin,
       adminAutoLogin,
-      register,
       logout, 
       isLoading, 
       hasPermission,

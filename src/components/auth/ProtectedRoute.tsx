@@ -1,6 +1,5 @@
 
 import { useAuth } from "@/context/AuthContext";
-import { Navigate, useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 
 interface ProtectedRouteProps {
@@ -10,7 +9,6 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ children, requiredPermission }: ProtectedRouteProps) {
   const { user, isLoading, hasPermission } = useAuth();
-  const location = useLocation();
 
   if (isLoading) {
     return (
@@ -20,24 +18,9 @@ export function ProtectedRoute({ children, requiredPermission }: ProtectedRouteP
     );
   }
 
-  if (!user) {
-    // Redirect to login page with return url
-    return <Navigate to="/login" state={{ from: location }} replace />;
-  }
-
-  if (requiredPermission && !hasPermission(requiredPermission)) {
-    // User doesn't have required permission
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold mb-2">Accès refusé</h2>
-          <p className="text-muted-foreground">
-            Vous n'avez pas les permissions nécessaires pour accéder à cette page.
-          </p>
-        </div>
-      </div>
-    );
-  }
+  // Suppression de toute vérification d'authentification
+  // L'accès est maintenant libre pour tous
+  console.log('Access granted without authentication check');
 
   return <>{children}</>;
 }

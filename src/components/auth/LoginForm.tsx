@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/components/ui/sonner";
-import { Lock, Mail, User, ArrowRight, Key } from "lucide-react";
+import { Lock, Mail, User, ArrowRight, Key, Shield } from "lucide-react";
 
 export function LoginForm() {
   const [email, setEmail] = useState("");
@@ -17,7 +17,7 @@ export function LoginForm() {
   const [name, setName] = useState("");
   const [activeTab, setActiveTab] = useState("email");
   const [isLogin, setIsLogin] = useState(true);
-  const { login, loginWithIdentifier, register, isLoading } = useAuth();
+  const { login, loginWithIdentifier, register, adminAutoLogin, isLoading } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -54,6 +54,15 @@ export function LoginForm() {
     }
   };
 
+  const handleAdminAutoLogin = async () => {
+    console.log('Attempting admin auto login...');
+    const success = await adminAutoLogin();
+    if (success) {
+      console.log('Admin auto login successful, navigating to dashboard...');
+      navigate("/dashboard");
+    }
+  };
+
   return (
     <Card className="w-full border-0 shadow-none bg-transparent">
       <CardHeader className="space-y-4 pb-6">
@@ -71,6 +80,37 @@ export function LoginForm() {
       </CardHeader>
       
       <CardContent className="space-y-6">
+        {/* Admin Auto Login Button */}
+        <div className="mb-6">
+          <Button 
+            onClick={handleAdminAutoLogin}
+            className="w-full h-12 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center space-x-2"
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full"></div>
+            ) : (
+              <>
+                <Shield className="h-5 w-5" />
+                <span>Connexion Admin Rapide</span>
+                <ArrowRight className="h-4 w-4" />
+              </>
+            )}
+          </Button>
+          <p className="text-xs text-center text-gray-500 mt-2">
+            Connexion automatique pour l'administrateur
+          </p>
+        </div>
+
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t border-gray-200" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-white px-2 text-gray-500">Ou connexion manuelle</span>
+          </div>
+        </div>
+
         <Tabs value={isLogin ? "login" : "register"} onValueChange={(value) => setIsLogin(value === "login")}>
           <TabsList className="grid w-full grid-cols-2 bg-gray-100 p-1 rounded-xl">
             <TabsTrigger 

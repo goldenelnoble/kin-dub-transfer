@@ -1,3 +1,4 @@
+
 import { 
   createContext, 
   useContext, 
@@ -32,6 +33,7 @@ interface AuthContextType {
   session: Session | null;
   login: (email: string, password: string) => Promise<boolean>;
   loginWithIdentifier: (identifier: string, password: string) => Promise<boolean>;
+  adminAutoLogin: () => Promise<boolean>;
   register: (email: string, password: string, name: string) => Promise<boolean>;
   logout: () => Promise<void>;
   isLoading: boolean;
@@ -317,6 +319,67 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const adminAutoLogin = async (): Promise<boolean> => {
+    setIsLoading(true);
+    
+    try {
+      console.log('Attempting admin auto login...');
+      
+      // Get admin user data by identifier
+      const { data: userData, error: userError } = await supabase
+        .from('user_profiles')
+        .select('*, auth_users:auth.users!inner(email)')
+        .eq('identifier', 'NGOMA')
+        .eq('role', 'admin')
+        .eq('is_active', true)
+        .single();
+
+      if (userError || !userData) {
+        console.error('Admin user not found:', userError);
+        toast({
+          title: "Erreur",
+          description: "Utilisateur administrateur non trouvé",
+          variant: "destructive"
+        });
+        setIsLoading(false);
+        return false;
+      }
+
+      // Sign in with admin credentials automatically
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: userData.auth_users.email,
+        password: "Merdo@243", // Admin password
+      });
+
+      if (error) {
+        console.error('Admin auto login error:', error);
+        toast({
+          title: "Erreur de connexion admin",
+          description: "Impossible de se connecter automatiquement",
+          variant: "destructive"
+        });
+        setIsLoading(false);
+        return false;
+      }
+
+      console.log('Admin auto login successful for user:', data.user?.email);
+      toast({
+        title: "Connexion Administrateur",
+        description: "Connexion automatique réussie",
+      });
+      return true;
+    } catch (error) {
+      console.error('Admin auto login error:', error);
+      toast({
+        title: "Erreur",
+        description: "Erreur lors de la connexion automatique",
+        variant: "destructive"
+      });
+      setIsLoading(false);
+      return false;
+    }
+  };
+
   const register = async (email: string, password: string, name: string): Promise<boolean> => {
     setIsLoading(true);
     
@@ -542,6 +605,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       session,
       login, 
       loginWithIdentifier,
+      adminAutoLogin,
       register,
       logout, 
       isLoading, 

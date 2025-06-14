@@ -50,6 +50,122 @@ export type Database = {
           },
         ]
       }
+      parcel_tracking: {
+        Row: {
+          coordinates: Json | null
+          created_at: string
+          created_by: string | null
+          description: string
+          id: string
+          image_url: string | null
+          location: string
+          parcel_id: string
+          status: string
+        }
+        Insert: {
+          coordinates?: Json | null
+          created_at?: string
+          created_by?: string | null
+          description: string
+          id?: string
+          image_url?: string | null
+          location: string
+          parcel_id: string
+          status: string
+        }
+        Update: {
+          coordinates?: Json | null
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          id?: string
+          image_url?: string | null
+          location?: string
+          parcel_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parcel_tracking_parcel_id_fkey"
+            columns: ["parcel_id"]
+            isOneToOne: false
+            referencedRelation: "parcels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      parcels: {
+        Row: {
+          actual_delivery: string | null
+          created_at: string
+          created_by: string | null
+          declared_value: number | null
+          description: string | null
+          dimensions: Json | null
+          estimated_delivery: string | null
+          id: string
+          notes: string | null
+          priority: string | null
+          recipient_address: string
+          recipient_name: string
+          recipient_phone: string
+          sender_address: string
+          sender_name: string
+          sender_phone: string
+          shipping_cost: number
+          status: string
+          tracking_number: string
+          updated_at: string
+          weight: number
+        }
+        Insert: {
+          actual_delivery?: string | null
+          created_at?: string
+          created_by?: string | null
+          declared_value?: number | null
+          description?: string | null
+          dimensions?: Json | null
+          estimated_delivery?: string | null
+          id?: string
+          notes?: string | null
+          priority?: string | null
+          recipient_address: string
+          recipient_name: string
+          recipient_phone: string
+          sender_address: string
+          sender_name: string
+          sender_phone: string
+          shipping_cost: number
+          status?: string
+          tracking_number: string
+          updated_at?: string
+          weight: number
+        }
+        Update: {
+          actual_delivery?: string | null
+          created_at?: string
+          created_by?: string | null
+          declared_value?: number | null
+          description?: string | null
+          dimensions?: Json | null
+          estimated_delivery?: string | null
+          id?: string
+          notes?: string | null
+          priority?: string | null
+          recipient_address?: string
+          recipient_name?: string
+          recipient_phone?: string
+          sender_address?: string
+          sender_name?: string
+          sender_phone?: string
+          shipping_cost?: number
+          status?: string
+          tracking_number?: string
+          updated_at?: string
+          weight?: number
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null
@@ -264,6 +380,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_tracking_number: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: Database["public"]["Enums"]["user_role"]

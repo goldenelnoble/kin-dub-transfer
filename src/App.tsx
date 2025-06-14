@@ -1,3 +1,4 @@
+
 import React, { useEffect } from "react";
 import { Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -11,6 +12,9 @@ import Dashboard from "./pages/Dashboard";
 import Transactions from "./pages/Transactions";
 import TransactionDetail from "./pages/TransactionDetail";
 import NewTransaction from "./pages/NewTransaction";
+import Parcels from "./pages/Parcels";
+import NewParcel from "./pages/NewParcel";
+import ParcelTracking from "./pages/ParcelTracking";
 import Receipts from "./pages/Receipts";
 import Reports from "./pages/Reports";
 import AuditLog from "./pages/AuditLog";
@@ -56,6 +60,9 @@ function App() {
               <Route path="/transactions" element={<Transactions />} />
               <Route path="/transactions/:id" element={<TransactionDetail />} />
               <Route path="/transactions/new" element={<NewTransaction />} />
+              <Route path="/parcels" element={<Parcels />} />
+              <Route path="/parcels/new" element={<NewParcel />} />
+              <Route path="/track" element={<ParcelTracking />} />
               <Route path="/receipts" element={<Receipts />} />
               <Route path="/reports" element={<Reports />} />
               <Route path="/audit-log" element={<AuditLog />} />

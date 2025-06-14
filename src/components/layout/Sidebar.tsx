@@ -14,7 +14,8 @@ import {
   CreditCard,
   TrendingUp,
   Menu,
-  Calculator
+  Calculator,
+  Package
 } from "lucide-react";
 import { useState } from "react";
 import { ImpersonationBanner } from "@/components/auth/ImpersonationBanner";
@@ -39,6 +40,13 @@ export function Sidebar() {
       icon: <CreditCard className="h-5 w-5" />,
       visible: true,
       color: "text-green-600"
+    },
+    {
+      name: "Colis",
+      path: "/parcels",
+      icon: <Package className="h-5 w-5" />,
+      visible: true,
+      color: "text-orange-600"
     },
     {
       name: "Reçus",

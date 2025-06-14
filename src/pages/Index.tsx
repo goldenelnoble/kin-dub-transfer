@@ -90,7 +90,7 @@ const Index = () => {
                     <span>Système de colis</span>
                   </CardTitle>
                   <CardDescription className="text-[#B6801D]">
-                    Expédiez et suivez vos colis en toute simplicité
+                    Expédiez et suivez vos colis de Dubai vers Kinshasa
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -104,11 +104,23 @@ const Index = () => {
                       <p className="text-sm text-[#B6801D]">Localisez vos colis en temps réel</p>
                     </div>
                   </div>
-                  <div className="bg-[#FEF7CD]/50 p-4 rounded-lg text-center">
-                    <Package className="h-12 w-12 text-[#F97316] mx-auto mb-2" />
-                    <p className="text-[#B6801D] text-sm">
-                      Fonctionnalité bientôt disponible
-                    </p>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Button 
+                      onClick={() => navigate("/parcels/new")}
+                      className="bg-gradient-to-r from-[#F97316] to-[#F2C94C] hover:from-[#F97316]/90 hover:to-[#F2C94C]/90"
+                    >
+                      Expédier un colis
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                    <Button 
+                      onClick={() => navigate("/track")}
+                      variant="outline"
+                      className="border-[#F97316] text-[#F97316] hover:bg-[#F97316] hover:text-white"
+                    >
+                      Suivre un colis
+                      <Package className="ml-2 h-4 w-4" />
+                    </Button>
                   </div>
                 </CardContent>
               </Card>

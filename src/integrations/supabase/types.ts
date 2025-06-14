@@ -499,6 +499,7 @@ export type Database = {
         Row: {
           created_at: string | null
           id: string
+          identifier: string | null
           is_active: boolean | null
           last_login: string | null
           name: string
@@ -508,6 +509,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           id: string
+          identifier?: string | null
           is_active?: boolean | null
           last_login?: string | null
           name: string
@@ -517,6 +519,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           id?: string
+          identifier?: string | null
           is_active?: boolean | null
           last_login?: string | null
           name?: string
@@ -530,6 +533,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      authenticate_with_identifier: {
+        Args: { p_identifier: string; p_password: string }
+        Returns: {
+          user_id: string
+          email: string
+          role: string
+        }[]
+      }
       generate_tracking_number: {
         Args: Record<PropertyKey, never>
         Returns: string

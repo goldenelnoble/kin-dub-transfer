@@ -1,4 +1,3 @@
-
 import { 
   createContext, 
   useContext, 
@@ -25,12 +24,14 @@ export interface User {
   createdAt: Date;
   lastLogin?: Date;
   isActive: boolean;
+  identifier?: string;
 }
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   login: (email: string, password: string) => Promise<boolean>;
+  loginWithIdentifier: (identifier: string, password: string) => Promise<boolean>;
   register: (email: string, password: string, name: string) => Promise<boolean>;
   logout: () => Promise<void>;
   isLoading: boolean;
@@ -185,7 +186,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         role: profileData.role as UserRole,
         createdAt: new Date(profileData.created_at),
         lastLogin: profileData.last_login ? new Date(profileData.last_login) : undefined,
-        isActive: profileData.is_active
+        isActive: profileData.is_active,
+        identifier: profileData.identifier
       };
 
       console.log('User profile loaded:', user);
@@ -243,6 +245,68 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return true;
     } catch (error) {
       console.error('Login error:', error);
+      toast({
+        title: "Erreur",
+        description: "Erreur lors de la connexion",
+        variant: "destructive"
+      });
+      setIsLoading(false);
+      return false;
+    }
+  };
+
+  const loginWithIdentifier = async (identifier: string, password: string): Promise<boolean> => {
+    setIsLoading(true);
+    
+    try {
+      console.log('Attempting identifier login for:', identifier);
+      
+      // First, get user data using the identifier authentication function
+      const { data: userData, error: userError } = await supabase
+        .rpc('authenticate_with_identifier', {
+          p_identifier: identifier,
+          p_password: password
+        });
+
+      if (userError || !userData || userData.length === 0) {
+        console.error('Identifier authentication error:', userError);
+        toast({
+          title: "Erreur de connexion",
+          description: "Identifiant ou mot de passe incorrect",
+          variant: "destructive"
+        });
+        setIsLoading(false);
+        return false;
+      }
+
+      const userInfo = userData[0];
+      console.log('User found with identifier:', userInfo);
+
+      // Now sign in with the email from the user data
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: userInfo.email,
+        password,
+      });
+
+      if (error) {
+        console.error('Final login error:', error);
+        toast({
+          title: "Erreur de connexion",
+          description: "Erreur lors de la connexion",
+          variant: "destructive"
+        });
+        setIsLoading(false);
+        return false;
+      }
+
+      console.log('Identifier login successful for user:', data.user?.email);
+      toast({
+        title: "Connexion réussie",
+        description: "Vous êtes maintenant connecté",
+      });
+      return true;
+    } catch (error) {
+      console.error('Identifier login error:', error);
       toast({
         title: "Erreur",
         description: "Erreur lors de la connexion",
@@ -477,6 +541,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user, 
       session,
       login, 
+      loginWithIdentifier,
       register,
       logout, 
       isLoading, 

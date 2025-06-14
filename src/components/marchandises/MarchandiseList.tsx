@@ -12,7 +12,7 @@ interface Marchandise {
   nom: string;
   reference: string | null;
   poids: number | null;
-  dimensions: { length: string; width: string; height: string } | null;
+  dimensions: any | null; // Changed from strict type to any to handle JSON data
   created_at: string;
 }
 

@@ -50,7 +50,16 @@ export function ParcelForm() {
     setLoading(true);
 
     try {
+      // Generate tracking number first
+      const { data: trackingData, error: trackingError } = await supabase
+        .rpc('generate_tracking_number');
+
+      if (trackingError) {
+        throw trackingError;
+      }
+
       const parcelData = {
+        tracking_number: trackingData,
         sender_name: formData.sender_name,
         sender_phone: formData.sender_phone,
         sender_address: formData.sender_address,

@@ -1,3 +1,4 @@
+
 import { 
   createContext, 
   useContext, 
@@ -127,7 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       console.log('Fetching user profile for user:', supabaseUser.id);
       
-      const { data: profileData, error } = await supabase
+      let { data: profileData, error } = await supabase
         .from('user_profiles')
         .select('*')
         .eq('id', supabaseUser.id)

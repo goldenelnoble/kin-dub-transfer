@@ -112,10 +112,8 @@ const Users = () => {
       console.log('[Users] Loaded auth users:', authUsers);
 
       const usersData: User[] = (profiles || []).map(profile => {
-        // Find the corresponding auth user to get the email
-        const authUser = authUsers?.users ? 
-          authUsers.users.find(au => au.id === profile.id) : 
-          null;
+        // Find the corresponding auth user to get the email - explicitly type as potentially undefined
+        const authUser: any = authUsers?.users?.find((au: any) => au.id === profile.id) || null;
         
         return {
           id: profile.id,

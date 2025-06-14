@@ -40,7 +40,7 @@ const Dashboard = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
-              Tableau de Bord Financier
+              Tableau de Bord
             </h1>
             <p className="text-gray-600 mt-2">
               Gestion des transferts d'argent et transactions financières

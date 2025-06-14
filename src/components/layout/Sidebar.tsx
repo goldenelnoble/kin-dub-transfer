@@ -15,30 +15,14 @@ import {
   Shield,
   ClipboardCheck,
   History,
-  Package,
-  Search,
-  UserCheck,
-  Archive,
   ChevronDown,
-  ChevronRight,
-  Truck
+  ChevronRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navigation = [
   { name: "Accueil", href: "/", icon: Home },
-  { name: "Tableau Logistique", href: "/logistics-dashboard", icon: Truck },
-  { name: "Tableau Financier", href: "/dashboard", icon: BarChart3 },
-  {
-    name: "Logistique",
-    icon: Package,
-    children: [
-      { name: "Colis", href: "/parcels", icon: Package },
-      { name: "Suivi", href: "/track", icon: Search },
-      { name: "Clients", href: "/clients", icon: UserCheck },
-      { name: "Marchandises", href: "/marchandises", icon: Archive },
-    ]
-  },
+  { name: "Tableau de Bord", href: "/dashboard", icon: BarChart3 },
   {
     name: "Transactions",
     icon: ArrowLeftRight,
@@ -87,14 +71,14 @@ export function Sidebar() {
     <div className="flex flex-col w-64 bg-white/80 backdrop-blur-sm border-r border-gray-200/50 h-full shadow-sm">
       <div className="flex items-center justify-center h-16 px-4 border-b border-gray-200/50">
         <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 bg-gradient-to-br from-[#F97316] to-[#F2C94C] rounded-lg flex items-center justify-center">
-            <Package className="h-5 w-5 text-white" />
+          <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center">
+            <BarChart3 className="h-5 w-5 text-white" />
           </div>
           <div className="flex flex-col">
-            <span className="text-lg font-bold bg-gradient-to-r from-[#F97316] to-[#F2C94C] bg-clip-text text-transparent">
+            <span className="text-lg font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
               LogiFlow
             </span>
-            <span className="text-xs text-gray-500">Gestion Logistique</span>
+            <span className="text-xs text-gray-500">Transferts d'Argent</span>
           </div>
         </div>
       </div>
@@ -112,7 +96,7 @@ export function Sidebar() {
                     variant="ghost"
                     className={cn(
                       "w-full justify-start font-normal",
-                      hasActiveChild && "bg-orange-50 text-[#F97316]"
+                      hasActiveChild && "bg-green-50 text-green-600"
                     )}
                     onClick={() => toggleSection(item.name)}
                   >
@@ -133,7 +117,7 @@ export function Sidebar() {
                           variant="ghost"
                           className={cn(
                             "w-full justify-start font-normal text-sm",
-                            isActive(child.href) && "bg-orange-50 text-[#F97316] border-r-2 border-[#F97316]"
+                            isActive(child.href) && "bg-green-50 text-green-600 border-r-2 border-green-600"
                           )}
                           onClick={() => navigate(child.href)}
                         >
@@ -153,7 +137,7 @@ export function Sidebar() {
                 variant="ghost"
                 className={cn(
                   "w-full justify-start font-normal",
-                  isActive(item.href) && "bg-orange-50 text-[#F97316] border-r-2 border-[#F97316]"
+                  isActive(item.href) && "bg-green-50 text-green-600 border-r-2 border-green-600"
                 )}
                 onClick={() => navigate(item.href)}
               >
@@ -168,8 +152,8 @@ export function Sidebar() {
       <Separator />
       
       <div className="p-4">
-        <div className="flex items-center space-x-2 p-2 rounded-lg bg-gradient-to-r from-[#F97316]/10 to-[#F2C94C]/10">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-r from-[#F97316] to-[#F2C94C] flex items-center justify-center">
+        <div className="flex items-center space-x-2 p-2 rounded-lg bg-gradient-to-r from-green-500/10 to-emerald-600/10">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-r from-green-500 to-emerald-600 flex items-center justify-center">
             <span className="text-white text-sm font-semibold">A</span>
           </div>
           <div className="flex-1 min-w-0">

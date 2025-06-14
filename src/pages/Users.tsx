@@ -113,7 +113,9 @@ const Users = () => {
 
       const usersData: User[] = (profiles || []).map(profile => {
         // Find the corresponding auth user to get the email
-        const authUser = authUsers?.users?.find(au => au.id === profile.id);
+        const authUser = authUsers?.users ? 
+          authUsers.users.find(au => au.id === profile.id) : 
+          null;
         
         return {
           id: profile.id,
@@ -136,7 +138,6 @@ const Users = () => {
     }
   };
 
-  // Handle form submission for adding/updating users
   const onSubmit = async (data: UserFormValues) => {
     try {
       if (editingUser) {

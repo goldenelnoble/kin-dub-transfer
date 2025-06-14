@@ -1,29 +1,12 @@
 
-import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, Sparkles, Send, Package } from "lucide-react";
+import { ArrowRight, Send, Package } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const Index = () => {
   const navigate = useNavigate();
-  const [autoRedirect, setAutoRedirect] = useState(true);
-
-  useEffect(() => {
-    if (autoRedirect) {
-      // Redirection automatique vers le dashboard après 3 secondes
-      const timer = setTimeout(() => {
-        navigate("/dashboard", { replace: true });
-      }, 3000);
-
-      return () => clearTimeout(timer);
-    }
-  }, [navigate, autoRedirect]);
-
-  const handleStopAutoRedirect = () => {
-    setAutoRedirect(false);
-  };
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-[#FEF7CD] via-[#FEF3CF] to-[#F2C94C]/20 p-4">
@@ -53,7 +36,7 @@ const Index = () => {
         </div>
 
         {/* Système d'onglets */}
-        <div className="w-full" onClick={handleStopAutoRedirect}>
+        <div className="w-full">
           <Tabs defaultValue="transfers" className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-6">
               <TabsTrigger value="transfers" className="flex items-center space-x-2">
@@ -132,22 +115,6 @@ const Index = () => {
             </TabsContent>
           </Tabs>
         </div>
-
-        {/* Message de chargement et bouton d'accès */}
-        {autoRedirect && (
-          <div className="space-y-4 text-center">
-            <div className="flex items-center justify-center space-x-2 text-[#F97316]">
-              <Sparkles className="h-5 w-5 animate-pulse" />
-              <p className="text-lg font-medium">Chargement du tableau de bord...</p>
-              <Sparkles className="h-5 w-5 animate-pulse" />
-            </div>
-            
-            {/* Barre de progression */}
-            <div className="w-64 mx-auto bg-white/30 rounded-full h-2 overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-[#F97316] to-[#F2C94C] rounded-full animate-pulse"></div>
-            </div>
-          </div>
-        )}
 
         {/* Bouton de redirection manuelle */}
         <div className="text-center">

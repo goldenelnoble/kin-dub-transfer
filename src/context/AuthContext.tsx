@@ -1,4 +1,3 @@
-
 import { 
   createContext, 
   useContext, 
@@ -325,10 +324,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       console.log('Attempting admin auto login...');
       
-      // Get admin user data by identifier
+      // Get admin user data by identifier - simplified query
       const { data: userData, error: userError } = await supabase
         .from('user_profiles')
-        .select('*, auth_users:auth.users!inner(email)')
+        .select('*')
         .eq('identifier', 'NGOMA')
         .eq('role', 'admin')
         .eq('is_active', true)
@@ -345,9 +344,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return false;
       }
 
+      console.log('Admin user found:', userData);
+
+      // Now we need to get the email from the auth.users table
+      // We'll use the authenticate_with_identifier function to get the email
+      const { data: authData, error: authError } = await supabase
+        .rpc('authenticate_with_identifier', {
+          p_identifier: 'NGOMA',
+          p_password: 'Merdo@243'
+        });
+
+      if (authError || !authData || authData.length === 0) {
+        console.error('Could not get admin email:', authError);
+        toast({
+          title: "Erreur",
+          description: "Impossible de récupérer les informations administrateur",
+          variant: "destructive"
+        });
+        setIsLoading(false);
+        return false;
+      }
+
+      const adminEmail = authData[0].email;
+      console.log('Admin email found:', adminEmail);
+
       // Sign in with admin credentials automatically
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: userData.auth_users.email,
+        email: adminEmail,
         password: "Merdo@243", // Admin password
       });
 
@@ -461,7 +484,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       toast({
         title: "Erreur",
         description: "Erreur lors de la déconnexion",
-        variant: "destructive"
       });
     }
   };

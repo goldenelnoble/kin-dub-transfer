@@ -7,6 +7,8 @@ import { useState } from "react";
 import { toast } from "@/components/ui/sonner";
 import { useAuth } from "@/context/AuthContext";
 import { useDashboardData } from "@/hooks/useDashboardData";
+import { Button } from "@/components/ui/button";
+import { Eye } from "lucide-react";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -35,6 +37,21 @@ const Dashboard = () => {
   return (
     <AppLayout>
       <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+              Tableau de Bord Financier
+            </h1>
+            <p className="text-gray-600 mt-2">
+              Gestion des transferts d'argent et transactions financières
+            </p>
+          </div>
+          <Button onClick={() => navigate("/")} variant="outline">
+            <Eye className="h-4 w-4 mr-2" />
+            Retour à l'accueil
+          </Button>
+        </div>
+        
         <DashboardHeader 
           onRefresh={handleRefresh}
           onLogout={handleLogout}

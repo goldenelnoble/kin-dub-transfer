@@ -9,6 +9,7 @@ import { SecurityProvider } from "@/security/hooks/useSecurityContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
+import LogisticsDashboard from "./pages/LogisticsDashboard";
 import Transactions from "./pages/Transactions";
 import NewTransaction from "./pages/NewTransaction";
 import TransactionDetail from "./pages/TransactionDetail";
@@ -50,6 +51,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <Dashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/logistics-dashboard" 
+                element={
+                  <ProtectedRoute>
+                    <LogisticsDashboard />
                   </ProtectedRoute>
                 } 
               />

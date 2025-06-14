@@ -20,13 +20,15 @@ import {
   UserCheck,
   Archive,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Truck
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navigation = [
   { name: "Accueil", href: "/", icon: Home },
-  { name: "Tableau de bord", href: "/dashboard", icon: BarChart3 },
+  { name: "Tableau Logistique", href: "/logistics-dashboard", icon: Truck },
+  { name: "Tableau Financier", href: "/dashboard", icon: BarChart3 },
   {
     name: "Logistique",
     icon: Package,

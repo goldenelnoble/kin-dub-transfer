@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -58,8 +57,8 @@ export function LoginForm() {
     console.log('Attempting admin auto login...');
     const success = await adminAutoLogin();
     if (success) {
-      console.log('Admin auto login successful, navigating to dashboard...');
-      navigate("/dashboard");
+      console.log('Admin auto login successful, navigating to home page...');
+      navigate("/");
     }
   };
 

@@ -70,7 +70,7 @@ export function ParcelForm() {
 
       const { data, error } = await supabase
         .from('parcels')
-        .insert([parcelData])
+        .insert(parcelData)
         .select()
         .single();
 

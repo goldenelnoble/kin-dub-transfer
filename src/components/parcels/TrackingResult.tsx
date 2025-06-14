@@ -11,7 +11,7 @@ interface TrackingEvent {
   location: string;
   description: string;
   created_at: string;
-  coordinates?: { lat: number; lng: number };
+  coordinates?: { lat: number; lng: number } | null;
 }
 
 interface ParcelInfo {
@@ -65,11 +65,20 @@ export function TrackingResult({ trackingNumber }: TrackingResultProps) {
           .order('created_at', { ascending: false });
 
         if (!eventsError && eventsData) {
-          setTrackingEvents(eventsData);
+          // Transform the data to match our interface
+          const transformedEvents: TrackingEvent[] = eventsData.map(event => ({
+            id: event.id,
+            status: event.status,
+            location: event.location,
+            description: event.description,
+            created_at: event.created_at,
+            coordinates: event.coordinates as { lat: number; lng: number } | null
+          }));
+          setTrackingEvents(transformedEvents);
         }
       } catch (error) {
         console.error('Error fetching tracking data:', error);
-        setNotFoun(true);
+        setNotFound(true);
       } finally {
         setLoading(false);
       }

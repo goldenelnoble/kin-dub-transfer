@@ -2,7 +2,7 @@
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, ArrowLeftRight, BarChart3, Globe, Shield, Clock } from "lucide-react";
+import { ArrowLeftRight, Shield, Clock, Globe } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const Index = () => {
@@ -26,42 +26,13 @@ const Index = () => {
     }
   ];
 
-  const quickActions = [
-    {
-      title: "Nouvelle Transaction",
-      description: "Initier un transfert d'argent rapide et sécurisé",
-      href: "/transactions/new",
-      icon: ArrowLeftRight,
-      gradient: "from-emerald-500 via-emerald-600 to-green-600",
-      iconBg: "from-emerald-400 to-emerald-600"
-    },
-    {
-      title: "Gestion Transactions",
-      description: "Suivre et gérer toutes vos transactions",
-      href: "/transactions",
-      icon: TrendingUp,
-      gradient: "from-golden-500 via-golden-600 to-amber-600",
-      iconBg: "from-golden-400 to-golden-600"
-    },
-    {
-      title: "Rapports Analytics",
-      description: "Analyses détaillées et rapports financiers",
-      href: "/reports",
-      icon: BarChart3,
-      gradient: "from-noble-500 via-noble-600 to-slate-600",
-      iconBg: "from-noble-400 to-noble-600"
-    }
-  ];
-
   return (
     <AppLayout>
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-golden-50/30">
-        {/* Hero Section */}
+        {/* Hero Section Simplifié */}
         <div className="relative overflow-hidden">
-          {/* Background Effects */}
           <div className="absolute inset-0 bg-gradient-to-r from-golden-500/5 via-transparent to-emerald-500/5"></div>
           <div className="absolute top-0 left-1/4 w-96 h-96 bg-golden-400/10 rounded-full blur-3xl animate-float"></div>
-          <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-emerald-400/10 rounded-full blur-3xl animate-float" style={{animationDelay: '1s'}}></div>
           
           <div className="relative z-10 text-center py-20 px-6">
             <div className="mb-8">
@@ -79,126 +50,91 @@ const Index = () => {
                 Golden El Nobles
               </span>
               <br />
-              <span className="text-noble-700 text-4xl md:text-5xl">
+              <span className="text-noble-700 text-3xl md:text-4xl">
                 Cargo Services L.L.C
               </span>
             </h1>
             
-            <p className="text-xl md:text-2xl text-noble-600 max-w-4xl mx-auto font-inter font-light leading-relaxed mb-12">
+            <p className="text-xl md:text-2xl text-noble-600 max-w-3xl mx-auto font-inter font-light leading-relaxed mb-12">
               Votre partenaire de confiance pour les services de cargo premium et transferts d'argent internationaux
               <br />
               <span className="text-golden-600 font-medium">Kinshasa ↔ Dubaï</span>
             </p>
 
-            {/* Features */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto mb-16">
+            {/* Features simplifiées */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-3xl mx-auto mb-12">
               {features.map((feature, index) => (
-                <div key={index} className="flex flex-col items-center p-6 rounded-2xl bg-white/60 backdrop-blur-sm border border-white/20 shadow-lg hover:shadow-xl transition-all duration-300">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-golden-500 to-golden-600 flex items-center justify-center mb-4">
-                    <feature.icon className="h-6 w-6 text-white" />
+                <div key={index} className="flex flex-col items-center p-4 rounded-xl bg-white/60 backdrop-blur-sm border border-white/20 shadow-lg hover:shadow-xl transition-all duration-300">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-golden-500 to-golden-600 flex items-center justify-center mb-3">
+                    <feature.icon className="h-5 w-5 text-white" />
                   </div>
-                  <h3 className="font-inter font-semibold text-noble-800 mb-2">{feature.title}</h3>
-                  <p className="text-noble-600 text-sm text-center">{feature.description}</p>
+                  <h3 className="font-inter font-semibold text-noble-800 mb-1 text-sm">{feature.title}</h3>
+                  <p className="text-noble-600 text-xs text-center">{feature.description}</p>
                 </div>
               ))}
             </div>
+
+            {/* Bouton principal unique */}
+            <Button 
+              className="h-16 px-12 text-xl font-semibold bg-gradient-to-r from-golden-500 to-golden-600 hover:from-golden-600 hover:to-golden-700 text-white shadow-xl hover:shadow-2xl transition-all duration-300 rounded-2xl group"
+              onClick={() => navigate("/dashboard")}
+            >
+              <span className="group-hover:scale-105 transition-transform duration-200">
+                Accéder au Tableau de Bord
+              </span>
+              <ArrowLeftRight className="ml-3 h-6 w-6 group-hover:translate-x-1 transition-transform duration-200" />
+            </Button>
           </div>
         </div>
 
-        {/* Dashboard Access */}
-        <div className="py-16 px-6">
+        {/* Section d'accès simplifié */}
+        <div className="py-16 px-6 bg-gradient-to-br from-noble-50/50 to-golden-50/30">
           <div className="max-w-4xl mx-auto">
             <Card className="relative overflow-hidden border-0 shadow-2xl bg-gradient-to-br from-white via-white to-golden-50/30 backdrop-blur-sm hover:shadow-3xl transition-all duration-500 group">
               <div className="absolute inset-0 bg-gradient-to-r from-golden-500/5 via-transparent to-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
               
               <CardHeader className="text-center py-12 relative z-10">
-                <div className="w-24 h-24 rounded-2xl bg-white/90 backdrop-blur-sm flex items-center justify-center mx-auto mb-8 shadow-2xl group-hover:scale-110 transition-transform duration-300 border border-golden-200/50">
-                  <img 
-                    src="/lovable-uploads/3699c74f-5ee4-4571-93ea-3850eeb8546e.png" 
-                    alt="Golden El Nobles Cargo Logo" 
-                    className="w-16 h-16 object-contain"
-                  />
-                </div>
-                
-                <CardTitle className="text-3xl md:text-4xl font-playfair font-bold text-noble-800 mb-4">
-                  Centre de Contrôle
+                <CardTitle className="text-3xl font-playfair font-bold text-noble-800 mb-4">
+                  Gestion Professionnelle
                 </CardTitle>
                 <CardDescription className="text-lg text-noble-600 max-w-2xl mx-auto font-inter">
-                  Accédez à votre tableau de bord professionnel pour gérer vos opérations de cargo et transferts financiers
+                  Système intégré de gestion pour vos opérations de cargo et transferts financiers
                 </CardDescription>
               </CardHeader>
               
-              <CardContent className="pb-12 relative z-10">
-                <div className="flex flex-wrap justify-center gap-4 mb-8">
-                  {["Cargo Management", "Money Transfer", "Analytics", "Global Network"].map((tag, index) => (
-                    <span key={index} className="px-4 py-2 rounded-full bg-golden-100 text-golden-700 text-sm font-medium">
+              <CardContent className="pb-12 relative z-10 text-center">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                  {["Transactions", "Analytics", "Sécurité", "Support 24/7"].map((tag, index) => (
+                    <span key={index} className="px-3 py-2 rounded-full bg-golden-100 text-golden-700 text-sm font-medium">
                       {tag}
                     </span>
                   ))}
                 </div>
                 
-                <Button 
-                  className="w-full max-w-md mx-auto h-14 text-lg font-semibold bg-gradient-to-r from-golden-500 to-golden-600 hover:from-golden-600 hover:to-golden-700 text-white shadow-xl hover:shadow-2xl transition-all duration-300 rounded-xl group/btn"
-                  onClick={() => navigate("/dashboard")}
-                >
-                  <span className="group-hover/btn:scale-105 transition-transform duration-200">
-                    Accéder au Tableau de Bord
-                  </span>
-                  <ArrowLeftRight className="ml-3 h-5 w-5 group-hover/btn:translate-x-1 transition-transform duration-200" />
-                </Button>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <Button 
+                    className="h-12 px-8 font-semibold bg-gradient-to-r from-golden-500 to-golden-600 hover:from-golden-600 hover:to-golden-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 rounded-xl"
+                    onClick={() => navigate("/transactions/new")}
+                  >
+                    Nouvelle Transaction
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    className="h-12 px-8 font-semibold border-golden-300 text-golden-700 hover:bg-golden-50 transition-all duration-300 rounded-xl"
+                    onClick={() => navigate("/transactions")}
+                  >
+                    Voir Transactions
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </div>
         </div>
 
-        {/* Quick Actions */}
-        <div className="py-16 px-6 bg-gradient-to-br from-noble-50/50 to-golden-50/30">
-          <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-16">
-              <h2 className="text-4xl font-playfair font-bold text-noble-800 mb-4">
-                Actions Rapides
-              </h2>
-              <p className="text-xl text-noble-600 font-inter">
-                Démarrez vos opérations en quelques clics
-              </p>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {quickActions.map((action, index) => (
-                <Card key={action.href} className="group relative overflow-hidden border-0 shadow-xl hover:shadow-2xl transition-all duration-500 bg-white/80 backdrop-blur-sm">
-                  <div className={`absolute inset-0 bg-gradient-to-br ${action.gradient} opacity-0 group-hover:opacity-5 transition-opacity duration-500`}></div>
-                  
-                  <CardHeader className="text-center pt-10 relative z-10">
-                    <div className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${action.iconBg} flex items-center justify-center mx-auto mb-6 shadow-xl group-hover:scale-110 group-hover:rotate-3 transition-all duration-300`}>
-                      <action.icon className="h-10 w-10 text-white" />
-                    </div>
-                    <CardTitle className="text-xl font-inter font-bold text-noble-800 mb-3">
-                      {action.title}
-                    </CardTitle>
-                    <CardDescription className="text-noble-600 font-inter leading-relaxed">
-                      {action.description}
-                    </CardDescription>
-                  </CardHeader>
-                  
-                  <CardContent className="pb-8 relative z-10">
-                    <Button 
-                      className="w-full h-12 font-semibold bg-gradient-to-r from-noble-600 to-noble-700 hover:from-noble-700 hover:to-noble-800 text-white shadow-lg hover:shadow-xl transition-all duration-300 rounded-xl"
-                      onClick={() => navigate(action.href)}
-                    >
-                      Commencer
-                      <ArrowLeftRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="py-12 text-center bg-gradient-to-r from-noble-800 to-noble-900">
-          <p className="text-white/80 font-inter">
-            © 2024 Golden El Nobles Cargo Services L.L.C - Excellence in International Trade
+        {/* Footer simplifié */}
+        <div className="py-8 text-center bg-gradient-to-r from-noble-800 to-noble-900">
+          <p className="text-white/80 font-inter text-sm">
+            © 2024 Golden El Nobles Cargo Services L.L.C
           </p>
         </div>
       </div>

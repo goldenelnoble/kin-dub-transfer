@@ -22,7 +22,6 @@ import {
 import { cn } from "@/lib/utils";
 
 const navigation = [
-  { name: "Accueil", href: "/", icon: Home },
   { name: "Tableau de Bord", href: "/dashboard", icon: BarChart3 },
   {
     name: "Transactions",

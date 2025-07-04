@@ -35,12 +35,18 @@ export function SecurityProvider({ children }: { children: ReactNode }) {
     // Initialisation du système de sécurité
     console.log('[SECURITY] Security context initialized with level:', securityLevel);
     
-    // Log de l'initialisation
+    // Log de l'initialisation - avec des valeurs par défaut pour éviter les erreurs
     auditLogger.logCriticalAction({
       type: 'admin_action',
+      userId: 'system',
+      userEmail: 'system@golden-el-nobles.com',
+      ipAddress: '127.0.0.1',
+      userAgent: navigator?.userAgent || 'unknown',
+      resource: 'security_context',
       action: 'security_system_initialized',
       result: 'SUCCESS',
-      details: { securityLevel, timestamp: new Date().toISOString() }
+      details: { securityLevel, timestamp: new Date().toISOString() },
+      sessionId: 'system-init'
     });
   }, []);
 

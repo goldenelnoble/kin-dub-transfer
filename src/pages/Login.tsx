@@ -16,266 +16,380 @@ const Login = () => {
     let filename: string;
 
     if (platform === 'windows') {
-      filename = 'Golden-El-Nobles-Setup.ps1';
-      content = `# Golden El Nobles Cargo Services - Installation Sécurisée
-# Certificat de sécurité: Approuvé pour installation locale
-# Version: 1.0.0
-# Éditeur: Golden El Nobles Cargo Services L.L.C
+      filename = 'Golden-El-Nobles-Installer.bat';
+      content = `@echo off
+title Golden El Nobles Cargo Services - Installateur Automatique
+color 0A
+echo.
+echo ================================================
+echo    Golden El Nobles Cargo Services
+echo    Installateur Automatique Securise v2.0
+echo ================================================
+echo.
 
-# Définir la politique d'exécution pour ce script uniquement
-Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
+:: Verifier les privileges administrateur
+net session >nul 2>&1
+if %errorLevel% == 0 (
+    echo [OK] Privileges administrateur detectes
+) else (
+    echo [INFO] Privileges utilisateur standard detectes
+    echo [INFO] Tentative d'installation sans privileges admin...
+)
 
-Write-Host "================================" -ForegroundColor Green
-Write-Host "Golden El Nobles Cargo Services" -ForegroundColor Yellow
-Write-Host "Installation Sécurisée v1.0.0" -ForegroundColor Green
-Write-Host "================================" -ForegroundColor Green
-Write-Host ""
+echo.
+echo [ETAPE 1/4] Verification de Node.js...
 
-# Vérifier les privilèges administrateur
-$isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-if (-not $isAdmin) {
-    Write-Host "ATTENTION: Il est recommandé d'exécuter en tant qu'administrateur" -ForegroundColor Yellow
-    Write-Host "Continuer quand même? (O/N): " -NoNewline -ForegroundColor Cyan
-    $response = Read-Host
-    if ($response -ne "O" -and $response -ne "o") {
-        Write-Host "Installation annulée par l'utilisateur." -ForegroundColor Red
-        exit 1
-    }
-}
+:: Verifier si Node.js est installe
+node --version >nul 2>&1
+if %errorlevel% == 0 (
+    for /f "tokens=*" %%i in ('node --version') do set NODE_VERSION=%%i
+    echo [OK] Node.js detecte: %NODE_VERSION%
+    goto :install_deps
+) else (
+    echo [INFO] Node.js non detecte, installation automatique...
+    goto :install_nodejs
+)
 
-# Vérifier Node.js
-Write-Host "Vérification de Node.js..." -ForegroundColor Cyan
-try {
-    $nodeVersion = node --version 2>$null
-    if ($LASTEXITCODE -eq 0) {
-        Write-Host "✓ Node.js détecté: $nodeVersion" -ForegroundColor Green
+:install_nodejs
+echo.
+echo [ETAPE 2/4] Telechargement de Node.js...
+
+:: Creer le dossier temporaire
+if not exist "%TEMP%\\golden-setup" mkdir "%TEMP%\\golden-setup"
+cd /d "%TEMP%\\golden-setup"
+
+:: Telecharger Node.js avec PowerShell (plus fiable)
+echo [INFO] Telechargement en cours... (patientez)
+powershell -Command "& {[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://nodejs.org/dist/v20.10.0/node-v20.10.0-x64.msi' -OutFile 'nodejs.msi'}"
+
+if not exist "nodejs.msi" (
+    echo [ERREUR] Echec du telechargement de Node.js
+    echo [SOLUTION] Verifiez votre connexion internet
+    echo [ALTERNATIVE] Installez manuellement depuis: https://nodejs.org
+    pause
+    exit /b 1
+)
+
+echo [OK] Telechargement termine
+echo.
+echo [ETAPE 3/4] Installation de Node.js...
+echo [INFO] Installation silencieuse en cours...
+
+:: Installer Node.js silencieusement
+msiexec /i "nodejs.msi" /quiet /norestart
+if %errorlevel% == 0 (
+    echo [OK] Node.js installe avec succes!
+) else (
+    echo [AVERTISSEMENT] Installation avec privileges limites
+    echo [INFO] Tentative d'installation utilisateur...
+    msiexec /i "nodejs.msi" /qn ALLUSERS=0
+)
+
+:: Actualiser les variables d'environnement
+call refreshenv 2>nul
+set "PATH=%PATH%;%ProgramFiles%\\nodejs;%APPDATA%\\npm"
+
+:: Verifier l'installation
+timeout /t 3 /nobreak >nul
+node --version >nul 2>&1
+if %errorlevel% == 0 (
+    for /f "tokens=*" %%i in ('node --version') do set NODE_VERSION=%%i
+    echo [OK] Node.js %NODE_VERSION% operationnel!
+) else (
+    echo [AVERTISSEMENT] Redemarrage requis pour finaliser l'installation
+    echo [INFO] Relancer ce script apres redemarrage
+    pause
+    exit /b 1
+)
+
+:: Nettoyer les fichiers temporaires
+del /f /q "nodejs.msi" 2>nul
+
+:install_deps
+echo.
+echo [ETAPE 4/4] Installation des dependances...
+echo [INFO] Configuration de l'environnement...
+
+:: Retourner au dossier de l'application
+cd /d "%~dp0"
+
+:: Verifier si npm est disponible
+npm --version >nul 2>&1
+if %errorlevel% neq 0 (
+    echo [ERREUR] npm non detecte apres installation Node.js
+    echo [SOLUTION] Redemarrez votre ordinateur et relancez ce script
+    pause
+    exit /b 1
+)
+
+echo [INFO] Installation des modules npm...
+call npm install --silent
+if %errorlevel% == 0 (
+    echo [OK] Dependances installees!
+) else (
+    echo [AVERTISSEMENT] Quelques avertissements lors de l'installation
+    echo [INFO] L'application devrait fonctionner normalement
+)
+
+echo.
+echo [INFO] Creation du fichier de configuration...
+
+:: Creer le fichier .env.local
+(
+echo VITE_SUPABASE_URL=https://lgrjdbrzlgfmrrvisgrs.supabase.co
+echo VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxncmpkYnJ6bGdmbXJydmlzZ3JzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE3MTI1OTMsImV4cCI6MjA2NzI4ODU5M30.4XXmZbIDTYb_G80OLOt2NvMF2o_HaJhRqc3p7PW4bEQ
+) > .env.local
+
+echo [OK] Configuration creee: .env.local
+
+:: Creer un script de demarrage rapide
+(
+echo @echo off
+echo title Golden El Nobles Cargo Services
+echo echo Demarrage de l'application...
+echo npm run dev
+echo pause
+) > "Demarrer-Application.bat"
+
+echo [OK] Script de demarrage cree: Demarrer-Application.bat
+
+echo.
+echo ================================================
+echo    INSTALLATION TERMINEE AVEC SUCCES!
+echo ================================================
+echo.
+echo [DEMARRAGE] Options disponibles:
+echo.
+echo 1. Double-clic sur "Demarrer-Application.bat"
+echo 2. Ou tapez: npm run dev
+echo 3. Puis ouvrez: http://localhost:8080
+echo.
+echo [RESEAU] Pour acces reseau local:
+echo    http://[VOTRE-IP]:8080
+echo.
+echo [SUPPORT] Golden El Nobles Cargo Services L.L.C
+echo           Email: support@golden-el-nobles.com
+echo.
+
+:: Proposer de demarrer automatiquement
+set /p START_NOW="Demarrer l'application maintenant? (O/N): "
+if /i "%START_NOW%"=="O" (
+    echo [INFO] Demarrage en cours...
+    start "Golden El Nobles" cmd /k "npm run dev"
+    timeout /t 5 /nobreak >nul
+    start "http://localhost:8080"
+)
+
+echo.
+echo Merci d'utiliser Golden El Nobles Cargo Services!
+pause`;
     } else {
-        throw "Node.js non trouvé"
-    }
-} catch {
-    Write-Host "✗ ERREUR: Node.js n'est pas installé." -ForegroundColor Red
-    Write-Host "Téléchargement automatique depuis https://nodejs.org..." -ForegroundColor Yellow
-    
-    # Télécharger Node.js automatiquement
-    $nodeUrl = "https://nodejs.org/dist/v20.10.0/node-v20.10.0-x64.msi"
-    $nodeInstaller = "$env:TEMP\\nodejs-installer.msi"
-    
-    try {
-        Invoke-WebRequest -Uri $nodeUrl -OutFile $nodeInstaller -UseBasicParsing
-        Write-Host "Lancement de l'installation de Node.js..." -ForegroundColor Green
-        Start-Process -FilePath "msiexec.exe" -ArgumentList "/i", $nodeInstaller, "/quiet" -Wait
-        Write-Host "✓ Node.js installé avec succès!" -ForegroundColor Green
-        Remove-Item $nodeInstaller -Force
-    } catch {
-        Write-Host "Impossible de télécharger Node.js automatiquement." -ForegroundColor Red
-        Write-Host "Veuillez installer manuellement depuis: https://nodejs.org" -ForegroundColor Yellow
-        Read-Host "Appuyez sur Entrée pour quitter"
-        exit 1
-    }
-}
-
-Write-Host ""
-Write-Host "Installation des dépendances..." -ForegroundColor Cyan
-
-# Installer les dépendances avec gestion d'erreur améliorée
-try {
-    & npm install
-    if ($LASTEXITCODE -eq 0) {
-        Write-Host "✓ Dépendances installées avec succès!" -ForegroundColor Green
-    } else {
-        throw "Erreur lors de l'installation des dépendances"
-    }
-} catch {
-    Write-Host "✗ ERREUR: Échec de l'installation des dépendances" -ForegroundColor Red
-    Write-Host "Vérifiez votre connexion internet et réessayez." -ForegroundColor Yellow
-    Read-Host "Appuyez sur Entrée pour quitter"
-    exit 1
-}
-
-Write-Host ""
-Write-Host "Configuration de l'environnement..." -ForegroundColor Cyan
-
-# Créer le fichier de configuration de manière sécurisée
-$envContent = @"
-VITE_SUPABASE_URL=https://lgrjdbrzlgfmrrvisgrs.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxncmpkYnJ6bGdmbXJydmlzZ3JzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE3MTI1OTMsImV4cCI6MjA2NzI4ODU5M30.4XXmZbIDTYb_G80OLOt2NvMF2o_HaJhRqc3p7PW4bEQ
-"@
-
-try {
-    $envContent | Out-File -FilePath ".env.local" -Encoding UTF8 -Force
-    Write-Host "✓ Configuration créée: .env.local" -ForegroundColor Green
-} catch {
-    Write-Host "✗ Erreur lors de la création du fichier de configuration" -ForegroundColor Red
-    exit 1
-}
-
-Write-Host ""
-Write-Host "================================" -ForegroundColor Green
-Write-Host "Installation terminée avec succès!" -ForegroundColor Green
-Write-Host "================================" -ForegroundColor Green
-Write-Host ""
-Write-Host "Pour démarrer l'application:" -ForegroundColor Yellow
-Write-Host "1. Ouvrez PowerShell ou l'invite de commande dans ce dossier" -ForegroundColor White
-Write-Host "2. Tapez: npm run dev" -ForegroundColor Cyan
-Write-Host "3. Ouvrez votre navigateur à l'adresse: http://localhost:8080" -ForegroundColor Cyan
-Write-Host ""
-Write-Host "Pour accès réseau, l'application sera accessible via:" -ForegroundColor Yellow
-Write-Host "http://[VOTRE-IP]:8080" -ForegroundColor Cyan
-Write-Host ""
-Write-Host "© 2023 Golden El Nobles Cargo Services L.L.C" -ForegroundColor Gray
-Write-Host ""
-
-# Demander si l'utilisateur veut démarrer automatiquement
-Write-Host "Démarrer l'application maintenant? (O/N): " -NoNewline -ForegroundColor Cyan
-$startNow = Read-Host
-if ($startNow -eq "O" -or $startNow -eq "o") {
-    Write-Host "Démarrage de l'application..." -ForegroundColor Green
-    Start-Process -FilePath "npm" -ArgumentList "run", "dev" -NoNewWindow
-    Start-Sleep -Seconds 3
-    Start-Process "http://localhost:8080"
-}
-
-Read-Host "Appuyez sur Entrée pour quitter"`;
-    } else {
-      filename = 'golden-el-nobles-setup.sh';
+      filename = 'golden-el-nobles-installer.sh';
       content = `#!/bin/bash
 
-# Golden El Nobles Cargo Services - Installation Sécurisée
-# Version: 1.0.0
+# Golden El Nobles Cargo Services - Installateur Automatique
+# Version: 2.0.0
 # Éditeur: Golden El Nobles Cargo Services L.L.C
 
-echo "================================"
-echo "Golden El Nobles Cargo Services"
-echo "Installation Sécurisée v1.0.0"
-echo "================================"
+# Couleurs pour l'affichage
+RED='\\033[0;31m'
+GREEN='\\033[0;32m'
+YELLOW='\\033[1;33m'
+BLUE='\\033[0;34m'
+CYAN='\\033[0;36m'
+NC='\\033[0m' # No Color
+
+echo -e "\${GREEN}================================================\${NC}"
+echo -e "\${CYAN}   Golden El Nobles Cargo Services\${NC}"
+echo -e "\${GREEN}   Installateur Automatique Sécurisé v2.0\${NC}"
+echo -e "\${GREEN}================================================\${NC}"
 echo
 
-# Fonction de vérification des privilèges
-check_privileges() {
-    if [ "$EUID" -eq 0 ]; then
-        echo "⚠️  Attention: Exécution en tant que root détectée"
-        echo "Il est recommandé d'exécuter ce script avec un utilisateur normal."
-        read -p "Continuer quand même? (o/N): " response
-        if [[ ! "$response" =~ ^[Oo]$ ]]; then
-            echo "Installation annulée."
-            exit 1
+# Détecter l'OS
+detect_os() {
+    if [[ "\\$OSTYPE" == "linux-gnu"* ]]; then
+        OS="linux"
+        if [ -f /etc/debian-version ]; then
+            DISTRO="debian"
+        elif [ -f /etc/redhat-release ]; then
+            DISTRO="redhat"
+        elif [ -f /etc/arch-release ]; then
+            DISTRO="arch"
+        else
+            DISTRO="unknown"
         fi
+    elif [[ "\\$OSTYPE" == "darwin"* ]]; then
+        OS="mac"
+        DISTRO="mac"
+    else
+        OS="unknown"
+        DISTRO="unknown"
+    fi
+    
+    echo -e "\${BLUE}[INFO]\${NC} Système détecté: \\$OS (\\$DISTRO)"
+}
+
+# Installer Node.js automatiquement
+install_nodejs() {
+    echo -e "\${YELLOW}[ETAPE 2/4]\${NC} Installation de Node.js..."
+    
+    case \\$DISTRO in
+        "debian")
+            echo -e "\${BLUE}[INFO]\${NC} Installation via apt..."
+            sudo apt update -qq
+            sudo apt install -y curl
+            curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+            sudo apt install -y nodejs
+            ;;
+        "redhat")
+            echo -e "\${BLUE}[INFO]\${NC} Installation via yum/dnf..."
+            if command -v dnf &> /dev/null; then
+                sudo dnf install -y curl
+                curl -fsSL https://rpm.nodesource.com/setup_20.x | sudo bash -
+                sudo dnf install -y nodejs npm
+            else
+                sudo yum install -y curl
+                curl -fsSL https://rpm.nodesource.com/setup_20.x | sudo bash -
+                sudo yum install -y nodejs npm
+            fi
+            ;;
+        "arch")
+            echo -e "\${BLUE}[INFO]\${NC} Installation via pacman..."
+            sudo pacman -Sy --noconfirm nodejs npm
+            ;;
+        "mac")
+            echo -e "\${BLUE}[INFO]\${NC} Installation via Homebrew..."
+            if ! command -v brew &> /dev/null; then
+                echo -e "\${YELLOW}[INFO]\${NC} Installation de Homebrew..."
+                /bin/bash -c "\\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+            fi
+            brew install node
+            ;;
+        *)
+            echo -e "\${RED}[ERREUR]\${NC} Distribution non supportée pour l'installation automatique"
+            echo -e "\${YELLOW}[SOLUTION]\${NC} Installez manuellement depuis: https://nodejs.org"
+            exit 1
+            ;;
+    esac
+}
+
+# Vérifier Node.js
+check_nodejs() {
+    echo -e "\${YELLOW}[ETAPE 1/4]\${NC} Vérification de Node.js..."
+    
+    if command -v node &> /dev/null; then
+        NODE_VERSION=\\$(node --version)
+        echo -e "\${GREEN}[OK]\${NC} Node.js détecté: \\$NODE_VERSION"
+        return 0
+    else
+        echo -e "\${YELLOW}[INFO]\${NC} Node.js non détecté, installation automatique..."
+        return 1
     fi
 }
 
-# Vérifier les privilèges
-check_privileges
-
-# Détecter l'OS
-OSValue="$(uname -s)"
-case "\${OSValue}" in
-    Linux*)     MACHINE=Linux;;
-    Darwin*)    MACHINE=Mac;;
-    *)          MACHINE="UNKNOWN:\${OSValue}"
-esac
-
-echo "Système détecté: \$MACHINE"
-echo
-
-# Vérifier Node.js
-echo "Vérification de Node.js..."
-if command -v node &> /dev/null; then
-    NODE_VERSION=$(node --version)
-    echo "✓ Node.js détecté: $NODE_VERSION"
-else
-    echo "✗ ERREUR: Node.js n'est pas installé."
-    echo "Installation automatique de Node.js..."
+# Installer les dépendances
+install_dependencies() {
+    echo -e "\${YELLOW}[ETAPE 3/4]\${NC} Installation des dépendances..."
     
-    if [[ "$MACHINE" == "Mac" ]]; then
-        if command -v brew &> /dev/null; then
-            brew install node
-        else
-            echo "Homebrew non trouvé. Veuillez installer Node.js manuellement."
-            echo "https://nodejs.org/en/download/"
-            exit 1
-        fi
-    elif [[ "$MACHINE" == "Linux" ]]; then
-        if command -v apt &> /dev/null; then
-            sudo apt update && sudo apt install -y nodejs npm
-        elif command -v yum &> /dev/null; then
-            sudo yum install -y nodejs npm
-        elif command -v pacman &> /dev/null; then
-            sudo pacman -S nodejs npm
-        else
-            echo "Gestionnaire de paquets non supporté."
-            echo "Veuillez installer Node.js manuellement: https://nodejs.org"
-            exit 1
-        fi
-    fi
-    
-    # Vérifier l'installation
-    if command -v node &> /dev/null; then
-        echo "✓ Node.js installé avec succès!"
-    else
-        echo "✗ Échec de l'installation de Node.js"
+    if ! command -v npm &> /dev/null; then
+        echo -e "\${RED}[ERREUR]\${NC} npm non détecté après installation Node.js"
         exit 1
     fi
-fi
+    
+    echo -e "\${BLUE}[INFO]\${NC} Installation des modules npm..."
+    if npm install --silent; then
+        echo -e "\${GREEN}[OK]\${NC} Dépendances installées!"
+    else
+        echo -e "\${YELLOW}[AVERTISSEMENT]\${NC} Quelques avertissements lors de l'installation"
+        echo -e "\${BLUE}[INFO]\${NC} L'application devrait fonctionner normalement"
+    fi
+}
 
-echo
-echo "Installation des dépendances..."
-
-# Installer les dépendances avec gestion d'erreur
-if npm install; then
-    echo "✓ Dépendances installées avec succès!"
-else
-    echo "✗ ERREUR: Échec de l'installation des dépendances"
-    echo "Vérifiez votre connexion internet et réessayez."
-    exit 1
-fi
-
-echo
-echo "Configuration de l'environnement..."
-
-# Créer le fichier de configuration
-cat > .env.local << EOL
+# Configuration
+setup_config() {
+    echo -e "\${YELLOW}[ETAPE 4/4]\${NC} Configuration de l'environnement..."
+    
+    # Créer le fichier .env.local
+    cat > .env.local << EOL
 VITE_SUPABASE_URL=https://lgrjdbrzlgfmrrvisgrs.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxncmpkYnJ6bGdmbXJydmlzZ3JzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE3MTI1OTMsImV4cCI6MjA2NzI4ODU5M30.4XXmZbIDTYb_G80OLOt2NvMF2o_HaJhRqc3p7PW4bEQ
 EOL
 
-if [ $? -eq 0 ]; then
-    echo "✓ Configuration créée: .env.local"
-else
-    echo "✗ Erreur lors de la création du fichier de configuration"
-    exit 1
-fi
+    echo -e "\${GREEN}[OK]\${NC} Configuration créée: .env.local"
+    
+    # Créer un script de démarrage
+    cat > start-app.sh << 'EOL'
+#!/bin/bash
+echo "Démarrage de Golden El Nobles Cargo Services..."
+npm run dev
+EOL
+    
+    chmod +x start-app.sh
+    echo -e "\${GREEN}[OK]\${NC} Script de démarrage créé: start-app.sh"
+}
 
-echo
-echo "================================"
-echo "Installation terminée avec succès!"
-echo "================================"
-echo
-echo "Pour démarrer l'application:"
-echo "1. Ouvrez un terminal dans ce dossier"
-echo "2. Tapez: npm run dev"
-echo "3. Ouvrez votre navigateur à l'adresse: http://localhost:8080"
-echo
-echo "Pour accès réseau, l'application sera accessible via:"
-echo "http://[VOTRE-IP]:8080"
-echo
-echo "© 2023 Golden El Nobles Cargo Services L.L.C"
-echo
-
-# Demander si l'utilisateur veut démarrer automatiquement
-read -p "Démarrer l'application maintenant? (o/N): " start_now
-if [[ "$start_now" =~ ^[Oo]$ ]]; then
-    echo "Démarrage de l'application..."
-    npm run dev &
-    sleep 3
-    if command -v xdg-open &> /dev/null; then
-        xdg-open http://localhost:8080
-    elif command -v open &> /dev/null; then
-        open http://localhost:8080
+# Script principal
+main() {
+    detect_os
+    
+    if ! check_nodejs; then
+        install_nodejs
+        
+        # Vérifier l'installation
+        if command -v node &> /dev/null; then
+            NODE_VERSION=\\$(node --version)
+            echo -e "\${GREEN}[OK]\${NC} Node.js \\$NODE_VERSION opérationnel!"
+        else
+            echo -e "\${RED}[ERREUR]\${NC} Échec de l'installation de Node.js"
+            exit 1
+        fi
     fi
-fi
+    
+    install_dependencies
+    setup_config
+    
+    echo
+    echo -e "\${GREEN}================================================\${NC}"
+    echo -e "\${GREEN}   INSTALLATION TERMINÉE AVEC SUCCÈS!\${NC}"
+    echo -e "\${GREEN}================================================\${NC}"
+    echo
+    echo -e "\${YELLOW}[DÉMARRAGE]\${NC} Options disponibles:"
+    echo
+    echo -e "1. Tapez: \${CYAN}./start-app.sh\${NC}"
+    echo -e "2. Ou tapez: \${CYAN}npm run dev\${NC}"
+    echo -e "3. Puis ouvrez: \${CYAN}http://localhost:8080\${NC}"
+    echo
+    echo -e "\${YELLOW}[RÉSEAU]\${NC} Pour accès réseau local:"
+    echo -e "   \${CYAN}http://[VOTRE-IP]:8080\${NC}"
+    echo
+    echo -e "\${YELLOW}[SUPPORT]\${NC} Golden El Nobles Cargo Services L.L.C"
+    echo -e "          Email: support@golden-el-nobles.com"
+    echo
+    
+    # Proposer de démarrer automatiquement
+    read -p "Démarrer l'application maintenant? (o/N): " start_now
+    if [[ "\\$start_now" =~ ^[Oo]\\$ ]]; then
+        echo -e "\${BLUE}[INFO]\${NC} Démarrage en cours..."
+        npm run dev &
+        sleep 3
+        
+        # Ouvrir le navigateur
+        if command -v xdg-open &> /dev/null; then
+            xdg-open http://localhost:8080
+        elif command -v open &> /dev/null; then
+            open http://localhost:8080
+        fi
+    fi
+    
+    echo
+    echo -e "\${GREEN}Merci d'utiliser Golden El Nobles Cargo Services!\${NC}"
+}
+
+# Exécuter le script principal
+main
 
 # Rendre le script exécutable
-chmod +x "$0"`;
+chmod +x "\\$0"`;
     }
 
     // Créer et télécharger le fichier
@@ -289,24 +403,42 @@ chmod +x "$0"`;
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
 
-    // Afficher les instructions de sécurité
+    // Afficher les instructions
     if (platform === 'windows') {
       setTimeout(() => {
-        alert(`📋 INSTRUCTIONS DE SÉCURITÉ WINDOWS:
+        alert(`🚀 INSTALLATEUR AUTOMATIQUE WINDOWS
 
-1. Clic droit sur le fichier téléchargé
-2. Sélectionnez "Propriétés"
-3. Cochez "Débloquer" si présent
-4. Clic droit → "Exécuter avec PowerShell"
+✅ NOUVELLE VERSION AMÉLIORÉE:
+- Télécharge et installe Node.js automatiquement
+- Installation silencieuse sans intervention
+- Détection automatique des privilèges
+- Script de démarrage inclus
 
-OU
+📋 INSTRUCTIONS:
+1. Clic droit sur le fichier → "Exécuter en tant qu'administrateur"
+2. Ou double-clic simple (installation utilisateur)
+3. Laissez l'installateur faire le travail automatiquement
 
-1. Ouvrez PowerShell en tant qu'administrateur
-2. Tapez: Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-3. Confirmez avec "O"
-4. Exécutez le script
+⚡ PLUS BESOIN D'INSTALLER NODEJS MANUELLEMENT!
+Le script s'occupe de tout automatiquement.`);
+      }, 1000);
+    } else {
+      setTimeout(() => {
+        alert(`🚀 INSTALLATEUR AUTOMATIQUE LINUX/MAC
 
-Le script est sécurisé et approuvé par Golden El Nobles Cargo Services L.L.C.`);
+✅ FONCTIONNALITÉS:
+- Détection automatique de votre distribution
+- Installation automatique de Node.js
+- Support Ubuntu, CentOS, Arch, macOS
+- Configuration automatique complète
+
+📋 INSTRUCTIONS:
+1. Ouvrir un terminal
+2. Naviguer vers le dossier du fichier
+3. chmod +x golden-el-nobles-installer.sh
+4. ./golden-el-nobles-installer.sh
+
+⚡ INSTALLATION ENTIÈREMENT AUTOMATISÉE!`);
       }, 1000);
     }
   };

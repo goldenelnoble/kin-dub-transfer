@@ -70,6 +70,7 @@ Deno.serve(async (req) => {
             name: profile.name,
             email: authUser?.email || '',
             role: profile.role,
+            region: profile.region,
             createdAt: profile.created_at,
             lastLogin: profile.last_login,
             isActive: profile.is_active,
@@ -147,6 +148,7 @@ Deno.serve(async (req) => {
           .update({
             name: userData.name,
             role: userData.role || 'operator',
+            region: userData.region || 'kinshasa',
             is_active: userData.isActive !== undefined ? userData.isActive : true,
             identifier: userData.identifier
           })
@@ -170,7 +172,8 @@ Deno.serve(async (req) => {
             id: authData.user.id,
             email: authData.user.email,
             name: userData.name,
-            role: userData.role || 'operator'
+            role: userData.role || 'operator',
+            region: userData.region || 'kinshasa'
           }
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -224,6 +227,7 @@ Deno.serve(async (req) => {
           .update({
             name: userData.name,
             role: userData.role,
+            region: userData.region,
             is_active: userData.isActive,
             updated_at: new Date().toISOString()
           })

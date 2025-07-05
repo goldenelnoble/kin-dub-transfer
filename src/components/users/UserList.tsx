@@ -1,7 +1,7 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth, UserRole } from "@/context/AuthContext";
+import { OperatorRegion } from "@/types";
 import type { User } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,12 +13,14 @@ import { UserPlus, Edit, Trash2, User as UserIcon, Key, Copy } from "lucide-reac
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Badge } from "@/components/ui/badge";
 import * as z from "zod";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { ImpersonationButton } from "@/components/auth/ImpersonationButton";
+import { OperatorRegionFilter } from "./OperatorRegionFilter";
 
 // Form validation schema
 const userFormSchema = z.object({
@@ -27,6 +29,9 @@ const userFormSchema = z.object({
   password: z.string().min(8, { message: "Le mot de passe doit comporter au moins 8 caractères" }).optional(),
   role: z.enum(["admin", "supervisor", "operator", "auditor"], { 
     required_error: "Veuillez sélectionner un rôle" 
+  }),
+  region: z.enum(["kinshasa", "dubai"], {
+    required_error: "Veuillez sélectionner une région"
   }),
   isActive: z.boolean().default(true),
 });
@@ -37,10 +42,13 @@ export function UserList() {
   const { user, hasPermission, updateUser, createUser, deleteUser, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [users, setUsers] = useState<User[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [generatedPassword, setGeneratedPassword] = useState<string>("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedRegion, setSelectedRegion] = useState<OperatorRegion | "all">("all");
 
   // Initialize the form
   const form = useForm<UserFormValues>({
@@ -50,6 +58,7 @@ export function UserList() {
       email: "",
       password: "",
       role: "operator",
+      region: "kinshasa",
       isActive: true,
     },
   });
@@ -57,6 +66,19 @@ export function UserList() {
   useEffect(() => {
     loadUsers();
   }, []);
+
+  useEffect(() => {
+    let filtered = users.filter(user =>
+      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    if (selectedRegion !== "all") {
+      filtered = filtered.filter(user => user.region === selectedRegion);
+    }
+
+    setFilteredUsers(filtered);
+  }, [users, searchTerm, selectedRegion]);
 
   const loadUsers = async () => {
     try {
@@ -87,6 +109,7 @@ export function UserList() {
         name: userData.name || 'Utilisateur sans nom',
         email: userData.email || '',
         role: userData.role as UserRole,
+        region: (userData.region as OperatorRegion) || OperatorRegion.KINSHASA,
         createdAt: new Date(userData.createdAt),
         lastLogin: userData.lastLogin ? new Date(userData.lastLogin) : undefined,
         isActive: userData.isActive ?? true
@@ -130,6 +153,7 @@ export function UserList() {
         const success = await updateUser(editingUser.id, {
           name: data.name,
           role: data.role as UserRole,
+          region: data.region as OperatorRegion,
           isActive: data.isActive
         });
         
@@ -147,6 +171,7 @@ export function UserList() {
           name: data.name,
           email: data.email,
           role: data.role as UserRole,
+          region: data.region as OperatorRegion,
           isActive: data.isActive,
           password: data.password
         });
@@ -191,6 +216,7 @@ export function UserList() {
     form.setValue("name", user.name);
     form.setValue("email", user.email);
     form.setValue("role", user.role);
+    form.setValue("region", user.region);
     form.setValue("isActive", user.isActive);
     form.setValue("password", "");
     setGeneratedPassword("");
@@ -234,6 +260,7 @@ export function UserList() {
                     email: "",
                     password: "",
                     role: "operator",
+                    region: "kinshasa",
                     isActive: true,
                   });
                   setGeneratedPassword("");
@@ -388,6 +415,41 @@ export function UserList() {
 
                   <FormField
                     control={form.control}
+                    name="region"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Région d'opération</FormLabel>
+                        <Select 
+                          onValueChange={field.onChange} 
+                          value={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Sélectionner une région" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value={OperatorRegion.KINSHASA}>
+                              <div className="flex flex-col">
+                                <span className="font-medium">Kinshasa</span>
+                                <span className="text-xs text-gray-500">République Démocratique du Congo</span>
+                              </div>
+                            </SelectItem>
+                            <SelectItem value={OperatorRegion.DUBAI}>
+                              <div className="flex flex-col">
+                                <span className="font-medium">Dubaï</span>
+                                <span className="text-xs text-gray-500">Émirats Arabes Unis</span>
+                              </div>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
                     name="isActive"
                     render={({ field }) => (
                       <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 shadow-sm">
@@ -440,17 +502,35 @@ export function UserList() {
             <div>
               <CardTitle className="text-xl text-gray-900">Utilisateurs Actifs</CardTitle>
               <CardDescription className="text-gray-600">
-                {users.length} utilisateur{users.length > 1 ? 's' : ''} au total
+                {filteredUsers.length} utilisateur{filteredUsers.length > 1 ? 's' : ''} affiché{filteredUsers.length > 1 ? 's' : ''} sur {users.length} au total
               </CardDescription>
             </div>
           </div>
+          <div className="flex flex-col sm:flex-row gap-4 mt-4">
+            <Input
+              placeholder="Rechercher par nom ou email..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="max-w-sm"
+            />
+            <OperatorRegionFilter
+              selectedRegion={selectedRegion}
+              onRegionChange={setSelectedRegion}
+            />
+          </div>
         </CardHeader>
         <CardContent className="p-0">
-          {users.length === 0 ? (
+          {filteredUsers.length === 0 ? (
             <div className="text-center py-12">
               <UserIcon className="mx-auto h-16 w-16 text-gray-300" />
-              <h3 className="mt-4 text-lg font-medium text-gray-900">Aucun utilisateur</h3>
-              <p className="mt-2 text-gray-500">Commencez par créer un nouvel utilisateur.</p>
+              <h3 className="mt-4 text-lg font-medium text-gray-900">
+                {users.length === 0 ? "Aucun utilisateur" : "Aucun résultat"}
+              </h3>
+              <p className="mt-2 text-gray-500">
+                {users.length === 0 
+                  ? "Commencez par créer un nouvel utilisateur." 
+                  : "Essayez de modifier vos critères de recherche."}
+              </p>
             </div>
           ) : (
             <Table>
@@ -459,6 +539,7 @@ export function UserList() {
                   <TableHead className="text-gray-700 font-semibold">Utilisateur</TableHead>
                   <TableHead className="text-gray-700 font-semibold">Email</TableHead>
                   <TableHead className="text-gray-700 font-semibold">Rôle</TableHead>
+                  <TableHead className="text-gray-700 font-semibold">Région</TableHead>
                   <TableHead className="text-gray-700 font-semibold">Statut</TableHead>
                   <TableHead className="text-gray-700 font-semibold">Créé le</TableHead>
                   <TableHead className="text-gray-700 font-semibold">Dernière connexion</TableHead>
@@ -468,7 +549,7 @@ export function UserList() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {users.map(userItem => (
+                {filteredUsers.map(userItem => (
                   <TableRow key={userItem.id} className="hover:bg-gray-50">
                     <TableCell className="font-medium">
                       <div className="flex items-center space-x-3">
@@ -500,6 +581,11 @@ export function UserList() {
                       }`}>
                         {roleDisplay[userItem.role]}
                       </span>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={userItem.region === OperatorRegion.DUBAI ? "default" : "outline"}>
+                        {userItem.region === OperatorRegion.DUBAI ? "Dubaï" : "Kinshasa"}
+                      </Badge>
                     </TableCell>
                     <TableCell>
                       <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${

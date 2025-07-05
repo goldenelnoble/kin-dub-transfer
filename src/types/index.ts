@@ -3,6 +3,12 @@
 export { UserRole } from "@/context/AuthContext";
 export type { User } from "@/context/AuthContext";
 
+// Operator regions
+export enum OperatorRegion {
+  KINSHASA = "kinshasa",
+  DUBAI = "dubai"
+}
+
 // Transaction direction
 export enum TransactionDirection {
   KINSHASA_TO_DUBAI = "kinshasa_to_dubai",

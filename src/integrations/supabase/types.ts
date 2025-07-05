@@ -152,6 +152,7 @@ export type Database = {
           is_active: boolean
           last_login: string | null
           name: string
+          region: string | null
           role: Database["public"]["Enums"]["user_role"]
           updated_at: string
         }
@@ -162,6 +163,7 @@ export type Database = {
           is_active?: boolean
           last_login?: string | null
           name: string
+          region?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
         }
@@ -172,6 +174,7 @@ export type Database = {
           is_active?: boolean
           last_login?: string | null
           name?: string
+          region?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
         }

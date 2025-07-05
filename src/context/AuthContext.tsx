@@ -8,6 +8,7 @@ import {
 import { User as SupabaseUser, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
+import { OperatorRegion } from "@/types";
 
 export enum UserRole {
   ADMIN = "admin",
@@ -21,6 +22,7 @@ export interface User {
   name: string;
   email: string;
   role: UserRole;
+  region: OperatorRegion;
   createdAt: Date;
   lastLogin?: Date;
   isActive: boolean;
@@ -158,6 +160,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               name: supabaseUser.email || 'Utilisateur',
               email: supabaseUser.email || '',
               role: UserRole.OPERATOR,
+              region: OperatorRegion.KINSHASA,
               createdAt: new Date(),
               isActive: true
             };
@@ -173,6 +176,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             name: supabaseUser.email || 'Utilisateur',
             email: supabaseUser.email || '',
             role: UserRole.OPERATOR,
+            region: OperatorRegion.KINSHASA,
             createdAt: new Date(),
             isActive: true
           };
@@ -188,6 +192,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           name: supabaseUser.email || 'Utilisateur',
           email: supabaseUser.email || '',
           role: UserRole.OPERATOR,
+          region: OperatorRegion.KINSHASA,
           createdAt: new Date(),
           isActive: true
         };
@@ -200,6 +205,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         name: profileData.name,
         email: supabaseUser.email || '',
         role: profileData.role as UserRole,
+        region: (profileData.region as OperatorRegion) || OperatorRegion.KINSHASA,
         createdAt: new Date(profileData.created_at),
         lastLogin: profileData.last_login ? new Date(profileData.last_login) : undefined,
         isActive: profileData.is_active,
@@ -223,6 +229,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         name: supabaseUser.email || 'Utilisateur',
         email: supabaseUser.email || '',
         role: UserRole.OPERATOR,
+        region: OperatorRegion.KINSHASA,
         createdAt: new Date(),
         isActive: true
       };
@@ -371,6 +378,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           name: userData.name,
           email: userData.email,
           role: userData.role,
+          region: userData.region,
           isActive: userData.isActive,
           password: userData.password
         },

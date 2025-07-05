@@ -11,6 +11,128 @@ const Login = () => {
     return <Navigate to="/dashboard" replace />;
   }
 
+  const downloadSetupFile = (platform: 'windows' | 'linux') => {
+    let content: string;
+    let filename: string;
+
+    if (platform === 'windows') {
+      filename = 'setup.bat';
+      content = `@echo off
+echo ================================
+echo Golden El Nobles Cargo Services
+echo Installation Setup
+echo ================================
+echo.
+
+REM Vérifier si Node.js est installé
+node --version >nul 2>&1
+if %errorlevel% neq 0 (
+    echo ERREUR: Node.js n'est pas installé.
+    echo Veuillez télécharger et installer Node.js depuis https://nodejs.org
+    pause
+    exit /b 1
+)
+
+echo Node.js détecté...
+echo Installation des dépendances...
+echo.
+
+REM Installer les dépendances
+call npm install
+if %errorlevel% neq 0 (
+    echo ERREUR: Échec de l'installation des dépendances
+    pause
+    exit /b 1
+)
+
+echo.
+echo Configuration de l'environnement...
+
+REM Créer le fichier de configuration
+echo VITE_SUPABASE_URL=https://lgrjdbrzlgfmrrvisgrs.supabase.co > .env.local
+echo VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxncmpkYnJ6bGdmbXJydmlzZ3JzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE3MTI1OTMsImV4cCI6MjA2NzI4ODU5M30.4XXmZbIDTYb_G80OLOt2NvMF2o_HaJhRqc3p7PW4bEQ >> .env.local
+
+echo.
+echo ================================
+echo Installation terminée avec succès!
+echo ================================
+echo.
+echo Pour démarrer l'application:
+echo 1. Ouvrez une invite de commande dans ce dossier
+echo 2. Tapez: npm run dev
+echo 3. Ouvrez votre navigateur à l'adresse: http://localhost:8080
+echo.
+echo Pour accès réseau, l'application sera accessible via:
+echo http://[VOTRE-IP]:8080
+echo.
+pause`;
+    } else {
+      filename = 'setup.sh';
+      content = `#!/bin/bash
+
+echo "================================"
+echo "Golden El Nobles Cargo Services"
+echo "Installation Setup"
+echo "================================"
+echo
+
+# Vérifier si Node.js est installé
+if ! command -v node &> /dev/null; then
+    echo "ERREUR: Node.js n'est pas installé."
+    echo "Veuillez télécharger et installer Node.js depuis https://nodejs.org"
+    exit 1
+fi
+
+echo "Node.js détecté..."
+echo "Installation des dépendances..."
+echo
+
+# Installer les dépendances
+npm install
+if [ $? -ne 0 ]; then
+    echo "ERREUR: Échec de l'installation des dépendances"
+    exit 1
+fi
+
+echo
+echo "Configuration de l'environnement..."
+
+# Créer le fichier de configuration
+cat > .env.local << EOL
+VITE_SUPABASE_URL=https://lgrjdbrzlgfmrrvisgrs.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxncmpkYnJ6bGdmbXJydmlzZ3JzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE3MTI1OTMsImV4cCI6MjA2NzI4ODU5M30.4XXmZbIDTYb_G80OLOt2NvMF2o_HaJhRqc3p7PW4bEQ
+EOL
+
+echo
+echo "================================"
+echo "Installation terminée avec succès!"
+echo "================================"
+echo
+echo "Pour démarrer l'application:"
+echo "1. Ouvrez un terminal dans ce dossier"
+echo "2. Tapez: npm run dev"
+echo "3. Ouvrez votre navigateur à l'adresse: http://localhost:8080"
+echo
+echo "Pour accès réseau, l'application sera accessible via:"
+echo "http://[VOTRE-IP]:8080"
+echo
+
+# Rendre le script exécutable
+chmod +x setup.sh`;
+    }
+
+    // Créer et télécharger le fichier
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 p-4 relative overflow-hidden">
       {/* Background decorative elements */}
@@ -88,26 +210,24 @@ const Login = () => {
       <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2">
         <div className="flex flex-col items-center space-y-4">
           <div className="flex space-x-4">
-            <a
-              href="/setup.bat"
-              download="setup.bat"
+            <button
+              onClick={() => downloadSetupFile('windows')}
               className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 space-x-2"
             >
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
               </svg>
               <span>Setup Windows</span>
-            </a>
-            <a
-              href="/setup.sh"
-              download="setup.sh"
+            </button>
+            <button
+              onClick={() => downloadSetupFile('linux')}
               className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 space-x-2"
             >
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
               </svg>
               <span>Setup Linux/Mac</span>
-            </a>
+            </button>
           </div>
           <p className="text-xs text-gray-400 text-center">
             Téléchargez le setup pour installer l'application en local

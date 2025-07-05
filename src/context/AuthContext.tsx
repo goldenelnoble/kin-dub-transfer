@@ -30,8 +30,7 @@ export interface User {
 interface AuthContextType {
   user: User | null;
   session: Session | null;
-  instantLogin: () => Promise<boolean>;
-  adminAutoLogin: () => Promise<boolean>;
+  login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
   isLoading: boolean;
   hasPermission: (permission: string) => boolean;
@@ -231,128 +230,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const instantLogin = async (): Promise<boolean> => {
+  const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true);
     
     try {
-      console.log('Attempting instant login without credentials...');
+      console.log('Attempting login with email:', email);
       
-      // Create a fake session for instant access
-      const fakeUser: User = {
-        id: 'instant-user-' + Date.now(),
-        name: 'Utilisateur Instantané',
-        email: 'instant@user.com',
-        role: UserRole.OPERATOR,
-        createdAt: new Date(),
-        isActive: true
-      };
-
-      console.log('Instant login successful');
-      setUser(fakeUser);
-      
-      toast({
-        title: "Connexion instantanée",
-        description: "Accès accordé sans authentification",
-      });
-      
-      setIsLoading(false);
-      return true;
-    } catch (error) {
-      console.error('Instant login error:', error);
-      toast({
-        title: "Erreur",
-        description: "Erreur lors de la connexion instantanée",
-        variant: "destructive"
-      });
-      setIsLoading(false);
-      return false;
-    }
-  };
-
-  const adminAutoLogin = async (): Promise<boolean> => {
-    setIsLoading(true);
-    
-    try {
-      console.log('Attempting admin auto login...');
-      
-      // Get admin user data by identifier - simplified query
-      const { data: userData, error: userError } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('identifier', 'NGOMA')
-        .eq('role', 'admin')
-        .eq('is_active', true)
-        .single();
-
-      if (userError || !userData) {
-        console.error('Admin user not found:', userError);
-        toast({
-          title: "Erreur",
-          description: "Utilisateur administrateur non trouvé",
-          variant: "destructive"
-        });
-        setIsLoading(false);
-        return false;
-      }
-
-      console.log('Admin user found:', userData);
-
-      // Now we need to get the email from the auth.users table
-      // We'll use the authenticate_with_identifier function to get the email
-      const { data: authData, error: authError } = await supabase
-        .rpc('authenticate_with_identifier', {
-          p_identifier: 'NGOMA',
-          p_password: 'Merdo@243'
-        });
-
-      if (authError || !authData || authData.length === 0) {
-        console.error('Could not get admin email:', authError);
-        toast({
-          title: "Erreur",
-          description: "Impossible de récupérer les informations administrateur",
-          variant: "destructive"
-        });
-        setIsLoading(false);
-        return false;
-      }
-
-      const adminEmail = authData[0].email;
-      console.log('Admin email found:', adminEmail);
-
-      // Sign in with admin credentials automatically
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: adminEmail,
-        password: "Merdo@243", // Admin password
+        email,
+        password,
       });
 
       if (error) {
-        console.error('Admin auto login error:', error);
+        console.error('Login error:', error);
         toast({
-          title: "Erreur de connexion admin",
-          description: "Impossible de se connecter automatiquement",
+          title: "Erreur de connexion",
+          description: error.message === 'Invalid login credentials' 
+            ? "Email ou mot de passe incorrect" 
+            : error.message,
           variant: "destructive"
         });
         setIsLoading(false);
         return false;
       }
 
-      console.log('Admin auto login successful for user:', data.user?.email);
+      console.log('Login successful for user:', data.user?.email);
       toast({
-        title: "Connexion Administrateur",
-        description: "Connexion automatique réussie",
+        title: "Connexion réussie",
+        description: "Vous êtes maintenant connecté",
       });
+      
+      setIsLoading(false);
       return true;
     } catch (error) {
-      console.error('Admin auto login error:', error);
+      console.error('Login error:', error);
       toast({
         title: "Erreur",
-        description: "Erreur lors de la connexion automatique",
+        description: "Erreur lors de la connexion",
         variant: "destructive"
       });
       setIsLoading(false);
       return false;
     }
   };
+
 
   const logout = async () => {
     try {
@@ -548,8 +469,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider value={{ 
       user, 
       session,
-      instantLogin,
-      adminAutoLogin,
+      login,
       logout, 
       isLoading, 
       hasPermission,

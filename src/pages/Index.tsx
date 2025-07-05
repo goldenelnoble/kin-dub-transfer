@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Shield, Clock, Globe, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { AuthButtons } from "@/components/auth/AuthButtons";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -29,8 +30,23 @@ const Index = () => {
   return (
     <AppLayout>
       <div className="min-h-screen bg-gradient-to-br from-white via-golden-50/30 to-white">
+        {/* Header with Auth Buttons */}
+        <div className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-sm border-b border-noble-200/50">
+          <div className="max-w-7xl mx-auto px-8 py-4 flex justify-between items-center">
+            <div className="flex items-center space-x-3">
+              <img 
+                src="/lovable-uploads/3699c74f-5ee4-4571-93ea-3850eeb8546e.png" 
+                alt="Golden El Nobles Cargo Logo" 
+                className="w-8 h-8 object-contain"
+              />
+              <span className="font-playfair font-bold text-golden-600">Golden El Nobles</span>
+            </div>
+            <AuthButtons />
+          </div>
+        </div>
+
         {/* Hero Section */}
-        <section className="py-20 px-8">
+        <section className="py-32 px-8">
           <div className="max-w-4xl mx-auto text-center">
             {/* Logo */}
             <div className="flex justify-center mb-12">

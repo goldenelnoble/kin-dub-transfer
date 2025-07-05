@@ -20,6 +20,7 @@ import {
   Sparkles
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { SidebarAuthButtons } from "@/components/auth/SidebarAuthButtons";
 
 const navigation = [
   { name: "Tableau de Bord", href: "/dashboard", icon: BarChart3 },
@@ -167,20 +168,10 @@ export function Sidebar() {
       
       <Separator className="bg-white/20" />
       
-      {/* User Profile */}
+      {/* Auth Buttons */}
       <div className="p-6 relative z-10">
-        <div className="flex items-center space-x-3 p-4 rounded-xl bg-gradient-to-r from-white/10 to-white/5 border border-white/20 backdrop-blur-sm hover:from-white/15 hover:to-white/10 transition-all duration-300">
-          <div className="relative">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-golden-500 to-golden-600 flex items-center justify-center shadow-lg">
-              <span className="text-white text-sm font-bold font-inter">A</span>
-            </div>
-            <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-noble-800"></div>
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-white font-inter truncate">Admin</p>
-            <p className="text-xs text-white/60 truncate font-inter">Administrateur Système</p>
-          </div>
-          <Sparkles className="h-4 w-4 text-golden-400 animate-pulse" />
+        <div className="bg-gradient-to-r from-white/10 to-white/5 border border-white/20 backdrop-blur-sm rounded-xl p-4">
+          <SidebarAuthButtons />
         </div>
       </div>
     </div>

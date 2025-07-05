@@ -3,7 +3,6 @@ import { useAuth } from "@/context/AuthContext";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { UserTabs } from "@/components/users/UserTabs";
 import { HomeButton } from "@/components/ui/home-button";
-import { AuthButtons } from "@/components/auth/AuthButtons";
 
 const Users = () => {
   const { user, hasPermission, isAdmin } = useAuth();
@@ -28,10 +27,7 @@ const Users = () => {
               Gérez les utilisateurs, leurs rôles et la sécurité du système
             </p>
           </div>
-          <div className="flex items-center gap-4">
-            <AuthButtons />
-            <HomeButton variant="ghost" />
-          </div>
+          <HomeButton variant="ghost" />
         </div>
 
         <UserTabs />

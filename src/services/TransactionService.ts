@@ -75,6 +75,11 @@ export class TransactionService {
             const senderData = await SenderDatabase.getSenderById(tx.sender_id);
             const recipientData = await RecipientDatabase.getRecipientById(tx.recipient_id);
 
+            if (!senderData || !recipientData) {
+              console.warn(`Missing data for transaction ${tx.id}: sender=${!!senderData}, recipient=${!!recipientData}`);
+              return TransactionMapper.mapDatabaseTransactionToTransaction(tx);
+            }
+
             return TransactionMapper.mapDatabaseTransactionToTransaction({
               ...tx,
               senders: senderData,
@@ -105,6 +110,11 @@ export class TransactionService {
 
       const senderData = await SenderDatabase.getSenderById(transaction.sender_id);
       const recipientData = await RecipientDatabase.getRecipientById(transaction.recipient_id);
+
+      if (!senderData || !recipientData) {
+        console.warn(`Missing data for transaction ${id}: sender=${!!senderData}, recipient=${!!recipientData}`);
+        return TransactionMapper.mapDatabaseTransactionToTransaction(transaction);
+      }
 
       const result = TransactionMapper.mapDatabaseTransactionToTransaction({
         ...transaction,

@@ -182,6 +182,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
 
+      if (!profileData) {
+        // Create a default user if profile data is missing
+        const defaultUser: User = {
+          id: supabaseUser.id,
+          name: supabaseUser.email || 'Utilisateur',
+          email: supabaseUser.email || '',
+          role: UserRole.OPERATOR,
+          createdAt: new Date(),
+          isActive: true
+        };
+        setUser(defaultUser);
+        return;
+      }
+
       const user: User = {
         id: profileData.id,
         name: profileData.name,

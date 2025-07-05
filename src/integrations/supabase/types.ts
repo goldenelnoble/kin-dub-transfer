@@ -9,16 +9,188 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      recipients: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          phone: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          phone: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          phone?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      senders: {
+        Row: {
+          created_at: string
+          id: string
+          id_number: string
+          id_type: string
+          name: string
+          phone: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          id_number: string
+          id_type: string
+          name: string
+          phone: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          id_number?: string
+          id_type?: string
+          name?: string
+          phone?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      transactions: {
+        Row: {
+          amount: number
+          commission_amount: number
+          commission_percentage: number
+          created_at: string
+          created_by: string | null
+          currency: string
+          direction: string
+          fees: number
+          id: string
+          mobile_money_network: string | null
+          notes: string | null
+          payment_method: string
+          receiving_amount: number
+          recipient_id: string | null
+          sender_id: string | null
+          status: string
+          total: number
+          txn_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          commission_amount: number
+          commission_percentage: number
+          created_at?: string
+          created_by?: string | null
+          currency: string
+          direction: string
+          fees: number
+          id?: string
+          mobile_money_network?: string | null
+          notes?: string | null
+          payment_method: string
+          receiving_amount: number
+          recipient_id?: string | null
+          sender_id?: string | null
+          status?: string
+          total: number
+          txn_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          commission_amount?: number
+          commission_percentage?: number
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          direction?: string
+          fees?: number
+          id?: string
+          mobile_money_network?: string | null
+          notes?: string | null
+          payment_method?: string
+          receiving_amount?: number
+          recipient_id?: string | null
+          sender_id?: string | null
+          status?: string
+          total?: number
+          txn_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "recipients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "senders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_profiles: {
+        Row: {
+          created_at: string
+          id: string
+          identifier: string | null
+          is_active: boolean
+          last_login: string | null
+          name: string
+          role: Database["public"]["Enums"]["user_role"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          identifier?: string | null
+          is_active?: boolean
+          last_login?: string | null
+          name: string
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          identifier?: string | null
+          is_active?: boolean
+          last_login?: string | null
+          name?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      authenticate_with_identifier: {
+        Args: { p_identifier: string; p_password: string }
+        Returns: {
+          email: string
+        }[]
+      }
     }
     Enums: {
-      [_ in never]: never
+      user_role: "admin" | "supervisor" | "operator" | "auditor"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -133,6 +305,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      user_role: ["admin", "supervisor", "operator", "auditor"],
+    },
   },
 } as const

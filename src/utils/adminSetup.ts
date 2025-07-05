@@ -32,21 +32,9 @@ export const createAdminUser = async (): Promise<AdminCredentials | null> => {
     if (authError) {
       console.error('Auth error:', authError);
       
-      // If user already exists, try to promote them
+      // If user already exists, that's fine - they can still use the existing credentials
       if (authError.message?.includes('already registered') || authError.message?.includes('already been registered')) {
-        console.log('User already exists, promoting to admin...');
-        
-        const { data: promoteData, error: promoteError } = await supabase.rpc(
-          'promote_user_to_admin', 
-          { user_email: adminCredentials.email }
-        );
-
-        if (promoteError) {
-          console.error('Error promoting user:', promoteError);
-          return null;
-        }
-
-        console.log('User promoted to admin successfully');
+        console.log('User already exists, returning existing credentials...');
         return adminCredentials;
       }
       
@@ -63,18 +51,7 @@ export const createAdminUser = async (): Promise<AdminCredentials | null> => {
     // Wait a moment for the profile to be created by the trigger
     await new Promise(resolve => setTimeout(resolve, 1000));
 
-    // Promote the user to admin
-    const { error: promoteError } = await supabase.rpc(
-      'promote_user_to_admin', 
-      { user_email: adminCredentials.email }
-    );
-
-    if (promoteError) {
-      console.error('Error promoting user to admin:', promoteError);
-      return null;
-    }
-
-    console.log('Admin user created and promoted successfully');
+    console.log('Admin user created successfully');
     return adminCredentials;
 
   } catch (error) {

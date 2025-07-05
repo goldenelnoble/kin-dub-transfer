@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { Transaction, DashboardStats, TransactionStatus } from "@/types";
 import { TransactionService } from "@/services/TransactionService";
+import { TransactionRealtime } from "@/services/realtime/TransactionRealtime";
 import { toast } from "@/components/ui/sonner";
 
 export function useDashboardData() {
@@ -71,16 +72,16 @@ export function useDashboardData() {
     loadDashboardData();
 
     // Subscribe to real-time updates
-    const subscription = TransactionService.subscribeToTransactionChanges(() => {
+    const handleDashboardUpdate = () => {
       console.log('Dashboard: Received real-time update, refreshing data...');
       loadDashboardData();
-    });
+    };
+
+    TransactionService.subscribeToTransactionChanges(handleDashboardUpdate);
 
     return () => {
       console.log('Dashboard: Cleaning up subscription...');
-      if (subscription) {
-        subscription.unsubscribe();
-      }
+      TransactionRealtime.unsubscribe(handleDashboardUpdate);
     };
   }, []);
 

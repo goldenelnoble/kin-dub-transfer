@@ -5,6 +5,7 @@ import { toast } from "@/components/ui/sonner";
 import { filterTransactions } from "../utils/transactionUtils";
 import { useAuth } from "@/context/AuthContext";
 import { TransactionService } from "@/services/TransactionService";
+import { TransactionRealtime } from "@/services/realtime/TransactionRealtime";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -26,7 +27,7 @@ export function useTransactionList() {
     loadTransactions();
 
     // Subscribe to real-time updates
-    const subscription = TransactionService.subscribeToTransactionChanges((updatedTransaction) => {
+    const handleTransactionUpdate = (updatedTransaction: Transaction) => {
       console.log('useTransactionList: Received real-time update for transaction:', updatedTransaction.id);
       setTransactions(current => {
         const existingIndex = current.findIndex(tx => tx.id === updatedTransaction.id);
@@ -40,13 +41,13 @@ export function useTransactionList() {
           return [updatedTransaction, ...current];
         }
       });
-    });
+    };
+
+    TransactionService.subscribeToTransactionChanges(handleTransactionUpdate);
 
     return () => {
       console.log('useTransactionList: Cleaning up subscription...');
-      if (subscription) {
-        subscription.unsubscribe();
-      }
+      TransactionRealtime.unsubscribe(handleTransactionUpdate);
     };
   }, []);
 

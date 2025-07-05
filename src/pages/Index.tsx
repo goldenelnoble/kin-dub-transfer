@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Shield, Clock, Globe, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { AuthButtons } from "@/components/auth/AuthButtons";
+import { HomeAuthButton } from "@/components/auth/HomeAuthButton";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -41,7 +41,7 @@ const Index = () => {
               />
               <span className="font-playfair font-bold text-golden-600">Golden El Nobles</span>
             </div>
-            <AuthButtons />
+            <HomeAuthButton />
           </div>
         </div>
 

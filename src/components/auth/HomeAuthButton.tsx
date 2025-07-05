@@ -3,7 +3,7 @@ import { LogIn, LogOut, User } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 
-export function AuthButtons() {
+export function HomeAuthButton() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -18,18 +18,17 @@ export function AuthButtons() {
 
   if (user) {
     return (
-      <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2 text-sm text-noble-600">
-          <User className="h-4 w-4" />
-          <span>{user.name}</span>
-          <span className="text-xs bg-noble-100 px-2 py-1 rounded-full">
-            {user.role}
-          </span>
+      <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-xl border border-white/20">
+          <User className="h-5 w-5 text-golden-400" />
+          <div>
+            <p className="text-sm font-medium text-noble-800">{user.name}</p>
+            <p className="text-xs text-golden-600 font-medium">{user.role}</p>
+          </div>
         </div>
         <Button 
           onClick={handleLogout}
           variant="outline"
-          size="sm"
           className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
         >
           <LogOut className="h-4 w-4 mr-2" />
@@ -42,9 +41,7 @@ export function AuthButtons() {
   return (
     <Button 
       onClick={handleLogin}
-      variant="outline"
-      size="sm"
-      className="border-noble-300 text-noble-700 hover:bg-noble-50"
+      className="bg-gradient-to-r from-golden-500 to-golden-600 hover:from-golden-600 hover:to-golden-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
     >
       <LogIn className="h-4 w-4 mr-2" />
       Connexion

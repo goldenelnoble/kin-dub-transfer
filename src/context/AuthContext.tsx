@@ -394,21 +394,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   
   const updateUser = async (userId: string, userData: Partial<User>): Promise<boolean> => {
     try {
-      const { error } = await supabase
-        .from('user_profiles')
-        .update({
-          name: userData.name,
-          role: userData.role,
-          is_active: userData.isActive,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', userId);
+      const { data, error } = await supabase.functions.invoke('admin-users', {
+        body: { userId, ...userData },
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
 
       if (error) {
         console.error('Error updating user:', error);
         toast({
           title: "Erreur",
           description: "Erreur lors de la mise à jour de l'utilisateur",
+          variant: "destructive"
+        });
+        return false;
+      }
+
+      if (data.error) {
+        console.error('Error updating user:', data.error);
+        toast({
+          title: "Erreur",
+          description: data.error,
           variant: "destructive"
         });
         return false;
@@ -432,15 +440,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   
   const createUser = async (userData: Omit<User, 'id' | 'createdAt'> & { password: string }): Promise<boolean> => {
     try {
-      // Create user in Supabase Auth using admin function
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: userData.email,
-        password: userData.password,
-        user_metadata: { name: userData.name }
+      const { data, error } = await supabase.functions.invoke('admin-users', {
+        body: { 
+          action: 'create',
+          name: userData.name,
+          email: userData.email,
+          role: userData.role,
+          isActive: userData.isActive,
+          password: userData.password
+        },
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
       });
 
-      if (authError || !authData.user) {
-        console.error('Error creating auth user:', authError);
+      if (error) {
+        console.error('Error creating user:', error);
         toast({
           title: "Erreur",
           description: "Erreur lors de la création de l'utilisateur",
@@ -449,21 +465,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return false;
       }
 
-      // Update the profile with the specified role
-      const { error: profileError } = await supabase
-        .from('user_profiles')
-        .update({
-          name: userData.name,
-          role: userData.role,
-          is_active: userData.isActive
-        })
-        .eq('id', authData.user.id);
-
-      if (profileError) {
-        console.error('Error updating user profile:', profileError);
+      if (data.error) {
+        console.error('Error creating user:', data.error);
         toast({
           title: "Erreur",
-          description: "Erreur lors de la configuration du profil utilisateur",
+          description: data.error,
           variant: "destructive"
         });
         return false;
@@ -487,13 +493,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   
   const deleteUser = async (userId: string): Promise<boolean> => {
     try {
-      const { error } = await supabase.auth.admin.deleteUser(userId);
+      const { data, error } = await supabase.functions.invoke('admin-users', {
+        body: { 
+          action: 'delete',
+          userId: userId
+        },
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
 
       if (error) {
         console.error('Error deleting user:', error);
         toast({
           title: "Erreur",
           description: "Erreur lors de la suppression de l'utilisateur",
+          variant: "destructive"
+        });
+        return false;
+      }
+
+      if (data.error) {
+        console.error('Error deleting user:', data.error);
+        toast({
+          title: "Erreur",
+          description: data.error,
           variant: "destructive"
         });
         return false;

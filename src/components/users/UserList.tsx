@@ -63,38 +63,35 @@ export function UserList() {
       setIsLoading(true);
       console.log('[Users] Loading users from database...');
       
-      const { data: profiles, error: profilesError } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
+        const { data, error } = await supabase.functions.invoke('admin-users', {
+          body: { action: 'list' },
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
 
-      if (profilesError) {
-        console.error('Error loading user profiles:', profilesError);
-        toast.error("Erreur lors du chargement des utilisateurs");
-        return;
-      }
+        if (error) {
+          console.error('Error loading users:', error);
+          toast.error("Erreur lors du chargement des utilisateurs");
+          return;
+        }
 
-      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
+        if (data.error) {
+          console.error('Error loading users:', data.error);
+          toast.error(data.error);
+          return;
+        }
 
-      if (authError) {
-        console.error('Error loading auth users:', authError);
-        toast.error("Erreur lors du chargement des emails des utilisateurs");
-        return;
-      }
-
-      const usersData: User[] = (profiles || []).map(profile => {
-        const authUser: any = authUsers?.users?.find((au: any) => au.id === profile.id) || null;
-        
-        return {
-          id: profile.id,
-          name: profile.name || 'Utilisateur sans nom',
-          email: authUser?.email || '',
-          role: profile.role as UserRole,
-          createdAt: new Date(profile.created_at),
-          lastLogin: profile.last_login ? new Date(profile.last_login) : undefined,
-          isActive: profile.is_active ?? true
-        };
-      });
+      const usersData: User[] = (data.users || []).map((userData: any) => ({
+        id: userData.id,
+        name: userData.name || 'Utilisateur sans nom',
+        email: userData.email || '',
+        role: userData.role as UserRole,
+        createdAt: new Date(userData.createdAt),
+        lastLogin: userData.lastLogin ? new Date(userData.lastLogin) : undefined,
+        isActive: userData.isActive ?? true
+      }));
 
       setUsers(usersData);
     } catch (error) {

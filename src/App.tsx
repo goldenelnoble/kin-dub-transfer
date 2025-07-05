@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
 import { SecurityProvider } from "@/security/hooks/useSecurityContext";
+import { ImpersonationProvider } from "@/hooks/useImpersonation";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
@@ -30,8 +31,9 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <BrowserRouter>
       <AuthProvider>
-        <SecurityProvider>
-          <TooltipProvider>
+        <ImpersonationProvider>
+          <SecurityProvider>
+            <TooltipProvider>
             <Toaster />
             <Sonner />
             <Routes>
@@ -136,8 +138,9 @@ const App = () => (
               />
               <Route path="*" element={<NotFound />} />
             </Routes>
-          </TooltipProvider>
-        </SecurityProvider>
+            </TooltipProvider>
+          </SecurityProvider>
+        </ImpersonationProvider>
       </AuthProvider>
     </BrowserRouter>
   </QueryClientProvider>

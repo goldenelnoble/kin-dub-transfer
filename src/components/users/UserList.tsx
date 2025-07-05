@@ -70,19 +70,19 @@ export function UserList() {
         }
       });
 
-        if (error) {
-          console.error('Error loading users:', error);
-          toast.error("Erreur lors du chargement des utilisateurs");
-          return;
-        }
+      if (error) {
+        console.error('Error loading users:', error);
+        toast.error("Erreur de connexion au serveur");
+        return;
+      }
 
-        if (data.error) {
-          console.error('Error loading users:', data.error);
-          toast.error(data.error);
-          return;
-        }
+      if (data && data.error) {
+        console.error('Error loading users:', data.error);
+        toast.error(data.error);
+        return;
+      }
 
-      const usersData: User[] = (data.users || []).map((userData: any) => ({
+      const usersData: User[] = (data?.users || []).map((userData: any) => ({
         id: userData.id,
         name: userData.name || 'Utilisateur sans nom',
         email: userData.email || '',

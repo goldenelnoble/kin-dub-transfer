@@ -1,21 +1,15 @@
 
 import { LoginForm } from "@/components/auth/LoginForm";
 import { useAuth } from "@/context/AuthContext";
-import { Navigate, useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
+import { Navigate } from "react-router-dom";
 
 const Login = () => {
   const { user, isLoading } = useAuth();
-  const navigate = useNavigate();
 
   // If user is already logged in, redirect to dashboard
   if (user && !isLoading) {
     return <Navigate to="/dashboard" replace />;
   }
-
-  const handleCreateUserRedirect = () => {
-    navigate("/users");
-  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 p-4 relative overflow-hidden">
@@ -86,16 +80,6 @@ const Login = () => {
         <div className="flex-1 max-w-md w-full space-y-6">
           <div className="backdrop-blur-sm bg-white/80 rounded-2xl shadow-2xl border border-white/50 p-1">
             <LoginForm />
-          </div>
-          
-          <div className="space-y-4">
-            <Button 
-              onClick={handleCreateUserRedirect}
-              variant="outline"
-              className="w-full bg-white/50 border-orange-200 hover:bg-orange-50 text-orange-700 font-medium py-3 rounded-xl shadow-lg backdrop-blur-sm transition-all duration-200 hover:shadow-xl"
-            >
-              Aller à la gestion des utilisateurs
-            </Button>
           </div>
         </div>
       </div>

@@ -11,6 +11,7 @@ import {
 import { CURRENCY_SYMBOLS, DEFAULT_COMMISSION_PERCENTAGES } from "@/lib/constants";
 import { toast } from "@/components/ui/sonner";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
 import { TransactionService } from "@/services/TransactionService";
 import { TransactionDetailsForm } from "../forms/TransactionDetailsForm";
 import { SenderForm } from "../forms/SenderForm";
@@ -18,6 +19,7 @@ import { RecipientForm } from "../forms/RecipientForm";
 
 export function TransactionForm() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [direction, setDirection] = useState<TransactionDirection>(TransactionDirection.KINSHASA_TO_DUBAI);
@@ -110,7 +112,7 @@ export function TransactionForm() {
           phone: recipientPhone.trim()
         },
         notes: notes.trim() || undefined,
-        createdBy: "Operator User"
+        createdBy: user?.id || ""
       };
       
       const createdTransaction = await TransactionService.createTransaction(transaction);

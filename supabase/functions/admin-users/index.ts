@@ -26,6 +26,8 @@ Deno.serve(async (req) => {
     const url = new URL(req.url)
     const action = url.searchParams.get('action')
 
+    console.log(`Method: ${method}, Action: ${action}`)
+
     switch (method) {
       case 'GET':
         if (action === 'list') {
@@ -39,7 +41,12 @@ Deno.serve(async (req) => {
 
           if (profileError) {
             console.error('Error fetching profiles:', profileError)
-            throw profileError
+            return new Response(JSON.stringify({ 
+              error: 'Erreur lors de la récupération des profils utilisateurs'
+            }), {
+              status: 500,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            })
           }
 
           // Get auth users data
@@ -47,7 +54,12 @@ Deno.serve(async (req) => {
           
           if (authError) {
             console.error('Error fetching auth users:', authError)
-            throw authError
+            return new Response(JSON.stringify({ 
+              error: 'Erreur lors de la récupération des utilisateurs auth'
+            }), {
+              status: 500,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            })
           }
 
           // Combine profile and auth data
@@ -70,7 +82,13 @@ Deno.serve(async (req) => {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           })
         }
-        break
+        
+        return new Response(JSON.stringify({ 
+          error: 'Action non supportée pour GET' 
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
 
       case 'POST':
         const userData = await req.json()
@@ -78,6 +96,16 @@ Deno.serve(async (req) => {
         if (userData.action === 'create') {
           console.log('Creating new user...')
           console.log('User data received:', { ...userData, password: '[REDACTED]' })
+
+          // Validate required fields
+          if (!userData.email || !userData.password || !userData.name) {
+            return new Response(JSON.stringify({ 
+              error: 'Email, mot de passe et nom sont requis' 
+            }), {
+              status: 400,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            })
+          }
 
           // Create user in Supabase Auth
           const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
@@ -88,7 +116,12 @@ Deno.serve(async (req) => {
 
           if (authError || !authData.user) {
             console.error('Error creating auth user:', authError)
-            throw authError
+            return new Response(JSON.stringify({ 
+              error: authError?.message || 'Erreur lors de la création de l\'utilisateur'
+            }), {
+              status: 500,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            })
           }
 
           console.log('Auth user created successfully:', authData.user.id)
@@ -106,7 +139,12 @@ Deno.serve(async (req) => {
 
           if (profileError) {
             console.error('Error updating user profile:', profileError)
-            throw profileError
+            return new Response(JSON.stringify({ 
+              error: 'Erreur lors de la mise à jour du profil utilisateur'
+            }), {
+              status: 500,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            })
           }
 
           console.log('User profile updated successfully')
@@ -123,7 +161,13 @@ Deno.serve(async (req) => {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           })
         }
-        break
+        
+        return new Response(JSON.stringify({ 
+          error: 'Action non supportée pour POST' 
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
 
       case 'PUT':
         const updateData = await req.json()
@@ -133,6 +177,15 @@ Deno.serve(async (req) => {
           
           const { userId, ...userData } = updateData
           console.log('Updating user:', userId, userData)
+
+          if (!userId) {
+            return new Response(JSON.stringify({ 
+              error: 'ID utilisateur requis' 
+            }), {
+              status: 400,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            })
+          }
 
           // Update user profile
           const { error: profileError } = await supabaseAdmin
@@ -147,7 +200,12 @@ Deno.serve(async (req) => {
 
           if (profileError) {
             console.error('Error updating user profile:', profileError)
-            throw profileError
+            return new Response(JSON.stringify({ 
+              error: 'Erreur lors de la mise à jour du profil utilisateur'
+            }), {
+              status: 500,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            })
           }
 
           console.log('User updated successfully')
@@ -156,7 +214,13 @@ Deno.serve(async (req) => {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           })
         }
-        break
+        
+        return new Response(JSON.stringify({ 
+          error: 'Action non supportée pour PUT' 
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
 
       case 'DELETE':
         const deleteData = await req.json()
@@ -167,12 +231,26 @@ Deno.serve(async (req) => {
           const { userId } = deleteData
           console.log('Deleting user:', userId)
 
+          if (!userId) {
+            return new Response(JSON.stringify({ 
+              error: 'ID utilisateur requis' 
+            }), {
+              status: 400,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            })
+          }
+
           // Delete user from auth (this will cascade to profile due to foreign key)
           const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId)
 
           if (deleteError) {
             console.error('Error deleting user:', deleteError)
-            throw deleteError
+            return new Response(JSON.stringify({ 
+              error: 'Erreur lors de la suppression de l\'utilisateur'
+            }), {
+              status: 500,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            })
           }
 
           console.log('User deleted successfully')
@@ -181,19 +259,22 @@ Deno.serve(async (req) => {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           })
         }
-        break
+        
+        return new Response(JSON.stringify({ 
+          error: 'Action non supportée pour DELETE' 
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
 
       default:
-        return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+        return new Response(JSON.stringify({ 
+          error: 'Méthode HTTP non autorisée' 
+        }), {
           status: 405,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         })
     }
-
-    return new Response(JSON.stringify({ error: 'Invalid action' }), {
-      status: 400,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    })
 
   } catch (error) {
     console.error('Error in admin-users function:', error)

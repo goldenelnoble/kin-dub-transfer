@@ -395,7 +395,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const updateUser = async (userId: string, userData: Partial<User>): Promise<boolean> => {
     try {
       const { data, error } = await supabase.functions.invoke('admin-users', {
-        body: { userId, ...userData },
+        body: { 
+          action: 'update',
+          userId, 
+          ...userData 
+        },
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

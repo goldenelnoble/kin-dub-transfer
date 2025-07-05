@@ -27,13 +27,12 @@ export function AdminUserManagement() {
     try {
       setIsLoading(true);
       
-        const { data, error } = await supabase.functions.invoke('admin-users', {
-          body: { action: 'list' },
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          }
-        });
+      const { data, error } = await supabase.functions.invoke('admin-users?action=list', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
 
         if (error) {
           console.error('Error loading users:', error);

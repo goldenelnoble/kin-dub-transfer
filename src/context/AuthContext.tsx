@@ -104,12 +104,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         console.log('Auth state changed:', event, session?.user?.email);
         setSession(session);
         
         if (session?.user) {
-          await fetchUserProfile(session.user);
+          // Defer Supabase calls to prevent deadlock
+          setTimeout(() => {
+            fetchUserProfile(session.user);
+          }, 0);
         } else {
           setUser(null);
         }
@@ -311,7 +314,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const hasPermission = (permission: string): boolean => {
-    if (!user) return true; // Pas de restrictions de sécurité
+    if (!user) return false; // Sécurité par défaut
     const rolePermissions = ROLE_PERMISSIONS[user.role];
     return rolePermissions[permission as keyof typeof rolePermissions] === true;
   };

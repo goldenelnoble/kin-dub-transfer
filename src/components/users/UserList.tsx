@@ -85,8 +85,9 @@ export function UserList() {
       setIsLoading(true);
       console.log('[Users] Loading users from database...');
       
-      const { data, error } = await supabase.functions.invoke('admin-users?action=list', {
-        method: 'GET',
+      const { data, error } = await supabase.functions.invoke('admin-users', {
+        body: { action: 'list' },
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         }

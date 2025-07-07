@@ -26,7 +26,7 @@ export class TransactionDatabase {
         .from('transactions')
         .select('txn_id')
         .eq('txn_id', shortId)
-        .single();
+        .maybeSingle();
       
       if (!existing) {
         break; // ID unique trouvé
@@ -87,11 +87,11 @@ export class TransactionDatabase {
   static async getTransactionById(id: string) {
     console.log(`Fetching transaction ${id}...`);
     
-    const { data: transaction, error: transactionError } = await supabase
-      .from('transactions')
-      .select('*')
-      .eq('txn_id', id)
-      .single();
+      const { data: transaction, error: transactionError } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('txn_id', id)
+        .maybeSingle();
 
     if (transactionError) {
       console.error(`Error fetching transaction ${id}:`, transactionError);
